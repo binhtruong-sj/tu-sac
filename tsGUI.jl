@@ -40,7 +40,7 @@ export ranks, suits, duplicate
 
 # Deck & deck-related methods
 export Deck, shuffle!, ssort, full_deck, ordered_deck, autoShuffle!, dealCards
-export getcards, rearrange
+export getcards, rearrange, sort!
 export test_deck, getDeckArray
 #####
 ##### Types
@@ -260,6 +260,7 @@ function rearrange(hand::Deck,arr,dst)
     println(arr)
     println(a)
     for i in arr
+        println("i,c=",(i,c))
         if(i!=dst)
             splice!(a,i-c)
             c += 1
@@ -303,6 +304,7 @@ end
 
 Base.length(deck::Deck) = length(deck.cards)
 Base.iterate(deck::Deck, state=1) = Base.iterate(deck.cards, state)
+Base.sort!(deck::Deck) = sort!(deck.cards)
 
 function Base.show(io::IO, deck::Deck)
     for (i, card) in enumerate(deck)
@@ -550,6 +552,8 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx,gy, dims,rdim=14, mode = false)
         actorsXY[m,:] = [px,py]
         if(mode)
             mask[m] = mask[m] | 0x1 
+        else
+            mask[m] = mask[m] & 0xFFFFFFFE
         end
         i = i + 1
     end
@@ -589,6 +593,7 @@ function organizeHand(ahand::TuSacCards.Deck)
     println("player1:")
     println(ahand)
     TuSacCards.ssort(ahand)
+   # TuSacCards.sort!(ahand)
     println(ahand)
 end
 
@@ -671,9 +676,9 @@ function fake_play()
 
 
     setupDrawDeck(player4_assets, 4, 7, 1,2, false)
-    setupDrawDeck(player3_assets, 8, 3, 0,6, false)
+    setupDrawDeck(player3_assets, 8, 4, 0,6, false)
 
-    setupDrawDeck(player2_assets, 16, 6, 1,2, false)
+    setupDrawDeck(player2_assets, 16, 7, 1,2, false)
     setupDrawDeck(player1_assets, 8, 16, 0,16,false)
 
 end
