@@ -5,13 +5,19 @@ realHEIGHT = HEIGHT *2
 WIDTH = (gameW*3)>>1
 realWIDTH = WIDTH *2
 BACKGROUND = colorant"red"
+
 cardXdim=64
 cardYdim=210
-gridX = 10
-gridY = 10
+tableXgrid = 20
+tableYgrid = 20
 
-gridXY(gx,gy) = (gx-1)*div(realWIDTH,gridX), (gy-1)*div(realHEIGHT,gridY)
-reverseGridXY(x,y) =  div(x,div(realWIDTH,gridX))+1,div(y,div(realHEIGHT,gridY))+1
+cardGrid = 4
+
+"""
+table-grid, giving x,y return grid coordinate
+"""
+tableGridXY(gx,gy) = (gx-1)*div(realWIDTH,tableXgrid), (gy-1)*div(realHEIGHT,tableYgrid)
+reverseTableGridXY(x,y) =  div(x,div(realWIDTH,tableXgrid))+1,div(y,div(realHEIGHT,tableYgrid))+1
 
 module TuSacCards
 
@@ -34,7 +40,7 @@ export ranks, suits, duplicate
 
 # Deck & deck-related methods
 export Deck, shuffle!, ssort, full_deck, ordered_deck, autoShuffle!, dealCards
-export getValue
+export getcards, rearrange
 export test_deck, getDeckArray
 #####
 ##### Types
@@ -248,9 +254,54 @@ function ssort(deck::Deck)
     deck.cards .= deck.cards[idx]
     deck
 end
+function rearrange(hand::Deck,arr,dst)
+    a = collect(1:length(hand))
+    c = 0
+    println(arr)
+    println(a)
+    for i in arr
+        if(i!=dst)
+            splice!(a,i-c)
+            c += 1
+        end
+    end
+    println(a)
+
+    for (i,n) in enumerate(a)
+        if n == dst
+            splice!(a,i,arr)
+            break
+        end
+    end
+    println(a)
+
+    hand.cards .= hand.cards[a]
+    hand
+end
+function getcards(deck::Deck,id)
+    if id == 0
+        ra = []
+        for c in deck
+            push!(ra,c.value)
+        end
+    else
+        ra = 0
+        for (i,c) in enumerate(deck)
+            if i == id
+                ra = c.value
+                break
+            end
+        end
+        if ra == 0
+            for (i,c) in enumerate(deck)
+                println(c," value=",c.value)     
+            end
+        end
+    end
+    return ra
+end
 
 Base.length(deck::Deck) = length(deck.cards)
-
 Base.iterate(deck::Deck, state=1) = Base.iterate(deck.cards, state)
 
 function Base.show(io::IO, deck::Deck)
@@ -315,63 +366,6 @@ end
 lowhi(r1,r2)  = r1>r2 ? (r2,r1) : (r1,r2)
 nextWrap(n::Int,d::Int,max::Int) = ((n+d)>max) ? 1 : (n+d)
 
-"""
-direction: 1,0 ->  hor+right
-           0,1 -> ver+down
-30+/- or 40+/-
-"""
-function deckCut(dir, a) 
-    r,c = size(a)
-    for dr in dir
-        if dr <2
-            rangeH = dr == 0 ? r : c
-            rangeL = 1
-            dr = dr + 29
-        else 
-            if dr > 30
-                g = abs(dr - 40)
-                rangeL,rangeH = div(r*g,4)+1,div(r*(g+1),4)
-            else
-                g = abs(dr - 20)
-                rangeL,rangeH = div(c*g,4)+1,div(c*(g+1),4)
-            end
-        end
-        crl,crh = lowhi(rand(rangeL:rangeH),rand(rangeL:rangeH))
-        println("dir, rl, rh, crl,crh=",(dir,rangeL, rangeH, crl,crh))
-        if dr < 30
-            #Horizontally
-            cl,ch = crl,crh
-            rr = rand(2:r)    
-             println("rr=",rr)
-                    
-            for col in cl:ch
-                save = a[:,col]
-                for n in 1:r
-                    rr = nextWrap(rr,1,r)
-                    a[n,col] = save[rr]
-                end
-                #rr = nextWrap(rr,1,r)
-            end
-        else
-            #rl,rh set the BACKGROUND
-            rl,rh = crl,crh
-            #rc set starting point to rotate
-            rc = rand(2:c)
-            println("rc=",rc)
-
-            for row in rl:rh
-                save = a[row,:]
-                for n in 1:c
-                    rc = nextWrap(rc,1,c)
-                    a[row,n] = save[rc]
-                end
-                #rc = nextWrap(rc,1,c)
-            end 
-        end
-    end
-
-end
-
 
 
 function getDeckArray(deck::Deck) 
@@ -391,6 +385,70 @@ autoShuffle:
 
 """
 function autoShuffle!(deck::Deck,ySize,gradienDir)
+    """
+        deckCut(dir, a)
+
+        direction: 1,0 ->  hor+right
+                0,1 -> ver+down
+                    30+/- or 40+/-
+    """
+    function deckCut(dir, a) 
+        cardGrid = 4
+        r,c = size(a)
+        println("r,c=",(r,c))
+        for dr in dir
+            if dr <2
+                rangeH = dr == 0 ? r : c
+                rangeL = 1
+                dr = dr + 29
+            else 
+                if dr > 30
+                    g = abs(dr - 40)
+                    Grid = div(r, cardGrid)
+                else
+                    g = abs(dr - 20)
+                    Grid = div(c, cardGrid)
+                end
+                rangeL,rangeH = g*Grid+1, (g+1)*Grid
+
+            end
+            crl,crh = lowhi(rand(rangeL:rangeH),rand(rangeL:rangeH))
+            println("dir, rl, rh, crl,crh,Grid=",(dir,rangeL, rangeH, crl,crh,Grid))
+            if dr < 30
+                #Horizontally
+                cl,ch = crl,crh
+                rr = rand(2:r)    
+                println("rr=",rr)
+                        
+                for col in cl:ch
+                    save = a[:,col]
+                    for n in 1:r
+                        rr = nextWrap(rr,1,r)
+                        a[n,col] = save[rr]
+                    end
+                    #rr = nextWrap(rr,1,r)
+                end
+            else
+                #rl,rh set the BACKGROUND
+                rl,rh = crl,crh
+                #rc set starting point to rotate
+                rc = rand(2:c)
+                println("rc=",rc)
+
+                for row in rl:rh
+                    save = a[row,:]
+                    for n in 1:c
+                        rc = nextWrap(rc,1,c)
+                        a[row,n] = save[rc]
+                    end
+                    #rc = nextWrap(rc,1,c)
+                end 
+            end
+        end
+
+    end
+###-------------------------------------------
+
     println("DIR=",gradienDir)
     a = collect(1:112)
     b = reshape(a,ySize,:)
@@ -403,6 +461,28 @@ end
 
 end # module
 ######################################################################
+function setupButtons(gx,gy,bcolor,text)
+    x,y = tableGridXY(gx,gy)
+    x1 = x + 200
+    y1 = y + 100
+    draw(Rect(x,y,x1,y1),colorant"green",fill=true)
+    
+    #=
+    replay = TextActor("Click to Play Again", "comicbd";
+            font_size = 36, color = Int[0, 0, 0, 255])
+    replay.pos = (135, 390)
+
+    draw(replay)
+    =#
+    
+    # play again instructions
+    replay = TextActor("Click to Play Again", "comicbd";
+        font_size = 36, color = Int[0, 0, 0, 255]
+    )
+    replay.pos = (135, 390)
+    draw(replay)
+end
+
 
 """
 setupActorgameDeck:
@@ -451,18 +531,18 @@ dims: 0: Vertical
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1 
       
 """
-function setupDrawDeck(deck::TuSacCards.Deck, gx,gy, dims, mode = false) 
+function setupDrawDeck(deck::TuSacCards.Deck, gx,gy, dims,rdim=14, mode = false) 
     i = 0
-    x,y = gridXY(gx,gy)
-    ra=[]
-    xDim = dims == 2 ? 16 : dims == 1 ? 100 : 3
-    yDim = dims == 2 ? 16 : 3
+    x,y = tableGridXY(gx,gy)
+    xDim = dims == 0 ? 100 : rdim
+    yDim = rdim 
+    modified_cardYdim = (dims > 0) & mode ? cardYdim >> 1 : cardYdim
     maxPx = 0
     maxPy = 0
     for card in deck
         m = mapToActors[card.value]
         px = x+(rem(i,xDim)*cardXdim) 
-        py = dims != 1 ? y+(div(i,yDim)*cardYdim) : y
+        py = dims != 0 ? y+(div(i,yDim)*modified_cardYdim) : y
         actors[m].pos = px,py
         fc_actors[m].pos = px,py
         maxPx = max(maxPx, px)
@@ -474,7 +554,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx,gy, dims, mode = false)
         i = i + 1
     end
     ra_state = []
-    push!(ra_state,x,y, maxPx+cardXdim, maxPy+cardYdim, 0, 0, 0, 0, 0)
+    push!(ra_state,x,y, maxPx+cardXdim, maxPy+modified_cardYdim, 0, 0, 0, 0, 0)
     return ra_state
 end
 
@@ -534,13 +614,13 @@ function tusacDeal()
         push!(player4_hand,pop!(gameDeck,5))
     end
     print(player1_hand)
-    setupDrawDeck(gameDeck, 4, 3, 2,true)
+    setupDrawDeck(gameDeck, 8, 8, 2,14,true)
 
-    setupDrawDeck(player4_hand, 1, 2, 1,true)
-    setupDrawDeck(player3_hand, 2, 1,0,true)
+    setupDrawDeck(player4_hand, 1, 6, 1,2,true)
+    setupDrawDeck(player3_hand, 8, 1,0,1,true)
 
-    setupDrawDeck(player2_hand, 10, 1, 0,true)
-    global human_state = setupDrawDeck(player1_hand,2,10,1,false)
+    setupDrawDeck(player2_hand, 20, 6, 1,2,true)
+    global human_state = setupDrawDeck(player1_hand,8,19,0,1,false)
 
     println("\n1")
     print(player1_hand)
@@ -555,15 +635,22 @@ function tusacDeal()
 end
 
 function fake_play()
+    println("---b----------------")
+    println(player1_hand)
     global player1_discards = TuSacCards.Deck(pop!(player1_hand,6))
     global player2_discards = TuSacCards.Deck(pop!(player2_hand,7))
     global player3_discards = TuSacCards.Deck(pop!(player3_hand,8))
     global player4_discards = TuSacCards.Deck(pop!(player4_hand,9))
+    println("--a-----------------")
 
+    println(player1_hand)
     global player1_assets = TuSacCards.Deck(pop!(player1_hand,8))
-    global player2_assets = TuSacCards.Deck(pop!(player2_hand,9))
-    global player3_assets = TuSacCards.Deck(pop!(player3_hand,10))
-    global player4_assets = TuSacCards.Deck(pop!(player4_hand,11))
+    global player2_assets = TuSacCards.Deck(pop!(player2_hand,3))
+    global player3_assets = TuSacCards.Deck(pop!(player3_hand,5))
+    global player4_assets = TuSacCards.Deck(pop!(player4_hand,4))
+    println("--f------------------")
+
+    println(player1_hand)
 
     println(player1_discards)
     println(player2_discards)
@@ -576,11 +663,18 @@ function fake_play()
     println(player4_assets)
 
 
-    setupDrawDeck(player4_discards, 2, 9, 1, true)
-    setupDrawDeck(player3_discards, 3, 2, 0, true)
+    setupDrawDeck(player4_discards, 2, 16, 2,6, false)
+    setupDrawDeck(player3_discards, 2, 2, 2,6, false)
 
-    setupDrawDeck(player2_discards, 9, 2, 0,true)
-    setupDrawDeck(player1_discards, 7, 8, 1,false)
+    setupDrawDeck(player2_discards, 16, 2, 2,6, false)
+    setupDrawDeck(player1_discards, 16, 16, 2,6,false)
+
+
+    setupDrawDeck(player4_assets, 4, 7, 1,2, false)
+    setupDrawDeck(player3_assets, 8, 3, 0,6, false)
+
+    setupDrawDeck(player2_assets, 16, 6, 1,2, false)
+    setupDrawDeck(player1_assets, 8, 16, 0,16,false)
 
 end
     #ar = TuSacCards.getDeckArray(dd)
@@ -605,9 +699,9 @@ actions --  0, nothing
             4, autoShuffle
             5, cut the deck
             6, deal cards
-            
-            7, start game
-            8, setup new boxes for discards and assets
+            7, manual re-arrange card
+            20, start game
+            30, setup new boxes for discards and assets
             .....
 """
 function gameStates(gameActions)
@@ -616,7 +710,7 @@ function gameStates(gameActions)
     if tusacState == 0
         if gameActions == 1
             gameDeck = TuSacCards.ordered_deck()
-            ad_state= setupDrawDeck(gameDeck, 2, 2, 2,false)
+            ad_state= setupDrawDeck(gameDeck, 8, 2, 2,14,false)
             tusacState = 1
         end
     elseif tusacState == 1
@@ -629,12 +723,14 @@ function gameStates(gameActions)
                 tusacState = 3
             end
     elseif tusacState == 3
-        println("Dealing is completed")
+            println("Dealing is completed")
         if gameActions == 8
             println("Starting game")
             fake_play()
             tusacState = 4
         end
+    elseif tusacState == 4
+
     end
 end
 
@@ -664,7 +760,7 @@ function on_mouse_move(g,pos)
                 if along the x/y direction (+ or -), gradien_size is factor in
             20+/- or 40+/-: -> no change after this.  It will go back to 0: after someone check/restart
     """
-    function MouseOnBoxShuffle(x,y,ar_state)
+    function mouseDirOnBox(x,y,ar_state)
         if ar_state[5] == 0 
             ar_state[5] = 1
         elseif ar_state[5] == 1
@@ -679,15 +775,17 @@ function on_mouse_move(g,pos)
                 deltaY = ar_state[9]-ar_state[7]
                 calGradien(a,b,loc,gradien_size) = div(gradien_size*(loc-a),b-a)            
                 if abs(deltaX) <  abs(deltaY)
-                    g = calGradien(ar_state[1],ar_state[3],ar_state[6],4)
+                    g = calGradien(ar_state[1],ar_state[3],ar_state[6], cardGrid)
                     deltaX > 0 ? ar_state[5] = 40+g : ar_state[5] = 40-g
                 else
-                    g = calGradien(ar_state[2],ar_state[4],ar_state[7],4)
+                    g = calGradien(ar_state[2],ar_state[4],ar_state[7], cardGrid)
                     deltaY > 0 ? ar_state[5] = 20+g : ar_state[5] = 20-g
                 end
             end
         end
     end
+    ####################
+    
     x = pos[1] << 1
     y = pos[2] << 1
    # println(x,",",y)
@@ -695,7 +793,7 @@ function on_mouse_move(g,pos)
         if ad_state[5] > 10 
             println(ad_state) 
         end
-       MouseOnBoxShuffle(x,y,ad_state)
+       mouseDirOnBox(x,y,ad_state)
    end
 end
 
@@ -704,8 +802,8 @@ function update(g)
    if(tusacState == 1)
        if(ad_state[5] > 10)
            # println("UPDATE:",ad_state)
-            TuSacCards.autoShuffle!(gameDeck,16,ad_state[5])
-            ad_state = setupDrawDeck(gameDeck, 2, 2, 2,false)
+            TuSacCards.autoShuffle!(gameDeck,14,ad_state[5])
+            ad_state = setupDrawDeck(gameDeck, 8, 2, 2,14,false)
             println(gameDeck)
        end
     end
@@ -722,29 +820,64 @@ function mouseDownOnBox(x,y,ad_state)
 end
 
 function on_mouse_down(g,pos)
+    global arr_indx
+    
+    function click_card(cardIndx,hand)
+        m = mapToActors[TuSacCards.getcards(hand,cardIndx)]
+        mcnt = mask[m] >> 4
+        if (mcnt == 1) && (length(arr_indx) > 0)
+            # moving these cards
+            mv_arr=[]
+            for i in arr_indx
+                push!(mv_arr,i)
+                mm = mapToActors[TuSacCards.getcards(hand,i)]
+                mask[mm] = (mask[mm] & 0xf ) 
+            end
+            sort!(mv_arr)
+            TuSacCards.rearrange(hand,mv_arr,cardIndx)
+
+            setupDrawDeck(hand, 8, 19,0,1,false)
+
+        else
+            mcnt += 1
+            mask[m] = (mask[m] & 0xf ) | mcnt << 4
+            x,y = actors[m].pos
+            actors[m].pos = x, y-50
+            push!(arr_indx,cardIndx)
+        end
+    end
 global tusacState
     x = pos[1] << 1
     y = pos[2] << 1
     if tusacState == 1
         gameStates(6)
     elseif tusacState == 2
+        global arr_indx = []
         organizeHand(player1_hand)
-        setupDrawDeck(player1_hand, 2, 10,1,false)
+        setupDrawDeck(player1_hand, 8, 19,0,1,false)
         gameStates(7)
     elseif tusacState == 3
-        ll = mouseDownOnBox(x, y, human_state)
-        println(ll,(reverseGridXY(x,y)))
-        if(ll == 21)
+        cindx = mouseDownOnBox(x, y, human_state)
+        println("x,y=",(reverseTableGridXY(x,y)))
+        println("ll=",cindx," cv=",(TuSacCards.getcards(player1_hand,cindx)))
+
+        if(cindx == 21)
             gameStates(8)
         end
+    elseif tusacState == 4
+            cindx = mouseDownOnBox(x, y, human_state)
+           click_card(cindx,player1_hand)
     end
-
 end
 
 
 function draw(g)
     fill(colorant"ivory4")
-   
+    buttons = []
+
+    setupButtons(10,10,"yellow","Ready")
+ # b = draw(Rect(10,10,100,100),colorant"Yellow",fill=true)
+
     for i = 1:112
         if ((mask[i] & 0x1) == 0)
             draw(actors[i])
@@ -753,6 +886,7 @@ function draw(g)
         end
     end
    
+    
     """
     for a in a1
         draw(a)
