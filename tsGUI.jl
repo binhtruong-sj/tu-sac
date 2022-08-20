@@ -1,13 +1,25 @@
-gameW = 1000
+macOS = false
 
-HEIGHT = gameW
-realHEIGHT = HEIGHT * 2
-WIDTH = (gameW * 3) >> 1
-realWIDTH = WIDTH * 2
+if macOS
+    gameW = 1000
+    HEIGHT = gameW
+    WIDTH = div(gameW *16, 9)
+    realHEIGHT = HEIGHT * 2
+    realWIDTH = WIDTH * 2
+    cardXdim = 64
+    cardYdim = 210
+else
+    gameW = 859
+    HEIGHT = gameW
+    WIDTH = div(gameW *16, 9)
+    realHEIGHT = div(HEIGHT, 1)
+    realWIDTH = div(WIDTH, 1)
+    cardXdim = 30
+    cardYdim = 100
+end
+
 BACKGROUND = colorant"red"
 
-cardXdim = 64
-cardYdim = 210
 tableXgrid = 20
 tableYgrid = 20
 
@@ -500,11 +512,17 @@ function setupActorgameDeck()
     for s in ['w', 'y', 'r', 'g']
         for r in 1:7
             for d in 0:3
-                st = string(s, r, ".png")
-                big_st = string(s, "-", r, ".png")
+                if macOS
+                    st = string(s, r, ".png")
+                    big_st = string(s, "-", r, ".png")
+                    afc = Actor("fc.png")
+                else
+                    st = string(s, r, "xs.png")
+                    big_st = string(s, r, "s.png")
+                    afc = Actor("fcxs.png")
+                end
                 act = Actor(st)
                 big_act = Actor(big_st)
-                afc = Actor("fc.png")
 
                 act.pos = 0, 0
                 deckI = (sc << 5) | (r << 2) | d
