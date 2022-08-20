@@ -267,6 +267,7 @@ function rearrange(hand::Deck,arr,dst)
         end
     end
     println(a)
+    println("dst=",dst," arr=",arr)
 
     for (i,n) in enumerate(a)
         if n == dst
@@ -280,6 +281,9 @@ function rearrange(hand::Deck,arr,dst)
     hand
 end
 function getcards(deck::Deck,id)
+    if id > length(deck)
+        return 0
+    end
     if id == 0
         ra = []
         for c in deck
@@ -320,7 +324,6 @@ end
 """
     pop!(deck::Deck, n::Int = 1)
     pop!(deck::Deck, card::Card)
-
 Remove `n` cards from the `deck`.
 or
 Remove `card` from the `deck`.
@@ -368,8 +371,6 @@ end
 lowhi(r1,r2)  = r1>r2 ? (r2,r1) : (r1,r2)
 nextWrap(n::Int,d::Int,max::Int) = ((n+d)>max) ? 1 : (n+d)
 
-
-
 function getDeckArray(deck::Deck) 
     a = []
     for card in deck
@@ -384,12 +385,10 @@ autoShuffle:
 
     - is up/left
     + is down/right
-
 """
 function autoShuffle!(deck::Deck,ySize,gradienDir)
     """
         deckCut(dir, a)
-
         direction: 1,0 ->  hor+right
                 0,1 -> ver+down
                     30+/- or 40+/-
@@ -494,6 +493,7 @@ setupActorgameDeck:
 function setupActorgameDeck()
     a=[]
     b=[]
+    big=[]
     mapToActor = Vector{UInt8}(undef,128)
     ind = 1
     sc = 0
@@ -501,7 +501,9 @@ function setupActorgameDeck()
         for r in 1:7
             for d in 0:3
                 st = string(s,r,".png")
+                big_st = string(s,"-",r,".png")
                 act = Actor(st)
+                big_act = Actor(big_st)
                 afc = Actor("fc.png")
 
                 act.pos = 0,0
@@ -509,16 +511,16 @@ function setupActorgameDeck()
                 mapToActor[deckI] = ind
                 push!(a,act)
                 push!(b,afc)
+                push!(big,big_act)
                 ind = ind + 1
             end
         end
         sc = sc + 1
     end
-    return a,b,mapToActor
+    return a,b,big,mapToActor
 end
 mask = zeros(UInt8,112)
-actors, fc_actors, mapToActors = setupActorgameDeck()
-actorsXY = zeros(Int16,(112,2))
+actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
 
 """
 setupDrawDeck:
@@ -533,23 +535,28 @@ dims: 0: Vertical
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1 
       
 """
-function setupDrawDeck(deck::TuSacCards.Deck, gx,gy, dims,rdim=14, mode = false) 
+function setupDrawDeck(deck::TuSacCards.Deck, gx,gy, xDim, mode = false) 
     i = 0
     x,y = tableGridXY(gx,gy)
-    xDim = dims == 0 ? 100 : rdim
-    yDim = rdim 
-    modified_cardYdim = (dims > 0) & mode ? cardYdim >> 1 : cardYdim
-    maxPx = 0
-    maxPy = 0
+    l = length(deck)
+
+    if xDim > 21
+        xDim = length(deck)
+    end
+    modified_cardYdim = mode ? cardYdim >> 1 : cardYdim
+   
     for card in deck
         m = mapToActors[card.value]
-        px = x+(rem(i,xDim)*cardXdim) 
-        py = dims != 0 ? y+(div(i,yDim)*modified_cardYdim) : y
+        px = x+(cardXdim*          rem(i,xDim)) 
+        py = y+(modified_cardYdim* div(i,xDim))
         actors[m].pos = px,py
         fc_actors[m].pos = px,py
-        maxPx = max(maxPx, px)
-        maxPy = max(maxPy, py)
-        actorsXY[m,:] = [px,py]
+        if (py + cardYdim*2) > realHEIGHT
+            bpy = py-200
+        else
+            bpy = py
+        end
+        big_actors[m].pos = px,bpy
         if(mode)
             mask[m] = mask[m] | 0x1 
         else
@@ -558,7 +565,15 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx,gy, dims,rdim=14, mode = false)
         i = i + 1
     end
     ra_state = []
-    push!(ra_state,x,y, maxPx+cardXdim, maxPy+modified_cardYdim, 0, 0, 0, 0, 0)
+    yDim = div(l,xDim)
+    if xDim*yDim < l 
+        yDim += 1
+    end
+    x1 = x + cardXdim * xDim
+    y1 = y + modified_cardYdim * yDim
+
+    println("x,y,x1,y1=",(x,y,x1,y1))
+    push!(ra_state,x,y, x1,y1, 0, 0, 0, 0, 0, xDim, length(deck))
     return ra_state
 end
 
@@ -596,6 +611,10 @@ function organizeHand(ahand::TuSacCards.Deck)
    # TuSacCards.sort!(ahand)
     println(ahand)
 end
+"""
+array of boxes where cards are stay within
+"""
+boxes = []
 
 """
 for i in 37:43
@@ -619,13 +638,14 @@ function tusacDeal()
         push!(player4_hand,pop!(gameDeck,5))
     end
     print(player1_hand)
-    setupDrawDeck(gameDeck, 8, 8, 2,14,true)
+    setupDrawDeck(gameDeck, 8, 8, 14,true)
 
-    setupDrawDeck(player4_hand, 1, 6, 1,2,true)
-    setupDrawDeck(player3_hand, 8, 1,0,1,true)
+    setupDrawDeck(player4_hand, 1, 6, 2,true)
+    setupDrawDeck(player3_hand, 8, 1, 100,true)
 
-    setupDrawDeck(player2_hand, 20, 6, 1,2,true)
-    global human_state = setupDrawDeck(player1_hand,8,19,0,1,false)
+    setupDrawDeck(player2_hand, 20, 6, 2,true)
+    global human_state = setupDrawDeck(player1_hand,8,19, 100,false)
+    push!(boxes,human_state)
 
     println("\n1")
     print(player1_hand)
@@ -667,19 +687,27 @@ function fake_play()
     println(player3_assets)
     println(player4_assets)
 
-
-    setupDrawDeck(player4_discards, 2, 16, 2,6, false)
-    setupDrawDeck(player3_discards, 2, 2, 2,6, false)
-
-    setupDrawDeck(player2_discards, 16, 2, 2,6, false)
-    setupDrawDeck(player1_discards, 16, 16, 2,6,false)
+    discard1 = setupDrawDeck(player1_discards, 16, 16, 6,false)
+    discard2 = setupDrawDeck(player2_discards, 16, 2, 6, false)
+    discard3 = setupDrawDeck(player3_discards, 2, 2, 6, false)
+    discard4 = setupDrawDeck(player4_discards, 2, 16, 6, false)
 
 
-    setupDrawDeck(player4_assets, 4, 7, 1,2, false)
-    setupDrawDeck(player3_assets, 8, 4, 0,6, false)
+    asset1 = setupDrawDeck(player1_assets, 8, 16, 16,false)
+    asset2 = setupDrawDeck(player2_assets, 16, 7, 2, false)
+    asset3 =setupDrawDeck(player3_assets, 8, 4, 100, false)
+    asset4 =setupDrawDeck(player4_assets, 4, 7, 2, false)
+    human_state = setupDrawDeck(player1_hand,8,19, 100,false)
 
-    setupDrawDeck(player2_assets, 16, 7, 1,2, false)
-    setupDrawDeck(player1_assets, 8, 16, 0,16,false)
+    push!(boxes, discard1)
+    push!(boxes, discard2)
+    push!(boxes, discard3)
+    push!(boxes, discard4)
+
+    push!(boxes, asset1)
+    push!(boxes, asset2)
+    push!(boxes, asset3)
+    push!(boxes, asset4)
 
 end
     #ar = TuSacCards.getDeckArray(dd)
@@ -715,7 +743,7 @@ function gameStates(gameActions)
     if tusacState == 0
         if gameActions == 1
             gameDeck = TuSacCards.ordered_deck()
-            ad_state= setupDrawDeck(gameDeck, 8, 2, 2,14,false)
+            ad_state= setupDrawDeck(gameDeck, 8, 2, 14,false)
             tusacState = 1
         end
     elseif tusacState == 1
@@ -724,6 +752,7 @@ function gameStates(gameActions)
             tusacDeal()
         end
     elseif tusacState == 2
+            global arr_indx = []
             if gameActions == 7
                 tusacState = 3
             end
@@ -743,6 +772,8 @@ end
 game start here
 =#
 gameStates(1)
+BIGcard = 0
+
 println("tusacState=",tusacState)
 
 
@@ -789,6 +820,19 @@ function on_mouse_move(g,pos)
             end
         end
     end
+    function withinBoxes(x,y,boxes)
+        for (i,b) in enumerate(boxes)
+           if  b[1] < x < b[3] && b[2] < y < b[4]
+                rx = div((x-b[1]),cardXdim) + 1
+                ry = div((y-b[2]),cardYdim) 
+               # println((x,y),(rx,ry,b[10]))
+                cardId = ry*b[10] + rx
+               # println(b)
+                return i, cardId
+           end
+        end
+        return 0,0
+    end
     ####################
     
     x = pos[1] << 1
@@ -798,8 +842,42 @@ function on_mouse_move(g,pos)
         if ad_state[5] > 10 
             println(ad_state) 
         end
-       mouseDirOnBox(x,y,ad_state)
-   end
+        mouseDirOnBox(x,y,ad_state)
+    elseif tusacState > 3
+        id, cardIndx =  withinBoxes(x,y,boxes)
+        
+        if id == 0
+            m = 0
+        elseif id == 1
+            m = TuSacCards.getcards(player1_hand,cardIndx)
+        elseif id == 2
+            m = TuSacCards.getcards(player1_discards,cardIndx)
+        elseif id == 3
+            m = TuSacCards.getcards(player2_discards,cardIndx)
+        elseif id == 4
+            m = TuSacCards.getcards(player3_discards,cardIndx)
+        elseif id == 5
+            m = TuSacCards.getcards(player4_discards,cardIndx)
+        elseif id == 6
+            m = TuSacCards.getcards(player1_assets,cardIndx)
+        elseif id == 7
+            m = TuSacCards.getcards(player2_assets,cardIndx)
+        elseif id == 8
+            m = TuSacCards.getcards(player3_assets,cardIndx)
+        else
+            m = TuSacCards.getcards(player4_assets,cardIndx)
+        end
+        if m!= 0 
+            m = mapToActors[m]
+        else 
+            m = 0        
+        end
+        if m!=0
+          println((id,cardIndx,m))
+        end
+        global BIGcard = m
+
+    end
 end
 
 function update(g)
@@ -808,7 +886,7 @@ function update(g)
        if(ad_state[5] > 10)
            # println("UPDATE:",ad_state)
             TuSacCards.autoShuffle!(gameDeck,14,ad_state[5])
-            ad_state = setupDrawDeck(gameDeck, 8, 2, 2,14,false)
+            ad_state = setupDrawDeck(gameDeck, 8, 2, 14,false)
             println(gameDeck)
        end
     end
@@ -826,26 +904,17 @@ end
 
 function on_mouse_down(g,pos)
     global arr_indx
-    
     function click_card(cardIndx,hand)
-        m = mapToActors[TuSacCards.getcards(hand,cardIndx)]
-        mcnt = mask[m] >> 4
-        if (mcnt == 1) && (length(arr_indx) > 0)
+        if cardIndx in arr_indx
             # moving these cards
-            mv_arr=[]
-            for i in arr_indx
-                push!(mv_arr,i)
-                mm = mapToActors[TuSacCards.getcards(hand,i)]
-                mask[mm] = (mask[mm] & 0xf ) 
+            if length(arr_indx)  > 1
+                sort!(arr_indx)
+                TuSacCards.rearrange(hand,arr_indx,cardIndx)
             end
-            sort!(mv_arr)
-            TuSacCards.rearrange(hand,mv_arr,cardIndx)
-
-            setupDrawDeck(hand, 8, 19,0,1,false)
-
+            arr_indx=[]
+            setupDrawDeck(hand, 8, 19,100,false)
         else
-            mcnt += 1
-            mask[m] = (mask[m] & 0xf ) | mcnt << 4
+            m = mapToActors[TuSacCards.getcards(hand,cardIndx)]
             x,y = actors[m].pos
             actors[m].pos = x, y-50
             push!(arr_indx,cardIndx)
@@ -859,7 +928,7 @@ global tusacState
     elseif tusacState == 2
         global arr_indx = []
         organizeHand(player1_hand)
-        setupDrawDeck(player1_hand, 8, 19,0,1,false)
+        setupDrawDeck(player1_hand, 8, 19,100,false)
         gameStates(7)
     elseif tusacState == 3
         cindx = mouseDownOnBox(x, y, human_state)
@@ -871,20 +940,24 @@ global tusacState
         end
     elseif tusacState == 4
             cindx = mouseDownOnBox(x, y, human_state)
-           click_card(cindx,player1_hand)
+            if cindx != 0
+                click_card(cindx,player1_hand)
+            end
     end
 end
 
 
 function draw(g)
+    global BIGcard
     fill(colorant"ivory4")
     buttons = []
 
     setupButtons(10,10,"yellow","Ready")
  # b = draw(Rect(10,10,100,100),colorant"Yellow",fill=true)
-
     for i = 1:112
-        if ((mask[i] & 0x1) == 0)
+        if i == BIGcard
+            draw(big_actors[i])
+        elseif ((mask[i] & 0x1) == 0)
             draw(actors[i])
         else
             draw(fc_actors[i])
