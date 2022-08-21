@@ -3,19 +3,21 @@ macOS = false
 if macOS
     gameW = 1000
     HEIGHT = gameW
-    WIDTH = div(gameW *16, 9)
+    WIDTH = div(gameW * 16, 9)
     realHEIGHT = HEIGHT * 2
     realWIDTH = WIDTH * 2
     cardXdim = 64
     cardYdim = 210
+    zoomCardYdim = 400
 else
-    gameW = 859
+    gameW = 820
     HEIGHT = gameW
-    WIDTH = div(gameW *16, 9)
+    WIDTH = div(gameW * 16, 9)
     realHEIGHT = div(HEIGHT, 1)
     realWIDTH = div(WIDTH, 1)
-    cardXdim = 30
-    cardYdim = 100
+    cardXdim = 24
+    cardYdim = 80
+    zoomCardYdim = 110
 end
 
 BACKGROUND = colorant"red"
@@ -28,8 +30,10 @@ cardGrid = 4
 """
 table-grid, giving x,y return grid coordinate
 """
-tableGridXY(gx, gy) = (gx - 1) * div(realWIDTH, tableXgrid), (gy - 1) * div(realHEIGHT, tableYgrid)
-reverseTableGridXY(x, y) = div(x, div(realWIDTH, tableXgrid)) + 1, div(y, div(realHEIGHT, tableYgrid)) + 1
+tableGridXY(gx, gy) = (gx - 1) * div(realWIDTH, tableXgrid),
+(gy - 1) * div(realHEIGHT, tableYgrid)
+reverseTableGridXY(x, y) = div(x, div(realWIDTH, tableXgrid)) + 1,
+div(y, div(realHEIGHT, tableYgrid)) + 1
 
 module TuSacCards
 
@@ -71,8 +75,8 @@ Suits have global constant bindings: `W`, `Y`, `R`, `G`.
 """
 struct Suit
     i::UInt8
-    Suit(s::Integer) = 0 ≤ s ≤ 3 ? new(s) :
-                       throw(ArgumentError("invalid suit number: $s"))
+    Suit(s::Integer) =
+        0 ≤ s ≤ 3 ? new(s) : throw(ArgumentError("invalid suit number: $s"))
 end
 
 
@@ -88,7 +92,7 @@ Base.show(io::IO, s::Suit) = print(io, char(s))
 
 """
 Encode a playing card as a 3 bits number [4:2]
-The next 2 bits bit[6:5] encodes the suit/color. The 
+The next 2 bits bit[6:5] encodes the suit/color. The
 bottom 2 bits bit[1:0] indicates cnt of card of same.
 
 -----: not used (0x0 value)
@@ -99,7 +103,7 @@ xe   : 0
 phao : 1
 ma   : 2
 chot : 3
-The upper 1 bits bit[2] encode 'groups' as [Tuong-si-tuong],  or 
+The upper 1 bits bit[2] encode 'groups' as [Tuong-si-tuong],  or
 [xe-phao-ma, chot]
 
 bit[1:0] count the 4 cards for each card
@@ -109,7 +113,8 @@ bit[6:5] encodes the colors
 struct Card
     value::UInt8
     function Card(r::Integer, s::Integer)
-        (0 <= r <= 31 && ((r & 0x1c) != 0)) || throw(ArgumentError("invalid card : $r"))
+        (0 <= r <= 31 && ((r & 0x1c) != 0)) ||
+            throw(ArgumentError("invalid card : $r"))
         return new(UInt8((s << 5) | r))
     end
     function Card(i::Integer)
@@ -225,12 +230,14 @@ suits() = (W, Y, R, G)
 A vector of a cards
 containing a full deck
 """
-full_deck() = Card[Card((r << 2 | d), s) for s in suits() for d in duplicate() for r in ranks()]
+full_deck() = Card[
+    Card((r << 2 | d), s) for s in suits() for d in duplicate() for r in ranks()
+]
 
 
 function test_deck()
     boid = []
-    for i in 1:5
+    for i = 1:5
         a = Actor("p1.png")
         a.pos = (100, 100)
         push!(boid, a)
@@ -319,7 +326,7 @@ function getcards(deck::Deck, id)
 end
 
 Base.length(deck::Deck) = length(deck.cards)
-Base.iterate(deck::Deck, state=1) = Base.iterate(deck.cards, state)
+Base.iterate(deck::Deck, state = 1) = Base.iterate(deck.cards, state)
 Base.sort!(deck::Deck) = sort!(deck.cards)
 
 function Base.show(io::IO, deck::Deck)
@@ -340,7 +347,8 @@ Remove `n` cards from the `deck`.
 or
 Remove `card` from the `deck`.
 """
-Base.pop!(deck::Deck, n::Integer=1) = collect(ntuple(i -> pop!(deck.cards), n))
+Base.pop!(deck::Deck, n::Integer = 1) =
+    collect(ntuple(i -> pop!(deck.cards), n))
 function Base.pop!(deck::Deck, card::Card)
     L0 = length(deck)
     filter!(x -> x ≠ card, deck.cards)
@@ -349,7 +357,7 @@ function Base.pop!(deck::Deck, card::Card)
 end
 
 """
-push! 
+push!
 push!(deck::Deck, cards::Vector{Card})
 #add `cards` to Deck
 """
@@ -426,16 +434,19 @@ function autoShuffle!(deck::Deck, ySize, gradienDir)
 
             end
             crl, crh = lowhi(rand(rangeL:rangeH), rand(rangeL:rangeH))
-            println("dir, rl, rh, crl,crh,Grid=", (dir, rangeL, rangeH, crl, crh, Grid))
+            println(
+                "dir, rl, rh, crl,crh,Grid=",
+                (dir, rangeL, rangeH, crl, crh, Grid),
+            )
             if dr < 30
                 #Horizontally
                 cl, ch = crl, crh
                 rr = rand(2:r)
                 println("rr=", rr)
 
-                for col in cl:ch
+                for col = cl:ch
                     save = a[:, col]
-                    for n in 1:r
+                    for n = 1:r
                         rr = nextWrap(rr, 1, r)
                         a[n, col] = save[rr]
                     end
@@ -448,9 +459,9 @@ function autoShuffle!(deck::Deck, ySize, gradienDir)
                 rc = rand(2:c)
                 println("rc=", rc)
 
-                for row in rl:rh
+                for row = rl:rh
                     save = a[row, :]
-                    for n in 1:c
+                    for n = 1:c
                         rc = nextWrap(rc, 1, c)
                         a[row, n] = save[rc]
                     end
@@ -478,7 +489,7 @@ function setupButtons(gx, gy, bcolor, text)
     x, y = tableGridXY(gx, gy)
     x1 = x + 200
     y1 = y + 100
-    draw(Rect(x, y, x1, y1), colorant"green", fill=true)
+    draw(Rect(x, y, x1, y1), colorant"green", fill = true)
 
     #=
     replay = TextActor("Click to Play Again", "comicbd";
@@ -489,8 +500,11 @@ function setupButtons(gx, gy, bcolor, text)
     =#
 
     # play again instructions
-    replay = TextActor("Click to Play Again", "comicbd";
-        font_size=36, color=Int[0, 0, 0, 255]
+    replay = TextActor(
+        "Click to Play Again",
+        "comicbd";
+        font_size = 36,
+        color = Int[0, 0, 0, 255],
     )
     replay.pos = (135, 390)
     draw(replay)
@@ -510,8 +524,8 @@ function setupActorgameDeck()
     ind = 1
     sc = 0
     for s in ['w', 'y', 'r', 'g']
-        for r in 1:7
-            for d in 0:3
+        for r = 1:7
+            for d = 0:3
                 if macOS
                     st = string(s, r, ".png")
                     big_st = string(s, "-", r, ".png")
@@ -545,15 +559,15 @@ setupDrawDeck:
 x,y: starting location
 dims: 0: Vertical
       1: Horizontal
-      2: Square 
-      
+      2: Square
+
       x0,y0 x1,y1 dimensions of box
-      state - set to 0 
+      state - set to 0
       mx0,my0,mx1,my1 are place holder for state usage
-      return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1 
-      
+      return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
+
 """
-function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, mode=false)
+function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, mode = false)
     i = 0
     x, y = tableGridXY(gx, gy)
     l = length(deck)
@@ -570,7 +584,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, mode=false)
         actors[m].pos = px, py
         fc_actors[m].pos = px, py
         if (py + cardYdim * 2) > realHEIGHT
-            bpy = py - 200
+            bpy = py + cardYdim - zoomCardYdim
         else
             bpy = py
         end
@@ -597,7 +611,7 @@ end
 
 function getRand1and0(low, high)
     rand_shuffle = []
-    for i in 1:rand((low:high))
+    for i = 1:rand((low:high))
         for j in rand((0:1))
             push!(rand_shuffle, j)
         end
@@ -639,7 +653,7 @@ for i in 37:43
     TuSacCards.autoShuffle!(gameDeck,7,i)
     println(gameDeck)
 end
- 
+
 TuSacCards.autoShuffle!(gameDeck,7,rs)
 println(rs)
 println(gameDeck)
@@ -805,8 +819,8 @@ function on_mouse_move(g, pos)
         is done by state machine a[6]:
             0: initial state, after draw the first time, init x0,y0, x1,y1 to -1 --> 1:
             1: check to see if within box, set x0,y0 --> 2:
-            2: check if within box still. If it is, set x1,y1 --> 2:   If not, 
-            Now, calculate the direction, compare x1 vs x0, and y1 vs y0 --> 
+            2: check if within box still. If it is, set x1,y1 --> 2:   If not,
+            Now, calculate the direction, compare x1 vs x0, and y1 vs y0 -->
             x1 > x0 --> +x 3:
             x1 < x0 --> -x 4:
             similarly for 5: 6:
@@ -818,21 +832,36 @@ function on_mouse_move(g, pos)
         if ar_state[5] == 0
             ar_state[5] = 1
         elseif ar_state[5] == 1
-            if (ar_state[1] < x < ar_state[3]) && (ar_state[2] < y < ar_state[4])
+            if (ar_state[1] < x < ar_state[3]) &&
+               (ar_state[2] < y < ar_state[4])
                 ar_state[6], ar_state[7] = x, y
                 ar_state[5] = 2
             end
         elseif ar_state[5] == 2
-            if ((ar_state[1] < x < ar_state[3]) && (ar_state[2] < y < ar_state[4])) == false
+            if (
+                (ar_state[1] < x < ar_state[3]) &&
+                (ar_state[2] < y < ar_state[4])
+            ) == false
                 ar_state[8], ar_state[9] = x, y
                 deltaX = ar_state[8] - ar_state[6]
                 deltaY = ar_state[9] - ar_state[7]
-                calGradien(a, b, loc, gradien_size) = div(gradien_size * (loc - a), b - a)
+                calGradien(a, b, loc, gradien_size) =
+                    div(gradien_size * (loc - a), b - a)
                 if abs(deltaX) < abs(deltaY)
-                    g = calGradien(ar_state[1], ar_state[3], ar_state[6], cardGrid)
+                    g = calGradien(
+                        ar_state[1],
+                        ar_state[3],
+                        ar_state[6],
+                        cardGrid,
+                    )
                     deltaX > 0 ? ar_state[5] = 40 + g : ar_state[5] = 40 - g
                 else
-                    g = calGradien(ar_state[2], ar_state[4], ar_state[7], cardGrid)
+                    g = calGradien(
+                        ar_state[2],
+                        ar_state[4],
+                        ar_state[7],
+                        cardGrid,
+                    )
                     deltaY > 0 ? ar_state[5] = 20 + g : ar_state[5] = 20 - g
                 end
             end
@@ -951,7 +980,12 @@ function on_mouse_down(g, pos)
     elseif tusacState == 3
         cindx = mouseDownOnBox(x, y, human_state)
         println("x,y=", (reverseTableGridXY(x, y)))
-        println("ll=", cindx, " cv=", (TuSacCards.getcards(player1_hand, cindx)))
+        println(
+            "ll=",
+            cindx,
+            " cv=",
+            (TuSacCards.getcards(player1_hand, cindx)),
+        )
 
         if (cindx == 21)
             gameStates(8)
@@ -972,16 +1006,19 @@ function draw(g)
 
     setupButtons(10, 10, "yellow", "Ready")
     # b = draw(Rect(10,10,100,100),colorant"Yellow",fill=true)
+    saveI = 0
     for i = 1:112
         if i == BIGcard
-            draw(big_actors[i])
+            saveI = i
         elseif ((mask[i] & 0x1) == 0)
             draw(actors[i])
         else
             draw(fc_actors[i])
         end
     end
-
+    if saveI != 0
+        draw(big_actors[saveI])
+    end
 
     """
     for a in a1
@@ -992,7 +1029,7 @@ function draw(g)
     end
     for a in a3
         draw(a)
-    end 
+    end
     for a in a4
         draw(a)
     end
