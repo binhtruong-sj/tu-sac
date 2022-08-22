@@ -1,7 +1,7 @@
-macOS = false
+macOS = true
 
 if macOS
-    gameW = 1000
+    gameW = 900
     HEIGHT = gameW
     WIDTH = div(gameW * 16, 9)
     realHEIGHT = HEIGHT * 2
@@ -567,7 +567,7 @@ dims: 0: Vertical
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
 
 """
-function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, mode = false)
+function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false)
     i = 0
     x, y = tableGridXY(gx, gy)
     l = length(deck)
@@ -575,7 +575,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, mode = false)
     if xDim > 21
         xDim = length(deck)
     end
-    modified_cardYdim = mode ? cardYdim >> 1 : cardYdim
+    modified_cardYdim = faceDown ? cardYdim >> 1 : cardYdim
 
     for card in deck
         m = mapToActors[card.value]
@@ -589,7 +589,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, mode = false)
             bpy = py
         end
         big_actors[m].pos = px, bpy
-        if (mode)
+        if (faceDown)
             mask[m] = mask[m] | 0x1
         else
             mask[m] = mask[m] & 0xFFFFFFFE
@@ -775,7 +775,7 @@ function gameStates(gameActions)
     if tusacState == 0
         if gameActions == 1
             gameDeck = TuSacCards.ordered_deck()
-            ad_state = setupDrawDeck(gameDeck, 8, 2, 14, false)
+            ad_state = setupDrawDeck(gameDeck, 8, 2, 14, true)
             tusacState = 1
         end
     elseif tusacState == 1
@@ -805,7 +805,7 @@ game start here
 =#
 gameStates(1)
 BIGcard = 0
-
+cardSelect = false
 println("tusacState=", tusacState)
 
 
@@ -920,7 +920,7 @@ function on_mouse_move(g, pos)
             m = 0
         end
         if m != 0
-            println((id, cardIndx, m))
+            println((id, cardIndx, m)," cardSelect=", cardSelect)
         end
         global BIGcard = m
 
@@ -933,7 +933,7 @@ function update(g)
         if (ad_state[5] > 10)
             # println("UPDATE:",ad_state)
             TuSacCards.autoShuffle!(gameDeck, 14, ad_state[5])
-            ad_state = setupDrawDeck(gameDeck, 8, 2, 14, false)
+            ad_state = setupDrawDeck(gameDeck, 8, 2, 14, true)
             println(gameDeck)
         end
     end
@@ -951,12 +951,14 @@ end
 
 function on_mouse_down(g, pos)
     global arr_indx
+    global cardSelect
     function click_card(cardIndx, hand)
         if cardIndx in arr_indx
             # moving these cards
             if length(arr_indx) > 1
                 sort!(arr_indx)
                 TuSacCards.rearrange(hand, arr_indx, cardIndx)
+                cardSelect = false
             end
             arr_indx = []
             setupDrawDeck(hand, 8, 19, 100, false)
@@ -965,6 +967,7 @@ function on_mouse_down(g, pos)
             x, y = actors[m].pos
             actors[m].pos = x, y - 50
             push!(arr_indx, cardIndx)
+            cardSelect = true
         end
     end
     global tusacState
@@ -1001,6 +1004,7 @@ end
 
 function draw(g)
     global BIGcard
+    global cardSelect
     fill(colorant"ivory4")
     buttons = []
 
@@ -1008,7 +1012,7 @@ function draw(g)
     # b = draw(Rect(10,10,100,100),colorant"Yellow",fill=true)
     saveI = 0
     for i = 1:112
-        if i == BIGcard
+        if cardSelect==false && (i == BIGcard)
             saveI = i
         elseif ((mask[i] & 0x1) == 0)
             draw(actors[i])
