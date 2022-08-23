@@ -43,7 +43,7 @@ import Random: shuffle!
 import Base
 
 # Suits/Colors
-export W, Y, R, G # aliases White, Yellow, Red, Green
+export T, V, D, X # aliases White, Yellow, Red, Green
 
 # Card, and Suit
 export Card, Suit
@@ -66,12 +66,12 @@ export test_deck, getDeckArray
     In TuSac, cards has 4 suit of color: White,Yellow,Red,Green
 
 Encode a suit as a 2-bit value (low bits of a `UInt8`):
-- 0 = W (White)
-- 1 = Y (Yellow)
-- 2 = R (Red)
-- 3 = G (Greed)
+- 0 = T rang (White)
+- 1 = V ang (Yellow)
+- 2 = D o (Red)
+- 3 = X anh (Greed)
 
-Suits have global constant bindings: `W`, `Y`, `R`, `G`.
+Suits have global constant bindings: `T`, `V`, `D`, `X`.
 """
 struct Suit
     i::UInt8
@@ -85,7 +85,7 @@ end
 
 Return the unicode characters:
 """
-char(s::Suit) = Char("WYRG"[s.i+1])
+char(s::Suit) = Char("TVDX"[s.i+1])
 Base.string(s::Suit) = string(char(s))
 Base.show(io::IO, s::Suit) = print(io, char(s))
 
@@ -99,10 +99,10 @@ bottom 2 bits bit[1:0] indicates cnt of card of same.
 Tuong: 1
 si   : 2
 tuong: 3
-xe   : 0
-phao : 1
-ma   : 2
-chot : 3
+xe   : 5
+phao : 6
+ma   : 7
+chot : 4
 The upper 1 bits bit[2] encode 'groups' as [Tuong-si-tuong],  or
 [xe-phao-ma, chot]
 
@@ -135,12 +135,12 @@ suit(c::Card) = Suit((0x60 & c.value) >>> 5)
 
 The rank of a card
 """
-rank(c::Card) = Int8((c.value & 0x1f))
+rank(c::Card) = UInt8((c.value & 0x1f))
 
-const W = Suit(0)
-const Y = Suit(1)
-const R = Suit(2)
-const G = Suit(3)
+const T = Suit(0)
+const V = Suit(1)
+const D = Suit(2)
+const X = Suit(3)
 
 # Allow constructing cards with, e.g., `3♡`
 Base.:*(r::Integer, s::Suit) = Card(r, s)
@@ -149,15 +149,15 @@ function Base.show(io::IO, c::Card)
     r = rank(c)
     rd = r >> 2
     @assert (rd != 0)
-    print(io, "Tstxpmc"[rd])
+    print(io, "Tstcxpm"[rd])
     print(io, suit(c))
 end
 
-function rank_string(r::Int8)
+function rank_string(r::UInt8)
     rr = r >> 2
     @assert rr > 0
 
-    return ("Tstxpmc"[rr])
+    return ("Tstcxpm"[rr])
 end
 
 Base.string(card::Card) = rank_string(rank(card)) * string(suit(card))
@@ -189,11 +189,11 @@ A `Symbol` (`:red`, or `:black`) indicating
 the color of the suit or card.
 """
 function color(s::Suit)
-    if s == 'R'
+    if s == 'D'
         return :red
-    elseif s == 'W'
+    elseif s == 'T'
         return :white
-    elseif s == 'Y'
+    elseif s == 'V'
         return :yellow
     else
         return :green
@@ -222,7 +222,7 @@ duplicate() = 0:3
 
 A Tuple of all suits
 """
-suits() = (W, Y, R, G)
+suits() = (T, V, D, X)
 
 """
     full_deck
@@ -527,12 +527,13 @@ function setupActorgameDeck()
         for r = 1:7
             for d = 0:3
                 if macOS
-                    st = string(s, r, ".png")
-                    big_st = string(s, "-", r, ".png")
+                    mapr = r < 4 ? r : (r == 4 ? 7 : r -1 )
+                    st = string(s, mapr, ".png")
+                    big_st = string(s, "-", mapr, ".png")
                     afc = Actor("fc.png")
                 else
-                    st = string(s, r, "xs.png")
-                    big_st = string(s, r, "s.png")
+                    st = string(s, mapr, "xs.png")
+                    big_st = string(s, mapr, "s.png")
                     afc = Actor("fcxs.png")
                 end
                 act = Actor(st)
@@ -891,37 +892,37 @@ function on_mouse_move(g, pos)
         end
         mouseDirOnBox(x, y, ad_state)
     elseif tusacState > 3
-        id, cardIndx = withinBoxes(x, y, boxes)
+        boxId, cardIndx = withinBoxes(x, y, boxes)
 
-        if id == 0
-            m = 0
-        elseif id == 1
-            m = TuSacCards.getcards(player1_hand, cardIndx)
-        elseif id == 2
-            m = TuSacCards.getcards(player1_discards, cardIndx)
-        elseif id == 3
-            m = TuSacCards.getcards(player2_discards, cardIndx)
-        elseif id == 4
-            m = TuSacCards.getcards(player3_discards, cardIndx)
-        elseif id == 5
-            m = TuSacCards.getcards(player4_discards, cardIndx)
-        elseif id == 6
-            m = TuSacCards.getcards(player1_assets, cardIndx)
-        elseif id == 7
-            m = TuSacCards.getcards(player2_assets, cardIndx)
-        elseif id == 8
-            m = TuSacCards.getcards(player3_assets, cardIndx)
+        if boxId == 0
+            v = 0
+        elseif boxId == 1
+            v = TuSacCards.getcards(player1_hand, cardIndx)
+        elseif boxId == 2
+            v = TuSacCards.getcards(player1_discards, cardIndx)
+        elseif boxId == 3
+            v = TuSacCards.getcards(player2_discards, cardIndx)
+        elseif boxId == 4
+            v = TuSacCards.getcards(player3_discards, cardIndx)
+        elseif boxId == 5
+            v = TuSacCards.getcards(player4_discards, cardIndx)
+        elseif boxId == 6
+            v = TuSacCards.getcards(player1_assets, cardIndx)
+        elseif boxId == 7
+            v = TuSacCards.getcards(player2_assets, cardIndx)
+        elseif boxId == 8
+            v = TuSacCards.getcards(player3_assets, cardIndx)
         else
-            m = TuSacCards.getcards(player4_assets, cardIndx)
+            v = TuSacCards.getcards(player4_assets, cardIndx)
         end
-        if m != 0
-            m = mapToActors[m]
+        if v != 0
+            m = mapToActors[v]
+            println((boxId, cardIndx, v, TuSacCards.Card(v)))
+
         else
             m = 0
         end
-        if m != 0
-            println((id, cardIndx, m)," cardSelect=", cardSelect)
-        end
+        
         global BIGcard = m
 
     end
