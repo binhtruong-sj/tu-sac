@@ -391,6 +391,8 @@ end
 lowhi(r1, r2) = r1 > r2 ? (r2, r1) : (r1, r2)
 nextWrap(n::Int, d::Int, max::Int) = ((n + d) > max) ? 1 : (n + d)
 
+"""
+"""
 function getDeckArray(deck::Deck)
     a = []
     for card in deck
@@ -755,15 +757,15 @@ function fake_play()
     push!(boxes, asset3)
     push!(boxes, asset4)
 
-    push!( all_discards,player1_discards )
-    push!( all_discards,player2_discards )
-    push!( all_discards,player3_discards )
-    push!( all_discards,player4_discards )
+    push!( all_discards,TuSacCards.getDeckArray(player1_discards ))
+    push!( all_discards,TuSacCards.getDeckArray(player2_discards ))
+    push!( all_discards,TuSacCards.getDeckArray(player3_discards ))
+    push!( all_discards,TuSacCards.getDeckArray(player4_discards ))
 
-    push!( all_assets,player1_assets )
-    push!( all_assets,player2_assets )
-    push!( all_assets,player3_assets )
-    push!( all_assets,player4_assets )
+    push!( all_assets,TuSacCards.getDeckArray(player1_assets ))
+    push!( all_assets,TuSacCards.getDeckArray(player2_assets ))
+    push!( all_assets,TuSacCards.getDeckArray(player3_assets ))
+    push!( all_assets,TuSacCards.getDeckArray(player4_assets ))
 
 end
 #ar = TuSacCards.getDeckArray(dd)
@@ -808,7 +810,10 @@ function gameStates(gameActions)
             tusacDeal()
             organizeHand(player1_hand)
             setupDrawDeck(player1_hand, 8, 18, 100, false)
-            global all_hands = [player1_hand,player2_hand,player3_hand,player4_hand]   
+            global all_hands = [TuSacCards.getDeckArray(player1_hand),
+            TuSacCards.getDeckArray(player2_hand),
+            TuSacCards.getDeckArray(player3_hand),
+            TuSacCards.getDeckArray(player4_hand)]   
         end
     elseif tusacState == 2
         global arr_indx = []
@@ -1000,16 +1005,17 @@ function gamePlay(all_hands,
     gameDeck;player=1, actions=0)
 
     function scanCards()
-        scores = Vector{UInt8}(0,length(all_hands[player]))
-        cColor = 0
-        for i = 1:size(all_hands[player])
+        scores = Vector{UInt8}(undef,length(all_hands[player]))
+        cColor = -1
+        for i = 1:length(all_hands[player])
             card = all_hands[player][i] 
+            println("sc=",TuSacCards.Card(card))
             ccard = (card >> 2) & 0x7
-            if cColor != card.value & 0x60
-                cColor = card.value & 0x60
-                seqCnt = 0
-                pairCnt = 0
-                prevCard = ccard
+            if cColor != (card & 0x60)
+                 cColor = card & 0x60
+                global seqCnt = 0
+                global pairCnt = 0
+                global prevCard = ccard
             else
                 if prevCard == ccard #same Card
                     pairCnt += 1
@@ -1019,14 +1025,17 @@ function gamePlay(all_hands,
             end
         end
     end
+
     if actions == 0
         println(all_hands)
         println(all_hands[player])
-        println("l,l=",(length(all_hands),length(all_hands[1])))
+        println("l,l=",(length(all_hands),length(all_hands[player])))
         println("length,player=",(length(all_hands[player]),player))
         for c in all_hands[player]
             println("card=",c)
         end
+
+        scanCards()
     end
 end
 
