@@ -754,15 +754,16 @@ function fake_play()
     push!(boxes, asset2)
     push!(boxes, asset3)
     push!(boxes, asset4)
-    push!( all_discards[1],player1_discards )
-    push!( all_discards[2],player2_discards )
-    push!( all_discards[3],player3_discards )
-    push!( all_discards[4],player4_discards )
 
-    push!( all_assets[1],player1_assets )
-    push!( all_assets[2],player2_assets )
-    push!( all_assets[3],player3_assets )
-    push!( all_assets[4],player4_assets )
+    push!( all_discards,player1_discards )
+    push!( all_discards,player2_discards )
+    push!( all_discards,player3_discards )
+    push!( all_discards,player4_discards )
+
+    push!( all_assets,player1_assets )
+    push!( all_assets,player2_assets )
+    push!( all_assets,player3_assets )
+    push!( all_assets,player4_assets )
 
 end
 #ar = TuSacCards.getDeckArray(dd)
@@ -807,7 +808,7 @@ function gameStates(gameActions)
             tusacDeal()
             organizeHand(player1_hand)
             setupDrawDeck(player1_hand, 8, 18, 100, false)
-            push!(all_hands[1],player1_hand);push!(all_hands[2],player2_hand);push!(all_hands[3],player3_hand);push!(all_hands[4],player4_hand)    
+            global all_hands = [player1_hand,player2_hand,player3_hand,player4_hand]   
         end
     elseif tusacState == 2
         global arr_indx = []
@@ -830,9 +831,9 @@ end
 game start here
 =#
 
-all_hands = [[],[],[],[]]
-all_discards = [[],[],[],[]]
-all_assets = [[],[],[],[]]
+all_hands = []
+all_discards = []
+all_assets = []
 gameStates(1)
 BIGcard = 0
 cardSelect = false
@@ -983,7 +984,7 @@ function mouseDownOnBox(x, y, ad_state)
 end
 """
 gamePlay:
-    actions: 0 - inital carts dealt - before any play
+    actions: 0 - inital cards dealt - before any play
              1 - play a single card, player choise
              2 - check for match single/double; return matched
              3 - check for match double only; return matched
@@ -1001,7 +1002,8 @@ function gamePlay(all_hands,
     function scanCards()
         scores = Vector{UInt8}(0,length(all_hands[player]))
         cColor = 0
-        for card in all_hands[player] 
+        for i = 1:size(all_hands[player])
+            card = all_hands[player][i] 
             ccard = (card >> 2) & 0x7
             if cColor != card.value & 0x60
                 cColor = card.value & 0x60
@@ -1017,9 +1019,14 @@ function gamePlay(all_hands,
             end
         end
     end
-    
     if actions == 0
+        println(all_hands)
         println(all_hands[player])
+        println("l,l=",(length(all_hands),length(all_hands[1])))
+        println("length,player=",(length(all_hands[player]),player))
+        for c in all_hands[player]
+            println("card=",c)
+        end
     end
 end
 
@@ -1078,10 +1085,7 @@ function on_mouse_down(g, pos)
             " cv=",
             (TuSacCards.getcards(player1_hand, cindx)),
         )
-
-        if (cindx == 21)
-            gameStates(8)
-        end
+        gameStates(8)
     elseif tusacState == 4
         cindx,yPortion = mouseDownOnBox(x, y, human_state)
         if cindx != 0
