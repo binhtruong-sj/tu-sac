@@ -1009,7 +1009,7 @@ function gamePlay(all_hands,
         cColor = -1
         for i = 1:length(all_hands[player])
             card = all_hands[player][i] 
-            println("sc=",TuSacCards.Card(card))
+            print("sc=",TuSacCards.Card(card))
             ccard = (card >> 2) & 0x7
             if cColor != (card & 0x60)
                  cColor = card & 0x60
@@ -1023,6 +1023,7 @@ function gamePlay(all_hands,
                     seqCnt += 1
                 end
             end
+            println(" paircnt,seqcnt=",(pairCnt,seqCnt))
         end
     end
 
