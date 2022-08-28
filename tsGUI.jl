@@ -487,6 +487,11 @@ end
 
 end # module
 ######################################################################
+
+all_hands = []
+all_discards = []
+all_assets = []
+
 function setupButtons(gx, gy, bcolor, text)
     x, y = tableGridXY(gx, gy)
     x1 = x + 200
@@ -529,7 +534,7 @@ function setupActorgameDeck()
         for r = 1:7
             for d = 0:3
                 if macOS
-                    mapr = r < 4 ? r : (r == 4 ? 7 : r -1 )
+                    mapr = r < 4 ? r : (r == 4 ? 7 : r - 1)
                     st = string(s, mapr, ".png")
                     big_st = string(s, "-", mapr, ".png")
                     afc = Actor("fc.png")
@@ -675,13 +680,12 @@ function tusacDeal()
     print(player1_hand)
     setupDrawDeck(gameDeck, 8, 8, 14, true)
 
-    setupDrawDeck(player4_hand, 1, 6, 2, true)
-    setupDrawDeck(player3_hand, 8, 1, 100, true)
+    setupDrawDeck(player4_hand, 1, 6, 2, false)
+    setupDrawDeck(player3_hand, 8, 1, 100, false)
 
-    setupDrawDeck(player2_hand, 20, 6, 2, true)
+    setupDrawDeck(player2_hand, 20, 6, 2, false)
     global human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
     push!(boxes, human_state)
-
     println("\n1")
     print(player1_hand)
     println("\n2")
@@ -698,12 +702,12 @@ end
 p0: own hand
 p1: player next to p0
 p2;
-p3: 
+p3:
 """
 
 
-function playerAcardCheck( aCard::TuSacCards.Card, ImNext::Bool)
-        
+function playerAcardCheck(aCard::TuSacCards.Card, ImNext::Bool)
+
 
 end
 
@@ -747,25 +751,14 @@ function fake_play()
     asset4 = setupDrawDeck(player4_assets, 4, 7, 2, false)
     human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
 
-    push!(boxes, discard1)
-    push!(boxes, discard2)
-    push!(boxes, discard3)
-    push!(boxes, discard4)
+    push!(boxes, discard1,discard2,discard3,discard4,asset1,asset2,asset3,asset4)
 
-    push!(boxes, asset1)
-    push!(boxes, asset2)
-    push!(boxes, asset3)
-    push!(boxes, asset4)
-
-    push!( all_discards,TuSacCards.getDeckArray(player1_discards ))
-    push!( all_discards,TuSacCards.getDeckArray(player2_discards ))
-    push!( all_discards,TuSacCards.getDeckArray(player3_discards ))
-    push!( all_discards,TuSacCards.getDeckArray(player4_discards ))
-
-    push!( all_assets,TuSacCards.getDeckArray(player1_assets ))
-    push!( all_assets,TuSacCards.getDeckArray(player2_assets ))
-    push!( all_assets,TuSacCards.getDeckArray(player3_assets ))
-    push!( all_assets,TuSacCards.getDeckArray(player4_assets ))
+    push!(all_discards, TuSacCards.getDeckArray(player1_discards),TuSacCards.getDeckArray(player2_discards),
+                        TuSacCards.getDeckArray(player3_discards),TuSacCards.getDeckArray(player4_discards))
+   
+    push!(all_assets, TuSacCards.getDeckArray(player1_assets),TuSacCards.getDeckArray(player2_assets),
+                      TuSacCards.getDeckArray(player3_assets),TuSacCards.getDeckArray(player4_assets))
+   
 
 end
 #ar = TuSacCards.getDeckArray(dd)
@@ -809,11 +802,13 @@ function gameStates(gameActions)
             tusacState = 2
             tusacDeal()
             organizeHand(player1_hand)
+            organizeHand(player2_hand)
+            organizeHand(player3_hand)
+            organizeHand(player4_hand)
+
+            push!(all_hands,TuSacCards.getDeckArray(player1_hand),TuSacCards.getDeckArray(player2_hand),
+                            TuSacCards.getDeckArray(player3_hand),TuSacCards.getDeckArray(player4_hand))
             setupDrawDeck(player1_hand, 8, 18, 100, false)
-            global all_hands = [TuSacCards.getDeckArray(player1_hand),
-            TuSacCards.getDeckArray(player2_hand),
-            TuSacCards.getDeckArray(player3_hand),
-            TuSacCards.getDeckArray(player4_hand)]   
         end
     elseif tusacState == 2
         global arr_indx = []
@@ -824,7 +819,7 @@ function gameStates(gameActions)
         println("Dealing is completed")
         if gameActions == 8
             println("Starting game")
-            gamePlay(all_hands,all_discards,all_assets,gameDeck;player=1,actions=0)
+            gamePlay(all_hands, all_discards, all_assets, gameDeck; player = 1, gameAct = 0)
             tusacState = 4
         end
     elseif tusacState == 4
@@ -836,9 +831,7 @@ end
 game start here
 =#
 
-all_hands = []
-all_discards = []
-all_assets = []
+
 gameStates(1)
 BIGcard = 0
 cardSelect = false
@@ -958,7 +951,7 @@ function on_mouse_move(g, pos)
         else
             m = 0
         end
-        
+
         global BIGcard = m
 
     end
@@ -977,66 +970,164 @@ function update(g)
 end
 
 function mouseDownOnBox(x, y, ad_state)
-    loc = 0;remy=0
+    loc = 0
+    remy = 0
     if (ad_state[1] < x < ad_state[3]) && ((ad_state[2] < y < ad_state[4]))
         dx = div((x - ad_state[1]), cardXdim)
         dy = div((y - ad_state[2]), cardYdim)
         remy = rem((y - ad_state[2]), cardYdim)
-        remy = div(remy,div(cardYdim,3))
+        remy = div(remy, div(cardYdim, 3))
         loc = div((ad_state[3] - ad_state[1]), cardXdim) * dy + dx + 1
     end
-    return loc,remy
+    return loc, remy
 end
+
 """
 gamePlay:
     actions: 0 - inital cards dealt - before any play
              1 - play a single card, player choise
              2 - check for match single/double; return matched
              3 - check for match double only; return matched
-             4 - play cards -- these cards 
+             4 - play cards -- these cards
     game-manager will control the flow of the game, calling each
     player for actions/reponse and maintaining all card-decks
 
-
 """
-function gamePlay(all_hands,
+
+function gamePlay(
+    all_hands,
     all_discards,
     all_assets,
-    gameDeck;player=1, actions=0)
+    gameDeck;
+    player = 1,
+    gameAct = 0
+)
 
-    function scanCards()
-        scores = Vector{UInt8}(undef,length(all_hands[player]))
-        cColor = -1
-        for i = 1:length(all_hands[player])
-            card = all_hands[player][i] 
-            print("sc=",TuSacCards.Card(card))
-            ccard = (card >> 2) & 0x7
-            if cColor != (card & 0x60)
-                 cColor = card & 0x60
-                global seqCnt = 0
-                global pairCnt = 0
-                global prevCard = ccard
+    """
+    scanCards() scan for single and missing seq
+
+    """
+    function scanCards(shand)
+        println("---")
+        ahand = shand
+        for c in ahand
+            print(TuSacCards.Card(c)," ")
+        end
+        println(" ")
+        # scan for pairs and remove them
+        pairs = []
+        allPairs = [[],[],[]]
+        prevacard = ahand[1]
+        pair  = 0
+        rhand = []
+        for i = 2:length(ahand)
+            acard = ahand[i] 
+            if (((acard >> 2)& 0x7)!= 1) && (acard&0xFC == prevacard &0xFC)
+                print(TuSacCards.Card(prevacard)," ")
+                push!(pairs, prevacard)
+                pair += 1
             else
-                if prevCard == ccard #same Card
-                    pairCnt += 1
-                elseif ccard != 4 && ccard == (prevCard + 1)
-                    seqCnt += 1
+                if pair > 0
+                    push!(pairs, prevacard)
+                    push!(allPairs[pair],pairs)
+                    print(TuSacCards.Card(prevacard)," ")
+                    println("pairs=",pairs)
+                    pairs = []
+                    pair = 0
+                else 
+                    push!(rhand,prevacard)
                 end
             end
-            println(" paircnt,seqcnt=",(pairCnt,seqCnt))
+            prevacard = acard
+        end
+        if pair > 0
+            push!(pairs, prevacard)
+            push!(allPairs[pair],pairs)
+            println("pairs=",pairs)
+        else
+            push!(rhand,prevacard)
+        end
+        println("allPairs",allPairs)
+        ahand = rhand
+        for c in ahand
+            print(TuSacCards.Card(c)," ")
+        end
+        println()
+        acard = ahand[1]
+        prevCColor = acard  >> 5
+        prevCval = (acard >> 2) & 0x7
+        prevcard = (acard & 0xFC) >> 2
+        prevacard = acard
+        prev2card = acard
+        prev3card = acard
+        seqCnt = 0
+        pair = 0
+        miss1 = []
+        single = []
+        for i = 2:length(ahand)
+            acard = ahand[i]
+            CColor = acard >> 5
+            Cval = (acard >> 2) & 0x7
+            card = (acard & 0xFC) >> 2
+           println("seqCnt=",seqCnt," sc=", TuSacCards.Card(acard),(prev3card>>2,prev2card>>2,prevacard>>2,acard>>2))
+
+            if (CColor == prevCColor) && 
+            (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
+            ( (prevcard + 1) == card ||
+              (prevcard + 2) == card )
+                prev3card = prev2card
+                prev2card = prevacard
+                seqCnt += 1
+            else
+                if seqCnt == 1
+                    push!(miss1, prev2card)
+                    push!(miss1, prevacard)
+                    println(
+                        "miss1=",
+                        TuSacCards.Card(prev2card),
+                        TuSacCards.Card(prevacard),
+                    )
+                elseif seqCnt == 0
+                    # a single
+                    if prevCval != 1 # Tuong
+                        push!(single, prevacard)
+                        println("single=", TuSacCards.Card(prevacard))
+                    end
+                end
+                seqCnt = 0
+            end
+            prevcard = card
+            prevCColor = CColor
+            prevCval = Cval
+            prevacard = acard
+        end
+        if seqCnt == 1
+            push!(miss1, prev2card)
+            push!(miss1, prevacard)
+            println(
+                "miss1=",
+                TuSacCards.Card(prev2card),
+                TuSacCards.Card(prevacard),
+            )
+        elseif seqCnt == 0
+            # a single
+            if prevCval != 1 # Tuong
+                push!(single, prevacard)
+                println("single=", TuSacCards.Card(prevacard))
+            end
         end
     end
 
-    if actions == 0
-        println(all_hands)
-        println(all_hands[player])
-        println("l,l=",(length(all_hands),length(all_hands[player])))
-        println("length,player=",(length(all_hands[player]),player))
-        for c in all_hands[player]
-            println("card=",c)
-        end
 
-        scanCards()
+    if gameAct == 0
+        println("Player",player," ",all_hands[player])
+        for ac in all_hands[player]
+            println((TuSacCards.Card(ac),ac))
+        end
+        scanCards(all_hands[1])
+         scanCards(all_hands[2])
+         scanCards(all_hands[3])
+         scanCards(all_hands[4])
     end
 end
 
@@ -1046,9 +1137,9 @@ function on_mouse_down(g, pos)
     global playCard = []
     """
     click_card:
-    
+
     """
-    function click_card(cardIndx, yPortion,  hand)
+    function click_card(cardIndx, yPortion, hand)
         if cardIndx in arr_indx
             # moving these cards
             if length(arr_indx) > 1
@@ -1058,9 +1149,9 @@ function on_mouse_down(g, pos)
                 else
                     playCard = []
                     for c in arr_indx
-                        push!(playCard,c)
+                        push!(playCard, c)
                     end
-                    println("Play-card=",playCard)
+                    println("Play-card=", playCard)
                 end
             end
             cardSelect = false
@@ -1069,7 +1160,7 @@ function on_mouse_down(g, pos)
         else
             m = mapToActors[TuSacCards.getcards(hand, cardIndx)]
             x, y = actors[m].pos
-            deltaY = yPortion>1 ? 50 : -50
+            deltaY = yPortion > 1 ? 50 : -50
             actors[m].pos = x, y + deltaY
             push!(arr_indx, cardIndx)
             cardSelect = true
@@ -1087,7 +1178,7 @@ function on_mouse_down(g, pos)
         global arr_indx = []
         gameStates(7)
     elseif tusacState == 3
-        cindx,remy = mouseDownOnBox(x, y, human_state)
+        cindx, remy = mouseDownOnBox(x, y, human_state)
         println("x,y=", (reverseTableGridXY(x, y)))
         println(
             "ll=",
@@ -1097,7 +1188,7 @@ function on_mouse_down(g, pos)
         )
         gameStates(8)
     elseif tusacState == 4
-        cindx,yPortion = mouseDownOnBox(x, y, human_state)
+        cindx, yPortion = mouseDownOnBox(x, y, human_state)
         if cindx != 0
             pCard = click_card(cindx, yPortion, player1_hand)
         end
@@ -1115,7 +1206,7 @@ function draw(g)
     # b = draw(Rect(10,10,100,100),colorant"Yellow",fill=true)
     saveI = 0
     for i = 1:112
-        if cardSelect==false && (i == BIGcard)
+        if cardSelect == false && (i == BIGcard)
             saveI = i
         elseif ((mask[i] & 0x1) == 0)
             draw(actors[i])
