@@ -492,30 +492,6 @@ all_hands = []
 all_discards = []
 all_assets = []
 
-function setupButtons(gx, gy, bcolor, text)
-    x, y = tableGridXY(gx, gy)
-    x1 = x + 200
-    y1 = y + 100
-    draw(Rect(x, y, x1, y1), colorant"green", fill = true)
-
-    #=
-    replay = TextActor("Click to Play Again", "comicbd";
-            font_size = 36, color = Int[0, 0, 0, 255])
-    replay.pos = (135, 390)
-
-    draw(replay)
-    =#
-
-    # play again instructions
-    replay = TextActor(
-        "Click to Play Again",
-        "comicbd";
-        font_size = 36,
-        color = Int[0, 0, 0, 255],
-    )
-    replay.pos = (135, 390)
-    draw(replay)
-end
 
 
 """
@@ -612,7 +588,6 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false)
     x1 = x + cardXdim * xDim
     y1 = y + modified_cardYdim * yDim
 
-    println("x,y,x1,y1=", (x, y, x1, y1))
     push!(ra_state, x, y, x1, y1, 0, 0, 0, 0, 0, xDim, length(deck))
     return ra_state
 end
@@ -680,22 +655,13 @@ function tusacDeal()
     print(player1_hand)
     setupDrawDeck(gameDeck, 8, 8, 14, true)
 
-    setupDrawDeck(player4_hand, 1, 6, 2, false)
-    setupDrawDeck(player3_hand, 8, 1, 100, false)
+    setupDrawDeck(player4_hand, 1, 6, 2, true)
+    setupDrawDeck(player3_hand, 8, 1, 100, true)
 
-    setupDrawDeck(player2_hand, 20, 6, 2, false)
+    setupDrawDeck(player2_hand, 20, 6, 2, true)
     global human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
     push!(boxes, human_state)
-    println("\n1")
-    print(player1_hand)
-    println("\n2")
-    print(player2_hand)
-    println("\n3")
-    print(player3_hand)
-    println("\n4")
-    print(player4_hand)
-    println("\nDeck remain")
-    print(gameDeck)
+    
 end
 
 """
@@ -712,44 +678,33 @@ function playerAcardCheck(aCard::TuSacCards.Card, ImNext::Bool)
 end
 
 function fake_play()
-    println("---b----------------")
-    println(player1_hand)
+    
     global player1_discards = TuSacCards.Deck(pop!(player1_hand, 6))
     global player2_discards = TuSacCards.Deck(pop!(player2_hand, 7))
     global player3_discards = TuSacCards.Deck(pop!(player3_hand, 8))
     global player4_discards = TuSacCards.Deck(pop!(player4_hand, 9))
-    println("--a-----------------")
-
-    println(player1_hand)
+   
     global player1_assets = TuSacCards.Deck(pop!(player1_hand, 8))
     global player2_assets = TuSacCards.Deck(pop!(player2_hand, 3))
     global player3_assets = TuSacCards.Deck(pop!(player3_hand, 5))
     global player4_assets = TuSacCards.Deck(pop!(player4_hand, 4))
-    println("--f------------------")
-
-    println(player1_hand)
-
-    println(player1_discards)
-    println(player2_discards)
-    println(player3_discards)
-    println(player4_discards)
-
-    println(player1_assets)
-    println(player2_assets)
-    println(player3_assets)
-    println(player4_assets)
+   
 
     discard1 = setupDrawDeck(player1_discards, 16, 16, 6, false)
     discard2 = setupDrawDeck(player2_discards, 16, 2, 6, false)
-    discard3 = setupDrawDeck(player3_discards, 2, 2, 6, false)
-    discard4 = setupDrawDeck(player4_discards, 2, 16, 6, false)
+    discard3 = setupDrawDeck(player3_discards, 3, 2, 6, false)
+    discard4 = setupDrawDeck(player4_discards, 3, 16, 6, false)
 
 
-    asset1 = setupDrawDeck(player1_assets, 8, 16, 16, false)
+    asset1 = setupDrawDeck(player1_assets, 8, 15, 16, false)
     asset2 = setupDrawDeck(player2_assets, 16, 7, 2, false)
     asset3 = setupDrawDeck(player3_assets, 8, 4, 100, false)
     asset4 = setupDrawDeck(player4_assets, 4, 7, 2, false)
-    human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
+    global human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
+    setupDrawDeck(player4_hand, 1, 6, 2, true)
+    setupDrawDeck(player3_hand, 8, 1, 100, true)
+    setupDrawDeck(player2_hand, 20, 6, 2, true)
+    global gd = setupDrawDeck(gameDeck, 8, 8, 14, true)
 
     push!(boxes, discard1,discard2,discard3,discard4,asset1,asset2,asset3,asset4)
 
@@ -764,6 +719,7 @@ end
 #ar = TuSacCards.getDeckArray(dd)
 #println(ar)
 tusacState = 0
+
 """
 gameStates(gameActions)
 
@@ -809,6 +765,7 @@ function gameStates(gameActions)
             push!(all_hands,TuSacCards.getDeckArray(player1_hand),TuSacCards.getDeckArray(player2_hand),
                             TuSacCards.getDeckArray(player3_hand),TuSacCards.getDeckArray(player4_hand))
             setupDrawDeck(player1_hand, 8, 18, 100, false)
+           
         end
     elseif tusacState == 2
         global arr_indx = []
@@ -819,7 +776,8 @@ function gameStates(gameActions)
         println("Dealing is completed")
         if gameActions == 8
             println("Starting game")
-            gamePlay(all_hands, all_discards, all_assets, gameDeck; player = 1, gameAct = 0)
+            fake_play()
+            gamePlay(all_hands, all_discards, all_assets, gameDeck,[]; player = 1, gameAct = 0)
             tusacState = 4
         end
     elseif tusacState == 4
@@ -922,7 +880,6 @@ function on_mouse_move(g, pos)
         mouseDirOnBox(x, y, ad_state)
     elseif tusacState > 3
         boxId, cardIndx = withinBoxes(x, y, boxes)
-
         if boxId == 0
             v = 0
         elseif boxId == 1
@@ -964,7 +921,6 @@ function update(g)
             # println("UPDATE:",ad_state)
             TuSacCards.autoShuffle!(gameDeck, 14, ad_state[5])
             ad_state = setupDrawDeck(gameDeck, 8, 2, 14, true)
-            println(gameDeck)
         end
     end
 end
@@ -998,7 +954,8 @@ function gamePlay(
     all_hands,
     all_discards,
     all_assets,
-    gameDeck;
+    gameDeck,
+    pcards;
     player = 1,
     gameAct = 0
 )
@@ -1200,6 +1157,8 @@ function on_mouse_down(g, pos)
     global tusacState
     x = pos[1] << 1
     y = pos[2] << 1
+
+  
     if tusacState == 1
         gameStates(6)
     elseif tusacState == 2
@@ -1207,18 +1166,15 @@ function on_mouse_down(g, pos)
         gameStates(7)
     elseif tusacState == 3
         cindx, remy = mouseDownOnBox(x, y, human_state)
-        println("x,y=", (reverseTableGridXY(x, y)))
-        println(
-            "ll=",
-            cindx,
-            " cv=",
-            (TuSacCards.getcards(player1_hand, cindx)),
-        )
         gameStates(8)
     elseif tusacState == 4
         cindx, yPortion = mouseDownOnBox(x, y, human_state)
         if cindx != 0
             pCard = click_card(cindx, yPortion, player1_hand)
+        end
+        cindx, yPortion = mouseDownOnBox(x, y, gd)
+        if cindx != 0
+            println("XONG ROI")
         end
     end
 end
@@ -1228,9 +1184,7 @@ function draw(g)
     global BIGcard
     global cardSelect
     fill(colorant"ivory4")
-    buttons = []
-
-    setupButtons(10, 10, "yellow", "Ready")
+   
     # b = draw(Rect(10,10,100,100),colorant"Yellow",fill=true)
     saveI = 0
     for i = 1:112
