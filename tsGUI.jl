@@ -1008,12 +1008,14 @@ function gamePlay(
 
     """
     function scanCards(shand)
-        println("---")
+        # println("---")
         ahand = shand
+        #=
         for c in ahand
             print(TuSacCards.Card(c)," ")
         end
         println(" ")
+        =#
         # scan for pairs and remove them
         pairs = []
         allPairs = [[],[],[]]
@@ -1023,15 +1025,15 @@ function gamePlay(
         for i = 2:length(ahand)
             acard = ahand[i] 
             if (((acard >> 2)& 0x7)!= 1) && (acard&0xFC == prevacard &0xFC)
-                print(TuSacCards.Card(prevacard)," ")
+              #  print(TuSacCards.Card(prevacard)," ")
                 push!(pairs, prevacard)
                 pair += 1
             else
                 if pair > 0
                     push!(pairs, prevacard)
                     push!(allPairs[pair],pairs)
-                    print(TuSacCards.Card(prevacard)," ")
-                    println("pairs=",pairs)
+                 #   print(TuSacCards.Card(prevacard)," ")
+                 #   println("pairs=",pairs)
                     pairs = []
                     pair = 0
                 else 
@@ -1043,15 +1045,17 @@ function gamePlay(
         if pair > 0
             push!(pairs, prevacard)
             push!(allPairs[pair],pairs)
-            println("pairs=",pairs)
+         #   println("pairs=",pairs)
         else
             push!(rhand,prevacard)
         end
-        println("allPairs",allPairs)
+     #   println("allPairs",allPairs)
         ahand = rhand
+        #=
         for c in ahand
             print(TuSacCards.Card(c)," ")
         end
+        =#
         println()
         acard = ahand[1]
         prevCColor = acard  >> 5
@@ -1069,7 +1073,7 @@ function gamePlay(
             CColor = acard >> 5
             Cval = (acard >> 2) & 0x7
             card = (acard & 0xFC) >> 2
-           println("seqCnt=",seqCnt," sc=", TuSacCards.Card(acard),(prev3card>>2,prev2card>>2,prevacard>>2,acard>>2))
+         #  println("seqCnt=",seqCnt," sc=", TuSacCards.Card(acard),(prev3card>>2,prev2card>>2,prevacard>>2,acard>>2))
 
             if (CColor == prevCColor) && 
             (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
@@ -1080,18 +1084,20 @@ function gamePlay(
                 seqCnt += 1
             else
                 if seqCnt == 1
-                    push!(miss1, prev2card)
-                    push!(miss1, prevacard)
+
+                    push!(miss1, (prev2card,prevacard))
+                    #=
                     println(
                         "miss1=",
                         TuSacCards.Card(prev2card),
                         TuSacCards.Card(prevacard),
                     )
+                    =#
                 elseif seqCnt == 0
                     # a single
                     if prevCval != 1 # Tuong
                         push!(single, prevacard)
-                        println("single=", TuSacCards.Card(prevacard))
+                    #    println("single=", TuSacCards.Card(prevacard))
                     end
                 end
                 seqCnt = 0
@@ -1102,32 +1108,54 @@ function gamePlay(
             prevacard = acard
         end
         if seqCnt == 1
-            push!(miss1, prev2card)
-            push!(miss1, prevacard)
+            push!(miss1, (prev2card,prevacard))
+          #=
             println(
                 "miss1=",
                 TuSacCards.Card(prev2card),
                 TuSacCards.Card(prevacard),
             )
+            =#
         elseif seqCnt == 0
             # a single
             if prevCval != 1 # Tuong
                 push!(single, prevacard)
-                println("single=", TuSacCards.Card(prevacard))
+           #     println("single=", TuSacCards.Card(prevacard))
             end
         end
+        println("------------")
+        for c in shand
+            print(TuSacCards.Card(c)," ")
+        end
+        
+        println("\nallPairs= ")
+        for p = 1:3
+            for ap in allPairs[p]
+                println(p+1," ",TuSacCards.Card(ap[1]))
+            end
+        end
+        println("\nsingle= ")
+        for c in single
+            print(" ",TuSacCards.Card(c))
+        end
+        println("\nmiss1= ")
+        for tc in miss1
+            for c in tc
+                print(" ",TuSacCards.Card(c))
+            end
+            print("|")
+        end
+        println()
+        return allPairs, single, miss1
     end
 
+    
 
     if gameAct == 0
-        println("Player",player," ",all_hands[player])
-        for ac in all_hands[player]
-            println((TuSacCards.Card(ac),ac))
-        end
-        scanCards(all_hands[1])
-         scanCards(all_hands[2])
-         scanCards(all_hands[3])
-         scanCards(all_hands[4])
+        allPairs, singles, miss1s =scanCards(all_hands[1])
+        allPairs, singles, miss1s =scanCards(all_hands[2])
+        allPairs, singles, miss1s =scanCards(all_hands[3])
+        allPairs, singles, miss1s =scanCards(all_hands[4])
     end
 end
 
