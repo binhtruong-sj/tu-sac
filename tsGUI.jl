@@ -528,7 +528,6 @@ dims: 0: Vertical
       state - set to 0
       mx0,my0,mx1,my1 are place holder for state usage
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
-
 """
 function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false)
     i = 0
@@ -538,7 +537,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false)
     if xDim > 21
         xDim = length(deck)
     end
-    modified_cardYdim = faceDown ? cardYdim >> 1 : cardYdim
+    modified_cardYdim = faceDown ? (cardYdim >> 2) : (cardYdim - (cardYdim>>2))
 
     for card in deck
         m = mapToActors[card.value]
@@ -566,7 +565,6 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false)
     end
     x1 = x + cardXdim * xDim
     y1 = y + modified_cardYdim * yDim
-
     push!(ra_state, x, y, x1, y1, 0, 0, 0, 0, 0, xDim, length(deck))
     return ra_state
 end
@@ -652,43 +650,37 @@ function playerAcardCheck(aCard::TuSacCards.Card, ImNext::Bool)
 end
 
 function fake_play()
-    
-    global player1_discards = TuSacCards.Deck(pop!(player1_hand, 3))
-    global player2_discards = TuSacCards.Deck(pop!(player2_hand, 2))
-    global player3_discards = TuSacCards.Deck(pop!(player3_hand, 3))
-    global player4_discards = TuSacCards.Deck(pop!(player4_hand, 5))
+    global player1_discards = TuSacCards.Deck(pop!(player1_hand, 5))
+    global player2_discards = TuSacCards.Deck(pop!(player2_hand, 7))
+    global player3_discards = TuSacCards.Deck(pop!(player3_hand, 8))
+    global player4_discards = TuSacCards.Deck(pop!(player4_hand, 7))
+    global player1_assets = TuSacCards.Deck(pop!(player1_hand, 6))
+    global player2_assets = TuSacCards.Deck(pop!(player2_hand, 5))
+    global player3_assets = TuSacCards.Deck(pop!(player3_hand, 6))
+    global player4_assets = TuSacCards.Deck(pop!(player4_hand, 5))
    
-    global player1_assets = TuSacCards.Deck(pop!(player1_hand, 1))
-    global player2_assets = TuSacCards.Deck(pop!(player2_hand, 3))
-    global player3_assets = TuSacCards.Deck(pop!(player3_hand, 2))
-    global player4_assets = TuSacCards.Deck(pop!(player4_hand, 4))
-   
+    discard1 = setupDrawDeck(player1_discards, 16, 16, 8, false)
+    discard2 = setupDrawDeck(player2_discards, 16, 2, 8, false)
+    discard3 = setupDrawDeck(player3_discards, 3, 2, 8, false)
+    discard4 = setupDrawDeck(player4_discards, 3, 16, 8, false)
 
-    discard1 = setupDrawDeck(player1_discards, 16, 16, 6, false)
-    discard2 = setupDrawDeck(player2_discards, 16, 2, 6, false)
-    discard3 = setupDrawDeck(player3_discards, 3, 2, 6, false)
-    discard4 = setupDrawDeck(player4_discards, 3, 16, 6, false)
+    asset1 = setupDrawDeck(player1_assets, 8, 14, 30, false)
+    asset2 = setupDrawDeck(player2_assets, 16, 7, 4, false)
+    asset3 = setupDrawDeck(player3_assets, 8, 4, 30, false)
+    asset4 = setupDrawDeck(player4_assets, 4, 7, 4, false)
 
-
-    asset1 = setupDrawDeck(player1_assets, 8, 14, 16, false)
-    asset2 = setupDrawDeck(player2_assets, 16, 7, 2, false)
-    asset3 = setupDrawDeck(player3_assets, 8, 4, 100, false)
-    asset4 = setupDrawDeck(player4_assets, 4, 7, 2, false)
     global human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
     setupDrawDeck(player4_hand, 1, 6, 2, true)
     setupDrawDeck(player3_hand, 8, 1, 100, true)
     setupDrawDeck(player2_hand, 20, 6, 2, true)
     global gd = setupDrawDeck(gameDeck, 8, 8, 14, true)
-
-    push!(boxes, discard1,discard2,discard3,discard4,asset1,asset2,asset3,asset4)
-
+    push!(boxes, discard1, discard2, discard3, discard4, 
+                 asset1, asset2, asset3, asset4)
     push!(all_discards, TuSacCards.getDeckArray(player1_discards),TuSacCards.getDeckArray(player2_discards),
                         TuSacCards.getDeckArray(player3_discards),TuSacCards.getDeckArray(player4_discards))
-   
     push!(all_assets, TuSacCards.getDeckArray(player1_assets),TuSacCards.getDeckArray(player2_assets),
                       TuSacCards.getDeckArray(player3_assets),TuSacCards.getDeckArray(player4_assets))
    
-
 end
 #ar = TuSacCards.getDeckArray(dd)
 #println(ar)
@@ -728,11 +720,11 @@ actions --  0, nothing
 """
 function gameStates(gameActions)
     global tusacState
-    global gameDeck, ad, ad_state
+    global gameDeck, ad, deckState
     if tusacState == tsSinitial
         if gameActions == gsSetupGame
             gameDeck = TuSacCards.ordered_deck()
-            ad_state = setupDrawDeck(gameDeck, 8, 2, 14, true)
+            deckState = setupDrawDeck(gameDeck, 8, 2, 14, true)
             tusacState = tsSdealCards
         end
     elseif tusacState == tsSdealCards
@@ -769,12 +761,12 @@ game start here
 
 gameStates(gsSetupGame)
 BIGcard = 0
-cardSelect = false
+onGoingCardSel = false
 playCard = 0
 
 
 function on_mouse_move(g, pos)
-    global tusacState, gameDeck, ad, ad_state
+    global tusacState, gameDeck, ad, deckState
     """
     MouseOnBoxShuffle:
 
@@ -792,41 +784,41 @@ function on_mouse_move(g, pos)
                 if along the x/y direction (+ or -), gradien_size is factor in
             20+/- or 40+/-: -> no change after this.  It will go back to 0: after someone check/restart
     """
-    function mouseDirOnBox(x, y, ar_state)
-        if ar_state[5] == 0
-            ar_state[5] = 1
-        elseif ar_state[5] == 1
-            if (ar_state[1] < x < ar_state[3]) &&
-               (ar_state[2] < y < ar_state[4])
-                ar_state[6], ar_state[7] = x, y
-                ar_state[5] = 2
+    function mouseDirOnBox(x, y, boxState)
+        if boxState[5] == 0
+            boxState[5] = 1
+        elseif boxState[5] == 1
+            if (boxState[1] < x < boxState[3]) &&
+               (boxState[2] < y < boxState[4])
+                boxState[6], boxState[7] = x, y
+                boxState[5] = 2
             end
-        elseif ar_state[5] == 2
+        elseif boxState[5] == 2
             if (
-                (ar_state[1] < x < ar_state[3]) &&
-                (ar_state[2] < y < ar_state[4])
+                (boxState[1] < x < boxState[3]) &&
+                (boxState[2] < y < boxState[4])
             ) == false
-                ar_state[8], ar_state[9] = x, y
-                deltaX = ar_state[8] - ar_state[6]
-                deltaY = ar_state[9] - ar_state[7]
+                boxState[8], boxState[9] = x, y
+                deltaX = boxState[8] - boxState[6]
+                deltaY = boxState[9] - boxState[7]
                 calGradien(a, b, loc, gradien_size) =
                     div(gradien_size * (loc - a), b - a)
                 if abs(deltaX) < abs(deltaY)
                     g = calGradien(
-                        ar_state[1],
-                        ar_state[3],
-                        ar_state[6],
+                        boxState[1],
+                        boxState[3],
+                        boxState[6],
                         cardGrid,
                     )
-                    deltaX > 0 ? ar_state[5] = 40 + g : ar_state[5] = 40 - g
+                    deltaX > 0 ? boxState[5] = 40 + g : boxState[5] = 40 - g
                 else
                     g = calGradien(
-                        ar_state[2],
-                        ar_state[4],
-                        ar_state[7],
+                        boxState[2],
+                        boxState[4],
+                        boxState[7],
                         cardGrid,
                     )
-                    deltaY > 0 ? ar_state[5] = 20 + g : ar_state[5] = 20 - g
+                    deltaY > 0 ? boxState[5] = 20 + g : boxState[5] = 20 - g
                 end
             end
         end
@@ -847,7 +839,7 @@ function on_mouse_move(g, pos)
     x = pos[1] << 1
     y = pos[2] << 1
     if (tusacState == tsSdealCards)
-        mouseDirOnBox(x, y, ad_state)
+        mouseDirOnBox(x, y, deckState)
     elseif tusacState > tsSstartGame
         boxId, cardIndx = withinBoxes(x, y, boxes)
         if boxId == 0
@@ -884,25 +876,25 @@ end
 
 function update(g)
     
-    global ad, ad_state, gameDeck, tusacState
+    global ad, deckState, gameDeck, tusacState
     if (tusacState == tsSdealCards)
-        if (ad_state[5] > 10)
-            TuSacCards.autoShuffle!(gameDeck, 14, ad_state[5])
-            ad_state = setupDrawDeck(gameDeck, 8, 2, 14, true)
+        if (deckState[5] > 10)
+            TuSacCards.autoShuffle!(gameDeck, 14, deckState[5])
+            deckState = setupDrawDeck(gameDeck, 8, 2, 14, true)
         end
     end
     
 end
 
-function mouseDownOnBox(x, y, ad_state)
+function mouseDownOnBox(x, y, boxState)
     loc = 0
     remy = 0
-    if (ad_state[1] < x < ad_state[3]) && ((ad_state[2] < y < ad_state[4]))
-        dx = div((x - ad_state[1]), cardXdim)
-        dy = div((y - ad_state[2]), cardYdim)
-        remy = rem((y - ad_state[2]), cardYdim)
+    if (boxState[1] < x < boxState[3]) && ((boxState[2] < y < boxState[4]))
+        dx = div((x - boxState[1]), cardXdim)
+        dy = div((y - boxState[2]), cardYdim)
+        remy = rem((y - boxState[2]), cardYdim)
         remy = div(remy, div(cardYdim, 3))
-        loc = div((ad_state[3] - ad_state[1]), cardXdim) * dy + dx + 1
+        loc = div((boxState[3] - boxState[1]), cardXdim) * dy + dx + 1
     end
     return loc, remy
 end
@@ -924,7 +916,7 @@ function gamePlay(
     all_discards,
     all_assets,
     gameDeck,
-    pcards;
+    presentedCards;
     player = 1,
     gameAct = 0
 )
@@ -1049,47 +1041,47 @@ function gamePlay(
 end
 
 function on_mouse_down(g, pos)
-    global arr_indx
-    global cardSelect
+    global cardsIndxArr
+    global onGoingCardSel
     global playCard = []
     """
     click_card:
 
     """
     function click_card(cardIndx, yPortion, hand)
-        if cardIndx in arr_indx
+        if cardIndx in cardsIndxArr
             if prevYportion != yPortion
                 setupDrawDeck(hand, 8, 18, 100, false)
-                arr_indx = []
+                cardsIndxArr = []
                 return []
             end
             # moving these cards
-            if length(arr_indx) > 1
+            if length(cardsIndxArr) > 1
                 if yPortion > 1
-                    sort!(arr_indx)
-                    TuSacCards.rearrange(hand, arr_indx, cardIndx)
+                    sort!(cardsIndxArr)
+                    TuSacCards.rearrange(hand, cardsIndxArr, cardIndx)
                     setupDrawDeck(hand, 8, 18, 100, false)
                 else
                     playCard = []
-                    for c in arr_indx
+                    for c in cardsIndxArr
                         push!(playCard, c)
                     end
                     println("Play-card=", playCard)
                 end
             end
             cardSelect = false
-            arr_indx = []
+            cardsIndxArr = []
         else
             m = mapToActors[TuSacCards.getcards(hand, cardIndx)]
             x, y = actors[m].pos
             global deltaY = yPortion > 1 ? 50 : -50
             actors[m].pos = x, y + deltaY
-            push!(arr_indx, cardIndx)
+            push!(cardsIndxArr, cardIndx)
             cardSelect = true
         end
         global prevYportion = yPortion
 
-        return arr_indx
+        return cardsIndxArr
     end
 
 
@@ -1099,7 +1091,7 @@ function on_mouse_down(g, pos)
 
   
     if tusacState == tsSdealCards
-        global arr_indx = []
+        global cardsIndxArr = []
         gameStates(gsOrganize)
    
     elseif tusacState == tsSstartGame
@@ -1121,12 +1113,12 @@ end
 
 function draw(g)
     global BIGcard
-    global cardSelect
+    global onGoingCardSel
     fill(colorant"ivory4")
    
     saveI = 0
     for i = 1:112
-        if cardSelect == false && (i == BIGcard)
+        if onGoingCardSel == false && (i == BIGcard)
             saveI = i
         elseif ((mask[i] & 0x1) == 0)
             draw(actors[i])
