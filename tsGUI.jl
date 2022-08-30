@@ -1061,15 +1061,17 @@ still buggy!
                 sort!(cardsIndxArr)
                 TuSacCards.rearrange(hand, cardsIndxArr, cardIndx)
                 setupDrawDeck(hand, 8, 18, 100, false)
-            else
+                cardSelect = false
+                cardsIndxArr = []
+          #=  else
                 playCard = []
                 for c in cardsIndxArr
                     push!(playCard, c)
                 end
                 println("Play-card=", playCard)
+                =#
             end
-            cardSelect = false
-            cardsIndxArr = []
+            
         else
             m = mapToActors[TuSacCards.getcards(hand, cardIndx)]
             x, y = actors[m].pos
@@ -1110,7 +1112,7 @@ still buggy!
         end
         cindx, yPortion = mouseDownOnBox(x, y, deckState)
         if cindx != 0
-            println(pCard)
+            println(cardsIndxArr)
             println("XONG ROI")
         end
     end
