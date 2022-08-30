@@ -534,11 +534,12 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false)
     x, y = tableGridXY(gx, gy)
     l = length(deck)
 
-    if xDim > 21
+    if xDim > 20
         xDim = length(deck)
+        modified_cardYdim = cardYdim
+    else 
+        modified_cardYdim = faceDown ? (cardYdim >> 2) : (cardYdim - (cardYdim>>2))
     end
-    modified_cardYdim = faceDown ? (cardYdim >> 2) : (cardYdim - (cardYdim>>2))
-
     for card in deck
         m = mapToActors[card.value]
         px = x + (cardXdim * rem(i, xDim))
@@ -636,18 +637,6 @@ function tusacDeal()
     
 end
 
-"""
-p0: own hand
-p1: player next to p0
-p2;
-p3:
-"""
-
-
-function playerAcardCheck(aCard::TuSacCards.Card, ImNext::Bool)
-
-
-end
 
 function fake_play()
     global player1_discards = TuSacCards.Deck(pop!(player1_hand, 5))
@@ -724,7 +713,7 @@ function gameStates(gameActions)
     if tusacState == tsSinitial
         if gameActions == gsSetupGame
             gameDeck = TuSacCards.ordered_deck()
-            deckState = setupDrawDeck(gameDeck, 8, 2, 14, true)
+            deckState = setupDrawDeck(gameDeck, 8, 8, 14, true)
             tusacState = tsSdealCards
         end
     elseif tusacState == tsSdealCards
@@ -743,9 +732,18 @@ function gameStates(gameActions)
         end
     elseif tusacState == tsSstartGame
         println("Dealing is completed")
+    global player1_discards = TuSacCards.Deck(pop!(player1_hand, 0))
+    global player2_discards = TuSacCards.Deck(pop!(player2_hand, 0))
+    global player3_discards = TuSacCards.Deck(pop!(player3_hand, 0))
+    global player4_discards = TuSacCards.Deck(pop!(player4_hand, 0))
+    global player1_assets = TuSacCards.Deck(pop!(player1_hand, 0))
+    global player2_assets = TuSacCards.Deck(pop!(player2_hand, 0))
+    global player3_assets = TuSacCards.Deck(pop!(player3_hand, 0))
+    global player4_assets = TuSacCards.Deck(pop!(player4_hand, 0))
+   
         if gameActions == gsStartGame
             println("Starting game")
-            fake_play()
+           # fake_play()
             gamePlay(all_hands, all_discards, all_assets, gameDeck,[]; player = 1, gameAct = 0)
             tusacState = tsSinGamePlay1
         end
@@ -761,7 +759,7 @@ game start here
 
 gameStates(gsSetupGame)
 BIGcard = 0
-onGoingCardSel = false
+cardSelect = false
 playCard = 0
 
 
@@ -880,7 +878,7 @@ function update(g)
     if (tusacState == tsSdealCards)
         if (deckState[5] > 10)
             TuSacCards.autoShuffle!(gameDeck, 14, deckState[5])
-            deckState = setupDrawDeck(gameDeck, 8, 2, 14, true)
+            deckState = setupDrawDeck(gameDeck, 8, 8, 14, true)
         end
     end
     
@@ -893,7 +891,7 @@ function mouseDownOnBox(x, y, boxState)
         dx = div((x - boxState[1]), cardXdim)
         dy = div((y - boxState[2]), cardYdim)
         remy = rem((y - boxState[2]), cardYdim)
-        remy = div(remy, div(cardYdim, 3))
+        remy = div(remy, div(cardYdim, 2))
         loc = div((boxState[3] - boxState[1]), cardXdim) * dy + dx + 1
     end
     return loc, remy
@@ -1042,46 +1040,54 @@ end
 
 function on_mouse_down(g, pos)
     global cardsIndxArr
-    global onGoingCardSel
+    global cardSelect
     global playCard = []
     """
     click_card:
-
+still buggy!
     """
     function click_card(cardIndx, yPortion, hand)
+        global prevYportion
+        println("yP=",yPortion)
         if cardIndx in cardsIndxArr
-            if prevYportion != yPortion
-                setupDrawDeck(hand, 8, 18, 100, false)
-                cardsIndxArr = []
-                return []
-            end
             # moving these cards
-            if length(cardsIndxArr) > 1
-                if yPortion > 1
-                    sort!(cardsIndxArr)
-                    TuSacCards.rearrange(hand, cardsIndxArr, cardIndx)
-                    setupDrawDeck(hand, 8, 18, 100, false)
-                else
-                    playCard = []
-                    for c in cardsIndxArr
-                        push!(playCard, c)
-                    end
-                    println("Play-card=", playCard)
+            if yPortion != prevYportion
+                cardsIndxArr = []
+                setupDrawDeck(hand, 8, 18, 100, false)
+                println("RESET")
+                cardSelect = false
+                return []
+            elseif yPortion > 0
+                sort!(cardsIndxArr)
+                TuSacCards.rearrange(hand, cardsIndxArr, cardIndx)
+                setupDrawDeck(hand, 8, 18, 100, false)
+            else
+                playCard = []
+                for c in cardsIndxArr
+                    push!(playCard, c)
                 end
+                println("Play-card=", playCard)
             end
             cardSelect = false
             cardsIndxArr = []
         else
             m = mapToActors[TuSacCards.getcards(hand, cardIndx)]
             x, y = actors[m].pos
-            global deltaY = yPortion > 1 ? 50 : -50
+            global deltaY = yPortion > 0 ? 50 : -50
             actors[m].pos = x, y + deltaY
             push!(cardsIndxArr, cardIndx)
             cardSelect = true
         end
+        #=
+        if (length(cardsIndxArr)>0) && (prevYportion != yPortion)
+            setupDrawDeck(hand, 8, 18, 100, false)
+            cardsIndxArr = []
+            println("RESET")
+            return []
+        else
+            =#
         global prevYportion = yPortion
-
-        return cardsIndxArr
+        return playCard
     end
 
 
@@ -1102,7 +1108,7 @@ function on_mouse_down(g, pos)
         if cindx != 0
             global pCard = click_card(cindx, yPortion, player1_hand)
         end
-        cindx, yPortion = mouseDownOnBox(x, y, gd)
+        cindx, yPortion = mouseDownOnBox(x, y, deckState)
         if cindx != 0
             println(pCard)
             println("XONG ROI")
@@ -1113,13 +1119,14 @@ end
 
 function draw(g)
     global BIGcard
-    global onGoingCardSel
+    global cardSelect
     fill(colorant"ivory4")
    
     saveI = 0
     for i = 1:112
-        if onGoingCardSel == false && (i == BIGcard)
-            saveI = i
+        if ((cardSelect == false)) && (i == BIGcard)
+     #       if ((cardSelect == false)||(length(cardsIndxArr)==0)) && (i == BIGcard)
+                saveI = i
         elseif ((mask[i] & 0x1) == 0)
             draw(actors[i])
         else
