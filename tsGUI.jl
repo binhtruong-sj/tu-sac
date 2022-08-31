@@ -732,21 +732,55 @@ function gameStates(gameActions)
         end
     elseif tusacState == tsSstartGame
         println("Dealing is completed")
-    global player1_discards = TuSacCards.Deck(pop!(player1_hand, 0))
-    global player2_discards = TuSacCards.Deck(pop!(player2_hand, 0))
-    global player3_discards = TuSacCards.Deck(pop!(player3_hand, 0))
-    global player4_discards = TuSacCards.Deck(pop!(player4_hand, 0))
-    global player1_assets = TuSacCards.Deck(pop!(player1_hand, 0))
-    global player2_assets = TuSacCards.Deck(pop!(player2_hand, 0))
-    global player3_assets = TuSacCards.Deck(pop!(player3_hand, 0))
-    global player4_assets = TuSacCards.Deck(pop!(player4_hand, 0))
-   
-        if gameActions == gsStartGame
-            println("Starting game")
-           # fake_play()
-            gamePlay(all_hands, all_discards, all_assets, gameDeck,[]; player = 1, gameAct = 0)
-            tusacState = tsSinGamePlay1
+        global player1_discards = TuSacCards.Deck(pop!(player1_hand, 0))
+        global player2_discards = TuSacCards.Deck(pop!(player2_hand, 0))
+        global player3_discards = TuSacCards.Deck(pop!(player3_hand, 0))
+        global player4_discards = TuSacCards.Deck(pop!(player4_hand, 0))
+        global player1_assets = TuSacCards.Deck(pop!(player1_hand, 0))
+        global player2_assets = TuSacCards.Deck(pop!(player2_hand, 0))
+        global player3_assets = TuSacCards.Deck(pop!(player3_hand, 0))
+        global player4_assets = TuSacCards.Deck(pop!(player4_hand, 0))
+         println("Starting game")
+        # fake_play()
+        function removeCard!(array, n, card)
+            for l = 1:length(array[n])
+                if card == array[n][l]
+                    splice!(array[n],l)
+                    return
+                end
+            end
         end
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        removeCard!(all_hands,1,c)
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        removeCard!(all_hands,1,c)
+
+
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        removeCard!(all_hands,1,c)
+
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        removeCard!(all_hands,1,c)
+
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        removeCard!(all_hands,1,c)
+
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        removeCard!(all_hands,1,c)
+
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        removeCard!(all_hands,1,c)
+
+        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
+        println("CardPlay=",TuSacCards.Card(c))
+        tusacState = tsSinGamePlay1
     elseif tusacState == tsSinGamePlay1
 
     end
@@ -1038,6 +1072,214 @@ function gamePlay(
     end
 end
 
+T(v) = (v&0x1c == 0x4)
+s(v) = (v&0x1c != 0x8)
+t(v) = (v&0x1c != 0xc)
+c(v) = (v&0x1c != 0x10)
+x(v) = (v&0x1c != 0x14)
+p(v) = (v&0x1c != 0x18)
+m(v) = (v&0x1c != 0x1c)
+
+miss(v1,v2) = ((((v2&0xc) -(v1&0xc)) == 4) ? (((v1&0xc)==4) ? 0xc : 4 ) : 8 ) | (v1 & 0xF3)
+
+const gpPlay1card = 1
+const gpCheckMatch1 = 2
+const gpCheckMatch2 = 3
+const gpPopCards = 4
+
+"""
+hgamePlay:
+    actions: 0 - inital cards dealt - before any play
+             1 - play a single card, player choise
+             2 - check for match single/double; return matched
+             3 - check for match double only; return matched
+             4 - play cards -- these cards
+    game-manager will control the flow of the game, calling each
+    player for actions/reponse and maintaining all card-decks
+
+"""
+function hgamePlay(
+    all_hands,
+    all_discards,
+    all_assets,
+    gameDeck,
+    presentedCards;
+    gpPlayer = 1,
+    gpAction = 0
+)
+
+    """
+    scanCards() scan for single and missing seq
+
+    """
+    function scanCards(shand)
+        ahand = shand
+        # scan for pairs and remove them
+        pairs = []
+        allPairs = [[],[],[]]
+        prevacard = ahand[1]
+        pair  = 0
+        rhand = []
+        for i = 2:length(ahand)
+            acard = ahand[i] 
+            if (((acard >> 2)& 0x7)!= 1) && (acard&0xFC == prevacard &0xFC)
+                push!(pairs, prevacard)
+                pair += 1
+            else
+                if pair > 0
+                    push!(pairs, prevacard)
+                    push!(allPairs[pair],pairs)
+                    pairs = []
+                    pair = 0
+                else 
+                    push!(rhand,prevacard)
+                end
+            end
+            prevacard = acard
+        end
+        if pair > 0
+            push!(pairs, prevacard)
+            push!(allPairs[pair],pairs)
+        else
+            push!(rhand,prevacard)
+        end
+        ahand = rhand
+        acard = ahand[1]
+        prevCColor = acard  >> 5
+        prevCval = (acard >> 2) & 0x7
+        prevcard = (acard & 0xFC) >> 2
+        prevacard = acard
+        prev2card = acard
+        prev3card = acard
+        seqCnt = 0
+        pair = 0
+        miss1 = []
+        missT =[]
+        miss1bar = []
+        single = []
+        
+        for i = 2:length(ahand)
+            acard = ahand[i]
+            CColor = acard >> 5
+            Cval = (acard >> 2) & 0x7
+            card = (acard & 0xFC) >> 2
+            if (CColor == prevCColor) && 
+            (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
+            ( (prevcard + 1) == card ||
+              (prevcard + 2) == card )
+                prev3card = prev2card
+                prev2card = prevacard
+                seqCnt += 1
+            else
+                if seqCnt == 1
+                    ar =[]
+                    mc = miss(prev2card,prevacard)
+                    push!(miss1bar, mc)
+                    push!(ar,prev2card,prevacard)
+                    if T(mc) 
+                        push!(missT, ar)
+                    else
+                        push!(miss1, ar)
+                    end
+                elseif seqCnt == 0
+                    # a single
+                    if prevCval != 1 # Tuong
+                        push!(single, prevacard)
+                    end
+                end
+                seqCnt = 0
+            end
+            prevcard = card
+            prevCColor = CColor
+            prevCval = Cval
+            prevacard = acard
+        end
+        if seqCnt == 1
+            ar = []
+            mc = miss(prev2card,prevacard)
+            push!(miss1bar, mc)
+            push!(ar,prev2card,prevacard)
+            if T(mc) 
+                push!(missT, ar)
+            else
+                push!(miss1, ar)
+            end
+        elseif seqCnt == 0
+            # a single
+            if prevCval != 1 # Tuong
+                push!(single, prevacard)
+            end
+        end
+        println("------------")
+        for c in shand
+            print(TuSacCards.Card(c)," ")
+        end
+        
+        println("\nallPairs= ")
+        for p = 1:3
+            for ap in allPairs[p]
+                println(p+1," ",TuSacCards.Card(ap[1]))
+            end
+        end
+        println("\nsingle= ")
+        for c in single
+            print(" ",TuSacCards.Card(c))
+        end
+        println("\nmissT= ")
+        for tc in missT
+            for c in tc
+                print(" ",TuSacCards.Card(c))
+            end
+            print("|")
+        end
+        println("\nmiss1= ")
+        for tc in miss1
+            for c in tc
+                print(" ",TuSacCards.Card(c))
+            end
+            print("|")
+        end
+        println("\nmiss1Bar= ")
+        for mb in miss1bar
+            print(" ",TuSacCards.Card(mb))
+        end
+        println()
+        return allPairs, single, miss1, missT, miss1bar
+    end
+ 
+    allPairs, singles, miss1s, missTs, miss1sbar = scanCards(all_hands[gpPlayer])
+    
+    if gpAction == gpPlay1card
+        if length(missTs) > 0 
+            for mt in missTs
+                for m in mt
+                    push!(singles,m)
+                end
+            end
+            missTs = []
+        end
+        if length(singles) > 0
+            card = splice!(singles,rand(1:length(singles)))
+        else 
+            @assert(length(miss1s)>0)
+            m1 = splice!(miss1s,rand(1:length(miss1s)))
+            for m in m1
+                if T(m) == false
+                    push!(singles,m)
+                end
+            end
+            println("SSS=",singles)
+            card = splice!(singles,rand(1:length(singles)))
+        end
+        println("PlayCard = ", TuSacCards.Card(card))
+        return card 
+    end
+end
+
+"""
+    on_mouse_down(g, pos)
+
+"""
 function on_mouse_down(g, pos)
     global cardsIndxArr
     global cardSelect
@@ -1114,6 +1356,7 @@ still buggy!
         if cindx != 0
             println(cardsIndxArr)
             println("XONG ROI")
+            global play1Response = cardsIndxArr
         end
     end
 end
