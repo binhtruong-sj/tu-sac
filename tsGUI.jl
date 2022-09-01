@@ -64,6 +64,7 @@ end
 function nwGamePlayResult(gpPlayer)
 end
 
+end
 module TuSacCards
 
 using Random: randperm
@@ -1447,6 +1448,90 @@ const gpPlay1card = 1
 const gpCheckMatch1or2 = 3
 const gpCheckMatch2 = 2
 const gpPopCards = 4
+
+"""
+    human_gamePlay(
+    all_hands,
+    all_discards,
+    all_assets,
+    gameDeck,
+    pcard;
+    gpPlayer = 1,
+    gpAction = 0
+)
+similar to gamePlay -- but use stdio for input and output
+
+"""
+function hgamePlay(
+    all_hands,
+    all_discards,
+    all_assets,
+    gameDeck,
+    pcard;
+    gpPlayer = 1,
+    gpAction = 0
+)
+grank ="Tstcxpm"
+gcolor="TVDX"
+    aStrToVal(s) = (firstindex(s[1],grank)<<2)|(firstindex(s[2],gcolor)<<5)
+    function strToVal(ahand,str)
+        hand = ahand
+        r = []
+       for s in str
+        println("STR=",s)
+            v = aStrToVal(s)
+            for i in 1:length(hand)
+                c = hand[i]
+                if c_equal(c,v)
+                    push!(r,c)
+                    splice!(hand,i,1)
+                    break
+                end
+            end
+       end
+       return r
+    end
+
+println()
+println("Player",gpPlayer,"Hand: ")
+for c in all_hands[gpPlayer]
+    print(TuSacCards.Card(c)," ")
+end
+
+println()
+a = 0
+for as in all_assets
+    a += 1
+    print("Assets",a,":  ")
+    for i in 2:length(as)
+        c = as[i]
+        print(TuSacCards.Card(c)," ")
+    end
+    println()
+end
+println()
+a = 0
+for as in all_discards
+    a += 1
+    print("Trashs",a,":  ")
+    for i in 2:length(as)
+        c = as[i]
+        print(TuSacCards.Card(c)," ")
+    end
+    println()
+end
+
+if gpAction == gpPlay1card
+    println("Enter card to play")
+else 
+    println("Enter cards to to match with ",pcard)
+end
+    rl = readline()
+    println(rl)
+    r = strToVal(all_hands[gpPlayer],rl)
+    return r
+end
+
 """
 hgamePlay:
     actions: 0 - inital cards dealt - before any play
@@ -1458,7 +1543,7 @@ hgamePlay:
     player for actions/reponse and maintaining all card-decks
 
 """
-function hgamePlay(
+function bgamePlay(
     all_hands,
     all_discards,
     all_assets,
@@ -1466,6 +1551,7 @@ function hgamePlay(
     pcard;
     gpPlayer = 1,
     gpAction = 0
+
 )
 println("======================player",gpPlayer," Action=",actionStr(gpAction), " checkCard=", pcard)
   
