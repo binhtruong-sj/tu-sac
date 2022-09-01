@@ -754,7 +754,7 @@ c_equal(a,b) = (a&0xfc) == (b&0xFC)
 scanCards() scan for single and missing seq
 
 """
-function scanCards(shand)
+function scanCards(shand, silence = false)
     ahand = shand
     # scan for pairs and remove them
     pairs = []
@@ -874,44 +874,45 @@ function scanCards(shand)
             end
         end
     end
-
-    for c in shand
-        print(TuSacCards.Card(c)," ")
-    end
-    
-    println("\nallPairs= ")
-    for p = 1:3
-        for ap in allPairs[p]
-            println(p+1," ",TuSacCards.Card(ap[1]))
+    if silence == false
+        for c in shand
+            print(TuSacCards.Card(c)," ")
         end
-    end
-    println("\nsingle= ")
-    for c in single
-        print(" ",TuSacCards.Card(c))
-    end
-    println("\nChot1= ")
-    for c in chot1
-        print(" ",TuSacCards.Card(c))
-    end
-    println("\nmissT= ")
-    for tc in missT
-        for c in tc
+        
+        println("\nallPairs= ")
+        for p = 1:3
+            for ap in allPairs[p]
+                println(p+1," ",TuSacCards.Card(ap[1]))
+            end
+        end
+        println("\nsingle= ")
+        for c in single
             print(" ",TuSacCards.Card(c))
         end
-        print("|")
-    end
-    println("\nmiss1= ")
-    for tc in miss1
-        for c in tc
+        println("\nChot1= ")
+        for c in chot1
             print(" ",TuSacCards.Card(c))
         end
-        print("|")
+        println("\nmissT= ")
+        for tc in missT
+            for c in tc
+                print(" ",TuSacCards.Card(c))
+            end
+            print("|")
+        end
+        println("\nmiss1= ")
+        for tc in miss1
+            for c in tc
+                print(" ",TuSacCards.Card(c))
+            end
+            print("|")
+        end
+        println("\nmiss1Bar= ")
+        for mb in miss1bar
+            print(" ",TuSacCards.Card(mb))
+        end
+        println()
     end
-    println("\nmiss1Bar= ")
-    for mb in miss1bar
-        print(" ",TuSacCards.Card(mb))
-    end
-    println()
     return allPairs, single, chot1, miss1, missT, miss1bar
 end
 
@@ -1023,7 +1024,7 @@ function whoWin(n1,r1,n2,r2,n3,r3)
         end
         win=false
         if l > 0
-            ps,ss,cs,m1s,mts,mbs=scanCards(all_hands[n])
+            ps,ss,cs,m1s,mts,mbs=scanCards(all_hands[n],true)
             if length(union(ss,cs,m1s,mts,mbs))== 0
                 l = 4
                 win=true
@@ -1473,27 +1474,40 @@ function hgamePlay(
 )
 grank ="Tstcxpm"
 gcolor="TVDX"
-    aStrToVal(s) = (firstindex(s[1],grank)<<2)|(firstindex(s[2],gcolor)<<5)
+function find1(c,str) 
+    for i = 1:length(str)
+        if c == str[i]
+            return i
+        end
+    end
+    return 0
+end
+    aStrToVal(s) = (UInt8(find1(s[1],grank))<<2)|(UInt8(find1(s[2],gcolor)-1)<<5)
     function strToVal(ahand,str)
         hand = ahand
         r = []
-       for s in str
-        println("STR=",s)
+        for s in str
             v = aStrToVal(s)
             for i in 1:length(hand)
                 c = hand[i]
-                if c_equal(c,v)
+                found = false
+                for ar in r
+                    if ar == c
+                        found = true
+                    end
+                end
+                if !found && c_equal(c,v)
                     push!(r,c)
-                    splice!(hand,i,1)
                     break
                 end
             end
-       end
-       return r
+        end
+    
+    return r
     end
 
 println()
-println("Player",gpPlayer,"Hand: ")
+println("=========================Player",gpPlayer,"Hand: ")
 for c in all_hands[gpPlayer]
     print(TuSacCards.Card(c)," ")
 end
@@ -1520,15 +1534,23 @@ for as in all_discards
     end
     println()
 end
-
+    scanCards(all_hands[gpPlayer])
 if gpAction == gpPlay1card
     println("Enter card to play")
+elseif gpAction == gpCheckMatch1or2
+    println("Enter card(s) to to match with ",ts(pcard[1]))
 else 
-    println("Enter cards to to match with ",pcard)
+    println("Enter PAIR of cards to to match with ",ts(pcard[1]))
+
 end
-    rl = readline()
-    println(rl)
-    r = strToVal(all_hands[gpPlayer],rl)
+    al = readline()
+    if length(al) > 1
+        rl = split(al,' ')
+        r = strToVal(all_hands[gpPlayer],rl)
+    else
+        r = []
+    end
+    println("r=",r)
     return r
 end
 
