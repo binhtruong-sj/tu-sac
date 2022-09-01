@@ -35,6 +35,35 @@ tableGridXY(gx, gy) = (gx - 1) * div(realWIDTH, tableXgrid),
 reverseTableGridXY(x, y) = div(x, div(realWIDTH, tableXgrid)) + 1,
 div(y, div(realHEIGHT, tableYgrid)) + 1
 
+module nwAPI
+export nwSetup, nwGamePlay, nwGamePlayResult, nwCheckPlayers
+
+function nwSetup(ipAddress)
+
+end
+
+"""
+function return nothing, return immediately, not waiting for remote
+   
+"""
+function nwGamePlay(
+    all_hands,
+    all_discards,
+    all_assets,
+    gameDeck,
+    pcard;
+    gpPlayer = 1,
+    gpAction = 0
+)
+end
+
+"""
+    nwGamePlayResult(gpPlayer)
+        this would lock-up and wait for result to be ready, return the array
+"""
+function nwGamePlayResult(gpPlayer)
+end
+
 module TuSacCards
 
 using Random: randperm
