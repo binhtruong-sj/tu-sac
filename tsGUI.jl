@@ -721,6 +721,171 @@ miss(v1,v2) = ((((v2&0xc) -(v1&0xc)) == 4) ? (((v1&0xc)==4) ? 0xc : 4 ) : 8 ) | 
 c_equal(a,b) = (a&0xfc) == (b&0xFC)
 
 """
+scanCards() scan for single and missing seq
+
+"""
+function scanCards(shand)
+    ahand = shand
+    # scan for pairs and remove them
+    pairs = []
+    allPairs = [[],[],[]]
+    prevacard = ahand[1]
+    pair  = 0
+    rhand = []
+    chot1 = []
+
+    for i = 2:length(ahand)
+        acard = ahand[i] 
+        if  c_equal(acard, prevacard)
+            push!(pairs, prevacard)
+            pair += 1
+        else
+            if pair > 0
+                if T(prevacard)
+                    if pair == 1
+                        push!(rhand,prevacard)
+                    else
+                        if pair == 2
+                            push!(rhand,prevacard)
+                        end
+                        push!(pairs, prevacard)
+                        push!(allPairs[pair],pairs)
+                    end
+                else
+                    push!(pairs, prevacard)
+                    push!(allPairs[pair],pairs)
+                    if c(prevacard) && (pair == 2) # to handle chot's variant
+                        push!(chot1,prevacard)  # put these as extra single 
+                    end
+                end
+                pairs = []
+                pair = 0
+            else 
+                push!(rhand,prevacard)
+            end
+        end
+        prevacard = acard
+    end
+    if pair > 0
+        push!(pairs, prevacard)
+        push!(allPairs[pair],pairs)
+    else
+        push!(rhand,prevacard)
+    end
+    ahand = rhand
+    acard = ahand[1]
+    prevCColor = acard  >> 5
+    prevCval = (acard >> 2) & 0x7
+    prevcard = (acard & 0xFC) >> 2
+    prevacard = acard
+    prev2card = acard
+    prev3card = acard
+    seqCnt = 0
+    pair = 0
+    miss1 = []
+    missT =[]
+    miss1bar = []
+    single = []
+    for i = 2:length(ahand)
+        acard = ahand[i]
+        CColor = acard >> 5
+        Cval = (acard >> 2) & 0x7
+        card = (acard & 0xFC) >> 2
+        if (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
+        ((prevcard + 1) == card || (prevcard + 2) == card )
+            prev3card = prev2card
+            prev2card = prevacard
+            seqCnt += 1
+        else
+            if seqCnt == 1
+                ar =[]
+                mc = miss(prev2card,prevacard)
+                push!(miss1bar, mc)
+                push!(ar,prev2card,prevacard)
+                if T(mc) 
+                    push!(missT, ar)
+                else
+                    push!(miss1, ar)
+                end
+            elseif seqCnt == 0
+                # a single
+                if prevCval != 1 # Tuong
+                    if c(prevacard)
+                        push!(chot1,prevacard)
+                    else
+                        push!(single, prevacard)
+                    end
+                end
+            end
+            seqCnt = 0
+        end
+        prevcard = card
+        prevCColor = CColor
+        prevCval = Cval
+        prevacard = acard
+    end
+    if seqCnt == 1
+        ar = []
+        mc = miss(prev2card,prevacard)
+        push!(miss1bar, mc)
+        push!(ar,prev2card,prevacard)
+        if T(mc) 
+            push!(missT, ar)
+        else
+            push!(miss1, ar)
+        end
+    elseif seqCnt == 0
+        # a single
+        if prevCval != 1 # Tuong
+            if c(prevacard)
+                push!(chot1,prevacard)
+            else
+                push!(single, prevacard)
+            end
+        end
+    end
+
+    for c in shand
+        print(TuSacCards.Card(c)," ")
+    end
+    
+    println("\nallPairs= ")
+    for p = 1:3
+        for ap in allPairs[p]
+            println(p+1," ",TuSacCards.Card(ap[1]))
+        end
+    end
+    println("\nsingle= ")
+    for c in single
+        print(" ",TuSacCards.Card(c))
+    end
+    println("\nChot1= ")
+    for c in chot1
+        print(" ",TuSacCards.Card(c))
+    end
+    println("\nmissT= ")
+    for tc in missT
+        for c in tc
+            print(" ",TuSacCards.Card(c))
+        end
+        print("|")
+    end
+    println("\nmiss1= ")
+    for tc in miss1
+        for c in tc
+            print(" ",TuSacCards.Card(c))
+        end
+        print("|")
+    end
+    println("\nmiss1Bar= ")
+    for mb in miss1bar
+        print(" ",TuSacCards.Card(mb))
+    end
+    println()
+    return allPairs, single, chot1, miss1, missT, miss1bar
+end
+
+"""
 gameStates(gameActions)
 
 gameStates: control the flow/setup of the game
@@ -820,20 +985,25 @@ function gameStates(gameActions)
 
     nextPlayer(p) = p == 4 ? 1 : p+1
 
-function whoWin(n,pc,r1,r2,r3) 
-    function getl(r) 
+function whoWin(n1,r1,n2,r2,n3,r3) 
+    function getl(n,r) 
         l = length(r)
-        if l == 2 && pc == r[1]
-            return 4
-        end
         if (l > 1) && !c_equal(r[1],r[2]) # not pairs
              l = 1
         end
-        return l
+        win=false
+        if l > 0
+            ps,ss,cs,m1s,mts,mbs=scanCards(all_hands[n])
+            if length(union(ss,cs,m1s,mts,mbs))== 0
+                l = 4
+                win=true
+            end
+        end
+        return l,win
     end
-    l1 = getl(r1)
-    l2 = getl(r2)
-    l3 = getl(r3)
+    l1,w1 = getl(n1,r1)
+    l2,w2 = getl(n2,r2)
+    l3,w3 = getl(n3,r3)
 
     if l1 == 4
         w = 0
@@ -853,14 +1023,14 @@ function whoWin(n,pc,r1,r2,r3)
         end
     end
     r = w == 0 ? r1 : w == 1 ? r2 : r3
-    if length(r)>1 && r[1] == pc
-        pop!(r)
+    n = rem((n1-1+w),4) + 1
+    if w1||w2||w3
         w = -1
     end
-    n = rem((n-1+w),4) + 1
     println("Who win ?  n,w,r",(n,w,r),(l1,l2,l3))
     return n,w,r
 end
+
         needCard = true
         cPlayer = 1
 
@@ -894,7 +1064,9 @@ end
             n2c = hgamePlay(all_hands, all_discards, all_assets, gameDeck, newCard; gpPlayer = t2Player, gpAction = gpCheckMatch2 ) 
             t3Player = nextPlayer(t2Player)
             n3c = hgamePlay(all_hands, all_discards, all_assets, gameDeck, newCard; gpPlayer = t3Player, gpAction = gpCheckMatch2 )
-            nPlayer, winner, r = whoWin(t1Player,newCard,n1c,n2c,n3c)
+
+            nPlayer, winner, r = whoWin(t1Player,n1c,t2Player, n2c, t3Player,n3c)
+
             removeCards!(all_hands,cPlayer,newCard)
             removeCards!(all_hands,nPlayer,r)
             if (winner == 0) && ( length(r) == 0) # nobody winner
@@ -1233,11 +1405,6 @@ function gamePlay(
 end
 =#
 
-const gpPlay1card = 1
-const gpCheckMatch1or2 = 3
-const gpCheckMatch2 = 2
-const gpPopCards = 4
-
 actionStr(a) =  a == gpPlay1card ? "gpPlay1card" : a==gpCheckMatch1or2 ? "gpCheckMatch1or2" : a==gpCheckMatch2 ? "gpCheckMatch2" : "gpPopCards"
 
 function PrintResult(rt) 
@@ -1247,7 +1414,10 @@ function PrintResult(rt)
      end
     println()
 end
-
+const gpPlay1card = 1
+const gpCheckMatch1or2 = 3
+const gpCheckMatch2 = 2
+const gpPopCards = 4
 """
 hgamePlay:
     actions: 0 - inital cards dealt - before any play
@@ -1269,170 +1439,7 @@ function hgamePlay(
     gpAction = 0
 )
 println("======================player",gpPlayer," Action=",actionStr(gpAction), " checkCard=", pcard)
-    """
-    scanCards() scan for single and missing seq
-
-    """
-    function scanCards(shand)
-        ahand = shand
-        # scan for pairs and remove them
-        pairs = []
-        allPairs = [[],[],[]]
-        prevacard = ahand[1]
-        pair  = 0
-        rhand = []
-        chot1 = []
-
-        for i = 2:length(ahand)
-            acard = ahand[i] 
-            if  c_equal(acard, prevacard)
-                push!(pairs, prevacard)
-                pair += 1
-            else
-                if pair > 0
-                    if T(prevacard)
-                        if pair == 1
-                            push!(rhand,prevacard)
-                        else
-                            if pair == 2
-                                push!(rhand,prevacard)
-                            end
-                            push!(pairs, prevacard)
-                            push!(allPairs[pair],pairs)
-                        end
-                    else
-                        push!(pairs, prevacard)
-                        push!(allPairs[pair],pairs)
-                        if c(prevacard) && (pair == 2) # to handle chot's variant
-                            push!(chot1,prevacard)  # put these as extra single 
-                        end
-                    end
-                    pairs = []
-                    pair = 0
-                else 
-                    push!(rhand,prevacard)
-                end
-            end
-            prevacard = acard
-        end
-        if pair > 0
-            push!(pairs, prevacard)
-            push!(allPairs[pair],pairs)
-        else
-            push!(rhand,prevacard)
-        end
-        ahand = rhand
-        acard = ahand[1]
-        prevCColor = acard  >> 5
-        prevCval = (acard >> 2) & 0x7
-        prevcard = (acard & 0xFC) >> 2
-        prevacard = acard
-        prev2card = acard
-        prev3card = acard
-        seqCnt = 0
-        pair = 0
-        miss1 = []
-        missT =[]
-        miss1bar = []
-        single = []
-        for i = 2:length(ahand)
-            acard = ahand[i]
-            CColor = acard >> 5
-            Cval = (acard >> 2) & 0x7
-            card = (acard & 0xFC) >> 2
-            if (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
-            ((prevcard + 1) == card || (prevcard + 2) == card )
-                prev3card = prev2card
-                prev2card = prevacard
-                seqCnt += 1
-            else
-                if seqCnt == 1
-                    ar =[]
-                    mc = miss(prev2card,prevacard)
-                    push!(miss1bar, mc)
-                    push!(ar,prev2card,prevacard)
-                    if T(mc) 
-                        push!(missT, ar)
-                    else
-                        push!(miss1, ar)
-                    end
-                elseif seqCnt == 0
-                    # a single
-                    if prevCval != 1 # Tuong
-                        if c(prevacard)
-                            push!(chot1,prevacard)
-                        else
-                            push!(single, prevacard)
-                        end
-                    end
-                end
-                seqCnt = 0
-            end
-            prevcard = card
-            prevCColor = CColor
-            prevCval = Cval
-            prevacard = acard
-        end
-        if seqCnt == 1
-            ar = []
-            mc = miss(prev2card,prevacard)
-            push!(miss1bar, mc)
-            push!(ar,prev2card,prevacard)
-            if T(mc) 
-                push!(missT, ar)
-            else
-                push!(miss1, ar)
-            end
-        elseif seqCnt == 0
-            # a single
-            if prevCval != 1 # Tuong
-                if c(prevacard)
-                    push!(chot1,prevacard)
-                else
-                    push!(single, prevacard)
-                end
-            end
-        end
-
-        for c in shand
-            print(TuSacCards.Card(c)," ")
-        end
-        
-        println("\nallPairs= ")
-        for p = 1:3
-            for ap in allPairs[p]
-                println(p+1," ",TuSacCards.Card(ap[1]))
-            end
-        end
-        println("\nsingle= ")
-        for c in single
-            print(" ",TuSacCards.Card(c))
-        end
-        println("\nChot1= ")
-        for c in chot1
-            print(" ",TuSacCards.Card(c))
-        end
-        println("\nmissT= ")
-        for tc in missT
-            for c in tc
-                print(" ",TuSacCards.Card(c))
-            end
-            print("|")
-        end
-        println("\nmiss1= ")
-        for tc in miss1
-            for c in tc
-                print(" ",TuSacCards.Card(c))
-            end
-            print("|")
-        end
-        println("\nmiss1Bar= ")
-        for mb in miss1bar
-            print(" ",TuSacCards.Card(mb))
-        end
-        println()
-        return allPairs, single, chot1, miss1, missT, miss1bar
-    end
+  
   inSuit(a,b) = (a&0xc != 0) && (b&0xc !=0) && (a&0xF0 == b&0xF0)
     allPairs, singles, chot1s, miss1s, missTs, miss1sbar = scanCards(all_hands[gpPlayer])
 
@@ -1450,10 +1457,6 @@ println("======================player",gpPlayer," Action=",actionStr(gpAction), 
     end
             
     function chk1(playCard)
-        win, r = chkWin(playCard)
-            if win 
-                return [playCard, r]
-            end
         if c(playCard)
             for s in chot1s
                 print(" s=",(UInt8(s), UInt8(s & 0x1C),ts(s)))
@@ -1506,11 +1509,7 @@ println("======================player",gpPlayer," Action=",actionStr(gpAction), 
         end
         return []
     end
-    function chk2(playCard; chk2only = true)
-        win, r = chkWin(playCard)
-        if win 
-            return [playCard,r]
-        end
+    function chk2(playCard; chk2only = true)  
         inSuitArr = []
         println()
         found = false
@@ -1585,11 +1584,9 @@ println("======================player",gpPlayer," Action=",actionStr(gpAction), 
         println(ts(pcard))
 
         r = chk1(pcard)
-        if length(r) > 0
-            PrintResult(r)
-            return r
+        if length(r) == 0
+            r = chk2(pcard, chk2only = false)
         end
-        r = chk2(pcard, chk2only = false)
         PrintResult(r)
         return r
     elseif gpAction == gpCheckMatch2
