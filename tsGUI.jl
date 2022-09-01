@@ -750,36 +750,33 @@ function gameStates(gameActions)
                 end
             end
         end
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
-        removeCard!(all_hands,1,c)
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
-        removeCard!(all_hands,1,c)
 
+        for it in 1:15
+            player = rand(1:4)
+           
 
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
-        removeCard!(all_hands,1,c)
+            pc = all_hands[player][rand(1:length(all_hands[player]))]
+            for act in 2:3
+                for cr in -1:1
+                    print( ("Action=",act)," testCard =",TuSacCards.Card(pc))
+                    pcv = (((pc >> 2) & 0x7) + cr) & 0x7
+                    pcv = pcv == 0 ? 4 : pcv
+                    npc = (pc & 0xe3 ) | (pcv << 2)
 
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
-        removeCard!(all_hands,1,c)
+                    println(" -> ",(pc,TuSacCards.Card(npc)))
 
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
-        removeCard!(all_hands,1,c)
-
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
-        removeCard!(all_hands,1,c)
-
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
-        removeCard!(all_hands,1,c)
-
-        c = hgamePlay(all_hands, all_discards, all_assets, gameDeck,[]; gpPlayer = 1, gpAction = gpPlay1card)
-        println("CardPlay=",TuSacCards.Card(c))
+                    c = hgamePlay(all_hands, all_discards, all_assets, gameDeck, npc; gpPlayer = player, gpAction = act )
+                    print("\nCard-matched= ")
+                    for cc in c
+                        print(" ",TuSacCards.Card(cc))
+                        if cr == 1
+                        removeCard!(all_hands,player,cc)
+                        end
+                    end
+                    println()
+                end
+            end
+        end
         tusacState = tsSinGamePlay1
     elseif tusacState == tsSinGamePlay1
 
@@ -930,7 +927,7 @@ function mouseDownOnBox(x, y, boxState)
     end
     return loc, remy
 end
-
+#=
 """
 gamePlay:
     actions: 0 - inital cards dealt - before any play
@@ -1044,7 +1041,7 @@ function gamePlay(
         println("\nallPairs= ")
         for p = 1:3
             for ap in allPairs[p]
-                println(p+1," ",TuSacCards.Card(ap[1]))
+                print(" ",(p+1,TuSacCards.Card(ap[1])))
             end
         end
         println("\nsingle= ")
@@ -1071,20 +1068,23 @@ function gamePlay(
         allPairs, singles, miss1s =scanCards(all_hands[4])
     end
 end
+=#
 
-T(v) = (v&0x1c == 0x4)
-s(v) = (v&0x1c != 0x8)
-t(v) = (v&0x1c != 0xc)
-c(v) = (v&0x1c != 0x10)
-x(v) = (v&0x1c != 0x14)
-p(v) = (v&0x1c != 0x18)
-m(v) = (v&0x1c != 0x1c)
+T(v) = (v&0x1C) == 0x4
+s(v) = (v&0x1C) == 0x8
+t(v) = (v&0x1C) == 0xc
+c(v) = (v&0x1C) == 0x10
+x(v) = (v&0x1C) == 0x14
+p(v) = (v&0x1C) == 0x18
+m(v) = (v&0x1C) == 0x1c
 
 miss(v1,v2) = ((((v2&0xc) -(v1&0xc)) == 4) ? (((v1&0xc)==4) ? 0xc : 4 ) : 8 ) | (v1 & 0xF3)
 
+c_equal(a,b) = (a&0xfc) == (b&0xFC)
+
 const gpPlay1card = 1
-const gpCheckMatch1 = 2
-const gpCheckMatch2 = 3
+const gpCheckMatch1or2 = 3
+const gpCheckMatch2 = 2
 const gpPopCards = 4
 
 """
@@ -1103,7 +1103,7 @@ function hgamePlay(
     all_discards,
     all_assets,
     gameDeck,
-    presentedCards;
+    pcard;
     gpPlayer = 1,
     gpAction = 0
 )
@@ -1120,15 +1120,32 @@ function hgamePlay(
         prevacard = ahand[1]
         pair  = 0
         rhand = []
+        chot1 = []
+
         for i = 2:length(ahand)
             acard = ahand[i] 
-            if (((acard >> 2)& 0x7)!= 1) && (acard&0xFC == prevacard &0xFC)
+            if  c_equal(acard, prevacard)
                 push!(pairs, prevacard)
                 pair += 1
             else
                 if pair > 0
-                    push!(pairs, prevacard)
-                    push!(allPairs[pair],pairs)
+                    if T(prevacard)
+                        if pair == 1
+                            push!(rhand,prevacard)
+                        else
+                            if pair == 2
+                                push!(rhand,prevacard)
+                            end
+                            push!(pairs, prevacard)
+                            push!(allPairs[pair],pairs)
+                        end
+                    else
+                        push!(pairs, prevacard)
+                        push!(allPairs[pair],pairs)
+                        if c(prevacard) && (pair == 2) # to handle chot's variant
+                            push!(chot1,prevacard)  # put these as extra single 
+                        end
+                    end
                     pairs = []
                     pair = 0
                 else 
@@ -1157,16 +1174,13 @@ function hgamePlay(
         missT =[]
         miss1bar = []
         single = []
-        
         for i = 2:length(ahand)
             acard = ahand[i]
             CColor = acard >> 5
             Cval = (acard >> 2) & 0x7
             card = (acard & 0xFC) >> 2
-            if (CColor == prevCColor) && 
-            (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
-            ( (prevcard + 1) == card ||
-              (prevcard + 2) == card )
+            if (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
+            ((prevcard + 1) == card || (prevcard + 2) == card )
                 prev3card = prev2card
                 prev2card = prevacard
                 seqCnt += 1
@@ -1184,7 +1198,11 @@ function hgamePlay(
                 elseif seqCnt == 0
                     # a single
                     if prevCval != 1 # Tuong
-                        push!(single, prevacard)
+                        if c(prevacard)
+                            push!(chot1,prevacard)
+                        else
+                            push!(single, prevacard)
+                        end
                     end
                 end
                 seqCnt = 0
@@ -1207,10 +1225,14 @@ function hgamePlay(
         elseif seqCnt == 0
             # a single
             if prevCval != 1 # Tuong
-                push!(single, prevacard)
+                if c(prevacard)
+                    push!(chot1,prevacard)
+                else
+                    push!(single, prevacard)
+                end
             end
         end
-        println("------------")
+        println("--------- player = ", gpPlayer)
         for c in shand
             print(TuSacCards.Card(c)," ")
         end
@@ -1223,6 +1245,10 @@ function hgamePlay(
         end
         println("\nsingle= ")
         for c in single
+            print(" ",TuSacCards.Card(c))
+        end
+        println("\nChot1= ")
+        for c in chot1
             print(" ",TuSacCards.Card(c))
         end
         println("\nmissT= ")
@@ -1244,11 +1270,103 @@ function hgamePlay(
             print(" ",TuSacCards.Card(mb))
         end
         println()
-        return allPairs, single, miss1, missT, miss1bar
+        return allPairs, single, chot1, miss1, missT, miss1bar
     end
- 
-    allPairs, singles, miss1s, missTs, miss1sbar = scanCards(all_hands[gpPlayer])
-    
+  ts(a) = TuSacCards.Card(a)
+  inSuit(a,b) = (a&0xc != 0) && (b&0xc !=0) && (a&0xF0 == b&0xF0)
+    allPairs, singles, chot1s, miss1s, missTs, miss1sbar = scanCards(all_hands[gpPlayer])
+
+    function chk1(playCard)
+        if c(playCard)
+            for s in chot1s
+                print(" s=",(UInt8(s), UInt8(s & 0x1C),ts(s)))
+                @assert c(s)
+                if c_equal(s,playCard)
+                    if length(chot1s) != 3
+                        return s
+                    else
+                        return []
+                    end
+                end
+            end
+            if length(chot1s) > 1
+                return chot1s
+            else
+                return []
+            end
+        end
+        for s in singles
+            print(" s=",(UInt8(s),UInt8(s & 0x1C), ts(s)))
+            @assert !c(s)
+            if c_equal(s,playCard)
+                return s
+            end
+        end
+        println()
+        for mt in missTs
+            m = miss(mt[1],mt[2])
+            print(" mT=",ts(m))
+            if  c_equal(m, playCard)
+                return mt
+            elseif c_equal(mt[1],playCard)  && !T(playCard)
+                return mt[1]
+            elseif c_equal(mt[2],playCard)  && !T(playCard)
+                return mt[2]
+            end
+        end
+        println()
+
+        for m1 in miss1s
+            m = miss(m1[1],m1[2])
+            print(" m1=",ts(m))
+            if c_equal(m,playCard)
+                return m1
+            elseif c_equal(m1[1],playCard)  && !T(playCard)
+                return m1[1]
+            elseif c_equal(m1[2],playCard)  && !T(playCard)
+                return m1[2]
+            end
+        end
+        return []
+    end
+    function chk2(playCard; chk2only = true)
+        inSuitArr = []
+        println()
+        found = false
+        for m1 in miss1s # CAAE XX PM ? X
+            if c_equal(playCard,miss(m1[1],m1[2])) 
+                found = true
+                break
+            end
+        end
+        for p = 1:3
+            for ap in allPairs[p]
+                print(("pair-",p, TuSacCards.Card(ap[1])))
+                if c_equal(ap[1],playCard)
+                    if (p == 1) && found
+                        return []
+                    else
+                        return ap
+                    end
+                elseif !chk2only && inSuit(ap[1],playCard)  # CASE X PP ? M
+                    push!(inSuitArr,ap[1])
+                    println("inSuitArr =",inSuitArr)
+                end
+            end
+        end
+        if length(inSuitArr) > 0
+            for s in singles
+               if inSuit(s,playCard) 
+                    push!(inSuitArr,s)
+                    println("inSuitArr =",inSuitArr)
+                    return(inSuitArr)
+                end
+            end
+        end
+        println()
+        return []
+    end
+
     if gpAction == gpPlay1card
         if length(missTs) > 0 
             for mt in missTs
@@ -1273,6 +1391,19 @@ function hgamePlay(
         end
         println("PlayCard = ", TuSacCards.Card(card))
         return card 
+    elseif gpAction == gpCheckMatch1or2
+        r = chk1(pcard)
+        if length(r) > 0
+            println("\nresult=",r)
+            return r
+        end
+        r = chk2(pcard, chk2only = false)
+        println("\nresult=",r)
+        return r
+    elseif gpAction == gpCheckMatch2
+        r = chk2(pcard, chk2only = true)
+        println("\nresult=",r)
+        return r
     end
 end
 
