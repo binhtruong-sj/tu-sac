@@ -1025,16 +1025,20 @@ function whoWinRound(card, n1,r1,n2,r2,n3,r3,n4,r4)
         end
         win=false
         if l > 0  || T(card)# only check winner that has matched cards
+            for e in r
+                filter!(x->x!=e,all_hands[n])
+            end
             ps,ss,cs,m1s,mts,mbs=scanCards(all_hands[n],true)
-            println((ss,cs,m1s,mts,mbs))
-            println(length(union(ss,cs,m1s,mts,mbs)))
             if length(union(ss,cs,m1s,mts,mbs))== 0
                 println("WINWINWINWINWINWINWINWINWINWIWN")
                 l = 4
                 win=true
+            else
+                for e in r
+                    push!(all_hands[n],e)
+                end
             end
         end
-        println((n,l,win))
         return l,win
     end
     l1,w1 = getl(card, n1,r1)
