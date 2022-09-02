@@ -918,9 +918,9 @@ function scanCards(shand, silence = false)
 end
 
 """
-gameStates(gameActions)
+gsStateMachine(gameActions)
 
-gameStates: control the flow/setup of the game
+gsStateMachine: control the flow/setup of the game
 
 states  --  0: Idle, inital state, before setting up the game
             1: Game started, setting up new deck, shuffle or not, cut or not
@@ -941,7 +941,7 @@ actions --  0, nothing
             30, setup new boxes for discards and assets
             .....
 """
-function gameStates(gameActions)
+function gsStateMachine(gameActions)
     global tusacState
     global gameDeck, ad, deckState
     if tusacState == tsSinitial
@@ -1205,7 +1205,7 @@ game start here
 =#
 
 
-gameStates(gsSetupGame)
+gsStateMachine(gsSetupGame)
 BIGcard = 0
 cardSelect = false
 playCard = 0
@@ -1372,7 +1372,7 @@ const gpPopCards = 4
 similar to gamePlay -- but use stdio for input and output
 
 """
-function human_gamePlay(
+function hgamePlay(
     all_hands,
     all_discards,
     all_assets,
@@ -1474,7 +1474,7 @@ hgamePlay:
     player for actions/reponse and maintaining all card-decks
 
 """
-function hgamePlay(
+function bgamePlay(
     all_hands,
     all_discards,
     all_assets,
@@ -1720,11 +1720,11 @@ still buggy!
   
     if tusacState == tsSdealCards
         global cardsIndxArr = []
-        gameStates(gsOrganize)
+        gsStateMachine(gsOrganize)
    
     elseif tusacState == tsSstartGame
         cindx, remy = mouseDownOnBox(x, y, human_state)
-        gameStates(gsStartGame)
+        gsStateMachine(gsStartGame)
     elseif tusacState == tsSinGamePlay1
         cindx, yPortion = mouseDownOnBox(x, y, human_state)
         if cindx != 0
