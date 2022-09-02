@@ -1037,10 +1037,10 @@ function whoWinRound(card, n1,r1,n2,r2,n3,r3,n4,r4)
         println((n,l,win))
         return l,win
     end
-    l1,w1 = getl(n1,r1)
-    l2,w2 = getl(n2,r2)
-    l3,w3 = getl(n3,r3)
-    l4,w4 = getl(n4,r4)
+    l1,w1 = getl(card, n1,r1)
+    l2,w2 = getl(card, n2,r2)
+    l3,w3 = getl(card, n3,r3)
+    l4,w4 = getl(card, n4,r4)
 
     if l1 == 4
         w = 0
@@ -1340,148 +1340,6 @@ function mouseDownOnBox(x, y, boxState)
     end
     return loc, remy
 end
-#=
-"""
-gamePlay:
-    actions: 0 - inital cards dealt - before any play
-             1 - play a single card, player choise
-             2 - check for match single/double; return matched
-             3 - check for match double only; return matched
-             4 - play cards -- these cards
-    game-manager will control the flow of the game, calling each
-    player for actions/reponse and maintaining all card-decks
-
-"""
-
-function gamePlay(
-    all_hands,
-    all_discards,
-    all_assets,
-    gameDeck,
-    presentedCards;
-    player = 1,
-    gameAct = 0
-)
-
-    """
-    scanCards() scan for single and missing seq
-
-    """
-    function scanCards(shand)
-        ahand = shand
-        # scan for pairs and remove them
-        pairs = []
-        allPairs = [[],[],[]]
-        prevacard = ahand[1]
-        pair  = 0
-        rhand = []
-        for i = 2:length(ahand)
-            acard = ahand[i] 
-            if (((acard >> 2)& 0x7)!= 1) && (acard&0xFC == prevacard &0xFC)
-                push!(pairs, prevacard)
-                pair += 1
-            else
-                if pair > 0
-                    push!(pairs, prevacard)
-                    push!(allPairs[pair],pairs)
-                    pairs = []
-                    pair = 0
-                else 
-                    push!(rhand,prevacard)
-                end
-            end
-            prevacard = acard
-        end
-        if pair > 0
-            push!(pairs, prevacard)
-            push!(allPairs[pair],pairs)
-        else
-            push!(rhand,prevacard)
-        end
-        ahand = rhand
-        acard = ahand[1]
-        prevCColor = acard  >> 5
-        prevCval = (acard >> 2) & 0x7
-        prevcard = (acard & 0xFC) >> 2
-        prevacard = acard
-        prev2card = acard
-        prev3card = acard
-        seqCnt = 0
-        pair = 0
-        miss1 = []
-        single = []
-        for i = 2:length(ahand)
-            acard = ahand[i]
-            CColor = acard >> 5
-            Cval = (acard >> 2) & 0x7
-            card = (acard & 0xFC) >> 2
-            if (CColor == prevCColor) && 
-            (prevCval!=0x4)&&(Cval!=4) && ((Cval&0x3) != 1) &&
-            ( (prevcard + 1) == card ||
-              (prevcard + 2) == card )
-                prev3card = prev2card
-                prev2card = prevacard
-                seqCnt += 1
-            else
-                if seqCnt == 1
-                    push!(miss1, (prev2card,prevacard))
-                elseif seqCnt == 0
-                    # a single
-                    if prevCval != 1 # Tuong
-                        push!(single, prevacard)
-                    end
-                end
-                seqCnt = 0
-            end
-            prevcard = card
-            prevCColor = CColor
-            prevCval = Cval
-            prevacard = acard
-        end
-        if seqCnt == 1
-            push!(miss1, (prev2card,prevacard))
-        elseif seqCnt == 0
-            # a single
-            if prevCval != 1 # Tuong
-                push!(single, prevacard)
-            end
-        end
-        println("------------")
-        for c in shand
-            print(TuSacCards.Card(c)," ")
-        end
-        
-        println("\nallPairs= ")
-        for p = 1:3
-            for ap in allPairs[p]
-                print(" ",(p+1,TuSacCards.Card(ap[1])))
-            end
-        end
-        println("\nsingle= ")
-        for c in single
-            print(" ",TuSacCards.Card(c))
-        end
-        println("\nmiss1= ")
-        for tc in miss1
-            for c in tc
-                print(" ",TuSacCards.Card(c))
-            end
-            print("|")
-        end
-        println()
-        return allPairs, single, miss1
-    end
-
-    
-
-    if gameAct == 0
-        allPairs, singles, miss1s =scanCards(all_hands[1])
-        allPairs, singles, miss1s =scanCards(all_hands[2])
-        allPairs, singles, miss1s =scanCards(all_hands[3])
-        allPairs, singles, miss1s =scanCards(all_hands[4])
-    end
-end
-=#
 
 actionStr(a) =  a == gpPlay1card ? "gpPlay1card" : a==gpCheckMatch1or2 ? "gpCheckMatch1or2" : a==gpCheckMatch2 ? "gpCheckMatch2" : "gpPopCards"
 
