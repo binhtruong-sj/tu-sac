@@ -26,7 +26,10 @@ tableXgrid = 20
 tableYgrid = 20
 
 cardGrid = 4
-
+function gameover() 
+    while true
+    end
+end
 """
 table-grid, giving x,y return grid coordinate
 """
@@ -702,10 +705,10 @@ function tusacDeal()
     setupDrawDeck(gameDeck, 8, 8, 14, true)
 
     setupDrawDeck(player4_hand, 1, 6, 2, true)
-    setupDrawDeck(player3_hand, 8, 1, 100, true)
+    setupDrawDeck(player3_hand, 7, 1, 100, true)
 
     setupDrawDeck(player2_hand, 20, 6, 2, true)
-    global human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
+    global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
 
     push!(boxes, human_state)
     global player1_discards = TuSacCards.Deck(pop!(gameDeck, 1))
@@ -1001,14 +1004,14 @@ function gsStateMachine(gameActions)
             end
                 if n== 1
                     pop!(player1_hand,ts(c))
-                    global human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
+                    global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
                 elseif n == 2
                     pop!(player2_hand,ts(c))
                     setupDrawDeck(player2_hand, 20, 6, 2, true)
 
                 elseif n == 3
                     pop!(player3_hand,ts(c))
-                    setupDrawDeck(player3_hand, 8, 1, 100, true)
+                    setupDrawDeck(player3_hand, 7, 1, 100, true)
 
                 elseif n == 4
                     pop!(player4_hand,ts(c))
@@ -1142,148 +1145,161 @@ function gsStateMachine(gameActions)
     end
 
     function gamePlay1Iteration()
-        global glNewCard
+        global glNewCard, ActiveCard 
         global glNeedaPlayCard
         global glPrevPlayer
         global glIterationCnt
-        glIterationCnt += 1
-        println(
-            "++++++++++++++++++++++++++",
-            (glIterationCnt, glNeedaPlayCard, glPrevPlayer),
-            "+++++++++++++++++++++++++++",
-        )
-        printAllInfo()
-
-        if glNeedaPlayCard
-            glNewCard = hgamePlay(
-                all_hands,
-                all_discards,
-                all_assets,
-                gameDeck,
-                [];
-                gpPlayer = glPrevPlayer,
-                gpAction = gpPlay1card,
-            )
-        end
-
-        t1Player = nextPlayer(glPrevPlayer)
-        n1c = hgamePlay(
-            all_hands,
-            all_discards,
-            all_assets,
-            gameDeck,
-            glNewCard;
-            gpPlayer = t1Player,
-            gpAction = gpCheckMatch1or2,
-        )
-
-        if glNeedaPlayCard
-            t2Player = nextPlayer(t1Player)
-            n2c = hgamePlay(
-                all_hands,
-                all_discards,
-                all_assets,
-                gameDeck,
-                glNewCard;
-                gpPlayer = t2Player,
-                gpAction = gpCheckMatch2,
-            )
-        else
-            t2Player = nextPlayer(t1Player)
-            n2c = hgamePlay(
-                all_hands,
-                all_discards,
-                all_assets,
-                gameDeck,
-                glNewCard;
-                gpPlayer = t2Player,
-                gpAction = gpCheckMatch1or2,
-            )
-        end
-
-        t3Player = nextPlayer(t2Player)
-        n3c = hgamePlay(
-            all_hands,
-            all_discards,
-            all_assets,
-            gameDeck,
-            glNewCard;
-            gpPlayer = t3Player,
-            gpAction = gpCheckMatch2,
-        )
-
-        n4c = []
-        t4Player = nextPlayer(t3Player)
-        if !glNeedaPlayCard
-            n4c = hgamePlay(
-                all_hands,
-                all_discards,
-                all_assets,
-                gameDeck,
-                glNewCard;
-                gpPlayer = t4Player,
-                gpAction = gpCheckMatch2,
-            )
-        end
-        nPlayer, winner, r = whoWinRound(
-            glNewCard,
-            t1Player,
-            n1c,
-            t2Player,
-            n2c,
-            t3Player,
-            n3c,
-            t4Player,
-            n4c,
-        )
         function All_hand_updateActor(card, player) 
             mmm = mapToActors[card]
-            if(player==1)
-                x,y = tableGridXY(19,18)
-            elseif player == 2
-                x,y = tableGridXY(19,1)
-            elseif player == 3
-                x,y = tableGridXY(1,1)
-            else player == 2
-                x,y = tableGridXY(1,18)
-            end
-            println((mmm,actors[mmm].pos),x,y)
-            actors[mmm].pos = x,y
+            ActiveCard = mmm
+            mask[mmm] = mask[mmm] & 0xFE
         end
 
-        if glNeedaPlayCard
-            removeCards!(all_hands, glPrevPlayer, glNewCard)
-            All_hand_updateActor(glNewCard[1],glPrevPlayer)
-        end
-        removeCards!(all_hands, nPlayer, r)
-        if (winner == 0) && (length(r) == 0) # nobody match
-            if T(glNewCard)
-                addCards!(all_assets,0, nPlayer, glNewCard)
-                glNeedaPlayCard = true
-                glPrevPlayer = nPlayer
+        glIterationCnt += 1
+        if(rem(glIterationCnt,2) !=0)
+            println(
+                "++++++++++++++++++++++++++",
+                (glIterationCnt, glNeedaPlayCard, glPrevPlayer),
+                "+++++++++++++++++++++++++++",
+            )
+            printAllInfo()
+
+            if glNeedaPlayCard
+                glNewCard = hgamePlay(
+                    all_hands,
+                    all_discards,
+                    all_assets,
+                    gameDeck,
+                    [];
+                    gpPlayer = glPrevPlayer,
+                    gpAction = gpPlay1card,
+                )
+                removeCards!(all_hands, glPrevPlayer, glNewCard)
+                All_hand_updateActor(glNewCard[1],glPrevPlayer)
             else
-                if glNeedaPlayCard
-                    addCards!(all_discards, 1,glPrevPlayer, glNewCard)
-                else
-                    addCards!(all_discards, 1,nPlayer, glNewCard)
-                    glPrevPlayer = nPlayer
-                end
-                glNeedaPlayCard = false
                 nc = pop!(gameDeck, 1)
                 global gd = setupDrawDeck(gameDeck, 8, 8, 14, true)
-              #  gameDeck_updateActor(glNewCard,glPrevPlayer)
+
+                mmm = mapToActors[nc[1].value]
+                ActiveCard = mmm
+                mask[mmm] = mask[mmm] & 0xFE
+
+            #  gameDeck_updateActor(glNewCard,glPrevPlayer)
 
                 println("pick a card from Deck=", nc[1])
                 glNewCard = nc[1].value
             end
-        elseif winner == -1
-            println("GAME OVER, player", nPlayer, " win")
-            gameOver()
         else
-            addCards!(all_assets, 0, nPlayer, glNewCard)
-            addCards!(all_assets, 0, nPlayer, r)
-            glPrevPlayer = nPlayer
-            glNeedaPlayCard = true
+            t1Player = nextPlayer(glPrevPlayer)
+            n1c = hgamePlay(
+                all_hands,
+                all_discards,
+                all_assets,
+                gameDeck,
+                glNewCard;
+                gpPlayer = t1Player,
+                gpAction = gpCheckMatch1or2,
+            )
+
+            if glNeedaPlayCard
+                t2Player = nextPlayer(t1Player)
+                n2c = hgamePlay(
+                    all_hands,
+                    all_discards,
+                    all_assets,
+                    gameDeck,
+                    glNewCard;
+                    gpPlayer = t2Player,
+                    gpAction = gpCheckMatch2,
+                )
+            else
+                t2Player = nextPlayer(t1Player)
+                n2c = hgamePlay(
+                    all_hands,
+                    all_discards,
+                    all_assets,
+                    gameDeck,
+                    glNewCard;
+                    gpPlayer = t2Player,
+                    gpAction = gpCheckMatch1or2,
+                )
+            end
+
+            t3Player = nextPlayer(t2Player)
+            n3c = hgamePlay(
+                all_hands,
+                all_discards,
+                all_assets,
+                gameDeck,
+                glNewCard;
+                gpPlayer = t3Player,
+                gpAction = gpCheckMatch2,
+            )
+
+            n4c = []
+            t4Player = nextPlayer(t3Player)
+            if !glNeedaPlayCard
+                n4c = hgamePlay(
+                    all_hands,
+                    all_discards,
+                    all_assets,
+                    gameDeck,
+                    glNewCard;
+                    gpPlayer = t4Player,
+                    gpAction = gpCheckMatch2,
+                )
+            end
+            nPlayer, winner, r = whoWinRound(
+                glNewCard,
+                t1Player,
+                n1c,
+                t2Player,
+                n2c,
+                t3Player,
+                n3c,
+                t4Player,
+                n4c,
+            )
+        
+        
+            removeCards!(all_hands, nPlayer, r)
+            if (winner == 0) && (length(r) == 0) # nobody match
+                if T(glNewCard)
+                    addCards!(all_assets,0, nPlayer, glNewCard)
+                    glNeedaPlayCard = true
+                    glPrevPlayer = nPlayer
+                else
+                    if glNeedaPlayCard
+                        addCards!(all_discards, 1,glPrevPlayer, glNewCard)
+                    else
+                        addCards!(all_discards, 1,nPlayer, glNewCard)
+                        glPrevPlayer = nPlayer
+                    end
+
+                    glNeedaPlayCard = false
+#=
+                    nc = pop!(gameDeck, 1)
+                    global gd = setupDrawDeck(gameDeck, 8, 8, 14, true)
+
+                    mmm = mapToActors[nc[1].value]
+                    ActiveCard = mmm
+                    mask[mmm] = mask[mmm] & 0xFE
+
+                #  gameDeck_updateActor(glNewCard,glPrevPlayer)
+
+                    println("pick a card from Deck=", nc[1])
+                    glNewCard = nc[1].value
+=#
+                end
+            elseif winner == -1
+                println("GAME OVER, player", nPlayer, " win")
+                gameover()
+            else
+                addCards!(all_assets, 0, nPlayer, glNewCard)
+                addCards!(all_assets, 0, nPlayer, r)
+                glPrevPlayer = nPlayer
+                glNeedaPlayCard = true
+            end
         end
     end
     #=
@@ -1319,7 +1335,7 @@ function gsStateMachine(gameActions)
                 TuSacCards.getDeckArray(player3_hand),
                 TuSacCards.getDeckArray(player4_hand),
             )
-            setupDrawDeck(player1_hand, 8, 18, 100, false)
+            setupDrawDeck(player1_hand, 7, 18, 100, false)
         end
 # -------------------A
     elseif tusacState == tsSstartGame
@@ -1352,9 +1368,9 @@ function gsStateMachine(gameActions)
         asset3 = setupDrawDeck(player3_assets, 8, 4, 30, false)
         asset4 = setupDrawDeck(player4_assets, 4, 7, 4, false)
 
-        global human_state = setupDrawDeck(player1_hand, 8, 18, 100, false)
+        global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
         setupDrawDeck(player4_hand, 1, 6, 2, true)
-        setupDrawDeck(player3_hand, 8, 1, 100, true)
+        setupDrawDeck(player3_hand, 7, 1, 100, true)
         setupDrawDeck(player2_hand, 20, 6, 2, true)
         global gd = setupDrawDeck(gameDeck, 8, 8, 14, true)
         push!(
@@ -1378,6 +1394,9 @@ function gsStateMachine(gameActions)
       
         if length(gameDeck) > 12
             gamePlay1Iteration()
+        else
+            println("GAME OVER --- bai thui")
+            gameover()
         end
     end
 end
@@ -1389,6 +1408,7 @@ game start here
 
 gsStateMachine(gsSetupGame)
 BIGcard = 0
+ActiveCard = 0
 cardSelect = false
 playCard = 0
 
@@ -1927,7 +1947,7 @@ end
 
 
 function draw(g)
-    global BIGcard
+    global BIGcard, ActiveCard
     global cardSelect
     fill(colorant"ivory4")
 
@@ -1944,5 +1964,8 @@ function draw(g)
     end
     if saveI != 0
         draw(big_actors[saveI])
+    end
+    if ActiveCard != 0
+        draw(big_actors[ActiveCard])
     end
 end
