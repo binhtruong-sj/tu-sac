@@ -26,7 +26,9 @@ tableXgrid = 20
 tableYgrid = 20
 
 cardGrid = 4
+const gameDeckMinimum = 9
 function gameover() 
+
     while true
     end
 end
@@ -965,6 +967,9 @@ function scanCards(shand, silence = false)
     end
     return allPairs, single, chot1, miss1, missT, miss1Card
 end
+global rQ = Vector{Any}(undef,4)
+global rReady = Vector{Bool}(undef,4)
+
 
 """
 gsStateMachine(gameActions)
@@ -1173,7 +1178,14 @@ function gsStateMachine(gameActions)
                     [];
                     gpPlayer = glPrevPlayer,
                     gpAction = gpPlay1card,
+                    rQ,
+                    rReady
                 )
+                if rReady[glPrevPlayer]
+                    glNewCard = rQ[glPrevPlayer]
+                    println(glNewCard)
+                end
+
                 removeCards!(all_hands, glPrevPlayer, glNewCard)
                 All_hand_updateActor(glNewCard[1],glPrevPlayer)
             else
@@ -1186,12 +1198,12 @@ function gsStateMachine(gameActions)
 
             #  gameDeck_updateActor(glNewCard,glPrevPlayer)
 
-                println("pick a card from Deck=", nc[1])
+                println("pick a card from Deck=", nc[1], " for player", nextPlayer(glPrevPlayer))
                 glNewCard = nc[1].value
             end
         else
             t1Player = nextPlayer(glPrevPlayer)
-            n1c = hgamePlay(
+            hgamePlay(
                 all_hands,
                 all_discards,
                 all_assets,
@@ -1199,11 +1211,13 @@ function gsStateMachine(gameActions)
                 glNewCard;
                 gpPlayer = t1Player,
                 gpAction = gpCheckMatch1or2,
+                rQ,
+                rReady
             )
-
+            
             if glNeedaPlayCard
                 t2Player = nextPlayer(t1Player)
-                n2c = hgamePlay(
+                hgamePlay(
                     all_hands,
                     all_discards,
                     all_assets,
@@ -1211,10 +1225,13 @@ function gsStateMachine(gameActions)
                     glNewCard;
                     gpPlayer = t2Player,
                     gpAction = gpCheckMatch2,
+                    rQ,
+                    rReady
                 )
+               
             else
                 t2Player = nextPlayer(t1Player)
-                n2c = hgamePlay(
+                hgamePlay(
                     all_hands,
                     all_discards,
                     all_assets,
@@ -1222,11 +1239,14 @@ function gsStateMachine(gameActions)
                     glNewCard;
                     gpPlayer = t2Player,
                     gpAction = gpCheckMatch1or2,
+                    rQ,
+                    rReady
                 )
+              
             end
 
             t3Player = nextPlayer(t2Player)
-            n3c = hgamePlay(
+            hgamePlay(
                 all_hands,
                 all_discards,
                 all_assets,
@@ -1234,12 +1254,13 @@ function gsStateMachine(gameActions)
                 glNewCard;
                 gpPlayer = t3Player,
                 gpAction = gpCheckMatch2,
+                rQ,
+                rReady
             )
-
-            n4c = []
+           
             t4Player = nextPlayer(t3Player)
             if !glNeedaPlayCard
-                n4c = hgamePlay(
+                hgamePlay(
                     all_hands,
                     all_discards,
                     all_assets,
@@ -1247,7 +1268,30 @@ function gsStateMachine(gameActions)
                     glNewCard;
                     gpPlayer = t4Player,
                     gpAction = gpCheckMatch2,
+                    rQ,
+                    rReady
                 )
+              
+            end
+            if rReady[t1Player]
+                n1c = rQ[t1Player]
+                println(n1c)
+            end  
+            if rReady[t2Player]
+                n2c = rQ[t2Player]
+                println(n2c)
+            end
+            if rReady[t3Player]
+                n3c = rQ[t3Player]
+                println(n3c)
+            end
+            if !glNeedaPlayCard
+                if rReady[t4Player]
+                    n4c = rQ[t4Player]
+                    println(n4c)
+                end
+            else
+                n4c = []
             end
             nPlayer, winner, r = whoWinRound(
                 glNewCard,
@@ -1260,8 +1304,6 @@ function gsStateMachine(gameActions)
                 t4Player,
                 n4c,
             )
-        
-        
             removeCards!(all_hands, nPlayer, r)
             if (winner == 0) && (length(r) == 0) # nobody match
                 if T(glNewCard)
@@ -1293,7 +1335,8 @@ function gsStateMachine(gameActions)
                 end
             elseif winner == -1
                 println("GAME OVER, player", nPlayer, " win")
-                gameover()
+                gameOverCnt = 1
+                openAllCard = true
             else
                 addCards!(all_assets, 0, nPlayer, glNewCard)
                 addCards!(all_assets, 0, nPlayer, r)
@@ -1315,6 +1358,8 @@ function gsStateMachine(gameActions)
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, true)
             tusacState = tsSdealCards
         end
+        global gameOverCnt = 0
+        global openAllCard = false
 
 # -------------------A
 
@@ -1391,12 +1436,20 @@ function gsStateMachine(gameActions)
         global glIterationCnt = 0
     elseif tusacState == tsGameLoop
 
-      
-        if length(gameDeck) > 12
+        if gameOverCnt > 0
+            gameOverCnt += 1
+            if gameOverCnt > 10
+                gameover()
+            end
+        end
+        if length(gameDeck) >= gameDeckMinimum && gameOverCnt == 0
             gamePlay1Iteration()
         else
-            println("GAME OVER --- bai thui")
-            gameover()
+            if length(gameDeck) <= gameDeckMinimum
+                println("GAME OVER --- bai thui")
+            end
+            openAllCard = true
+            gameOverCnt = 1
         end
     end
 end
@@ -1530,8 +1583,8 @@ function update(g)
             TuSacCards.autoShuffle!(gameDeck, 14, deckState[5])
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, true)
         end
+ 
     end
-
 end
 
 function mouseDownOnBox(x, y, boxState)
@@ -1585,6 +1638,8 @@ function human_gamePlay(
     pcard;
     gpPlayer = 1,
     gpAction = 0,
+    rQ,
+    rReady
 )
     grank = "Tstcxpm"
     gcolor = "TVDX"
@@ -1617,7 +1672,6 @@ function human_gamePlay(
                 end
             end
         end
-
         return r
     end
 
@@ -1666,7 +1720,9 @@ function human_gamePlay(
         r = []
     end
     println("r=", r)
-    return r
+    rQ[gpPlayer] = r
+    rReady[gpPlayer] = true
+    return
 end
 
 """
@@ -1688,7 +1744,12 @@ function hgamePlay(
     pcard;
     gpPlayer = 1,
     gpAction = 0,
+    rQ,
+    rReady
 )
+    global rQ, rReady
+
+    rReady[gpPlayer] = false
     print(
         "======================player",
         gpPlayer,
@@ -1857,7 +1918,9 @@ function hgamePlay(
             end
         end
         println("PlayCard = ", ts(card))
-        return card
+        rQ[gpPlayer]=card
+        rReady[gpPlayer] = true
+        return 
     elseif gpAction == gpCheckMatch1or2
         println(ts(pcard))
 
@@ -1866,13 +1929,17 @@ function hgamePlay(
             r = chk2(pcard, chk2only = false)
         end
         PrintResult(r)
-        return r
+        rQ[gpPlayer]=r
+        rReady[gpPlayer] = true
+        return 
     elseif gpAction == gpCheckMatch2
         println(ts(pcard))
 
         r = chk2(pcard, chk2only = true)
         PrintResult(r)
-        return r
+        rQ[gpPlayer]=r
+        rReady[gpPlayer] = true
+        return 
     end
 end
 
@@ -1956,7 +2023,7 @@ function draw(g)
         if ((cardSelect == false)) && (i == BIGcard)
             #       if ((cardSelect == false)||(length(cardsIndxArr)==0)) && (i == BIGcard)
             saveI = i
-        elseif ((mask[i] & 0x1) == 0)
+        elseif (openAllCard == true) || ((mask[i] & 0x1) == 0)
             draw(actors[i])
         else
             draw(fc_actors[i])
