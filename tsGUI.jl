@@ -33,9 +33,13 @@ function gameOver(gameE)
     end
 end
 isGameOver() = gameEnd
-
+const humanIsGUI = false
 global humanPlayer =[true,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
+
+GUI_array=[]
+GUI_ready=false
+
 """
 table-grid, giving x,y return grid coordinate
 """
@@ -1796,6 +1800,8 @@ end
 return r
 end
 function humanResponse(gpPlayer)
+    global GUI_array, GUI_ready
+    if !humanIsGUI
         local al = readline()
         if length(al) > 1
             local rl = split(al, ' ')
@@ -1803,6 +1809,14 @@ function humanResponse(gpPlayer)
         else
             card = []
         end
+    else
+        if GUI_ready == true
+            card = []
+            for a in GUI_array
+                push!(card,a)
+            GUI_ready = false
+        end
+    end
     return card
 end
 """
@@ -2165,6 +2179,7 @@ still buggy!
     if tusacState == tsSdealCards
         global cardsIndxArr = []
         gsStateMachine(gsOrganize)
+        global GUI_ready = false
 
     elseif tusacState == tsSstartGame
         cindx, remy = mouseDownOnBox(x, y, human_state)
@@ -2177,8 +2192,11 @@ still buggy!
         end
         cindx, yPortion = mouseDownOnBox(x, y, deckState)
         if cindx != 0
+            global GUI_array, GUI_ready
             println(cardsIndxArr)
             println("XONG ROI")
+            copyto!(GUI_array,cardsIndxArr)
+            GUI_ready = true
             global play1Response = cardsIndxArr
         end
         gsStateMachine(gsGameLoop)
