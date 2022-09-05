@@ -34,7 +34,7 @@ function gameOver(gameE)
 end
 isGameOver() = gameEnd
 const humanIsGUI = false
-global humanPlayer =[true,false,false,false]
+global humanPlayer =[false,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 
 GUI_array=[]
@@ -1814,6 +1814,7 @@ function humanResponse(gpPlayer)
             card = []
             for a in GUI_array
                 push!(card,a)
+            end
             GUI_ready = false
         end
     end
