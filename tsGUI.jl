@@ -1,6 +1,7 @@
 macOS = true
 
 if macOS
+const macOSconst = 1
     gameW = 900
     HEIGHT = gameW
     WIDTH = div(gameW * 16, 9)
@@ -10,6 +11,8 @@ if macOS
     cardYdim = 210
     zoomCardYdim = 400
 else
+    const macOSconst = 0
+
     gameW = 820
     HEIGHT = gameW
     WIDTH = div(gameW * 16, 9)
@@ -35,8 +38,8 @@ function gameOver(gameE)
     end
 end
 isGameOver() = gameEnd
-const humanIsGUI = true
-global humanPlayer =[true,false,false,false]
+const humanIsGUI = false
+global humanPlayer =[false,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 global currentPlayer = 1
 gotClick = false
@@ -1286,13 +1289,13 @@ function updateWinnerPic(cp)
 if cp == 0
     gx,gy = 20,20
 elseif cp == 1 
-    gx,gy = 7, 14
+    gx,gy = 8, 13
 elseif cp == 2
-    gx,gy = 17,14
+    gx,gy = 16,11
 elseif cp == 3
-    gx,gy = 14, 3
+    gx,gy = 12, 3
 else 
-    gx,gy = 3,14
+    gx,gy = 3,12
 end
 winnerPic.pos = tableGridXY(gx, gy)
 end
@@ -1884,9 +1887,9 @@ function on_mouse_move(g, pos)
         return 0, 0
     end
     ####################
-
-    x = pos[1] << 1
-    y = pos[2] << 1
+        x = pos[1] << macOSconst
+        y = pos[2] << macOSconst
+    
 
     if (tusacState == tsSdealCards)
         mouseDirOnBox(x, y, deckState)
@@ -2429,8 +2432,8 @@ still buggy!
     end
 
     global tusacState
-    x = pos[1] << 1
-    y = pos[2] << 1
+    x = pos[1] << macOSconst
+    y = pos[2] << macOSconst
   
     if tusacState == tsSdealCards
         global cardsIndxArr = []
