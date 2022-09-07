@@ -35,8 +35,8 @@ function gameOver(gameE)
     end
 end
 isGameOver() = gameEnd
-const humanIsGUI = false
-global humanPlayer =[false,false,false,false]
+const humanIsGUI = true
+global humanPlayer =[true,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 global currentPlayer = 1
 gotClick = false
@@ -2118,7 +2118,7 @@ function hgamePlay(
             ts(pcard))
         end
         println()
-    allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs =
+    allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
         scanCards(all_hands[gpPlayer])
 
     """
@@ -2128,7 +2128,7 @@ TBW
 """
 function chk1(playCard)
         if is_c(playCard)
-                 r  = c_match(chotPs,chot1s,playCard)
+                 r  = c_match(chotPs,chot1Specials,playCard)
           #=       
           mtch,trsh = c_analyzer!(chotPs,chot1s,playCard)
           println("BT")
@@ -2181,6 +2181,7 @@ function chk1(playCard)
         end
         return []
     end
+
     function chk2(playCard; chk2only = true)
         inSuitArr = []
         found = false
@@ -2229,7 +2230,7 @@ function chk1(playCard)
     function gpHandlePlay1Card()
         println()
         println("Chot,",(chotPs,chot1s))
-        c1s = copy(chot1s)
+        c1s = copy(chot1Specials)
         trsh1 = c_scan(chotPs, c1s)
         c1s = copy(chot1s)
         #=
