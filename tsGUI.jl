@@ -18,7 +18,9 @@ else
     cardXdim = 24
     cardYdim = 80
     zoomCardYdim = 110
+    
 end
+zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
 BACKGROUND = colorant"red"
 
 const tableXgrid = 20
@@ -33,8 +35,8 @@ function gameOver(gameE)
     end
 end
 isGameOver() = gameEnd
-const humanIsGUI = true
-global humanPlayer =[true,false,false,false]
+const humanIsGUI = false
+global humanPlayer =[false,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 global currentPlayer = 1
 gotClick = false
@@ -43,6 +45,7 @@ GUI_ready=false
 global waitForHuman = false
 global handPic
 global A_hand = (7,18)
+global pBseat = []
 """
 table-grid, giving x,y return grid coordinate
 """
@@ -775,7 +778,7 @@ function tusacDeal()
     setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
     setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
 
-    setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
+    global pBseat = setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
     global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
 
     push!(boxes, human_state)
@@ -861,18 +864,43 @@ inTSuit(a) = (a&0x1c == 0x08) || (a&0x1c == 0x0C)
     miss(s1,s2): creat the missing card for group of 3,
 
 """
-missPiece(s1, s2) =
-    ((((s2 & 0xc) - (s1 & 0xc)) == 4) ? (((s1 & 0xc) == 4) ? 0xc : 4) : 8) |
-    (s1 & 0xF3)
+missPiece(s1, s2) = (s2 > s1) ? (((((s2 & 0xc) - (s1 & 0xc)) == 4 ) ?
+                                ( ((s1 & 0xc) == 4) ? 0xc : 4 ) : 8) |
+                                (s1 & 0xF3)) :  
+                                (((((s1 & 0xc) - (s2 & 0xc)) == 4 ) ? 
+                                ( ((s2 & 0xc) == 4) ? 0xc : 4 ) : 8) |
+                                    (s2 & 0xF3))
 
+function all_chots(cards,pc) 
+    for c in cards
+        if card_equal(pc,c)
+            return false
+        end
+    end
+    if length(cards) == 1
+        return false
+    else
+        if card_equal(cards[1],cards[2])
+            return false
+        end
+        if length(cards)==3
+            return !card_equal(cards[3],cards[2])
+        end
+    end
+    return true
+end
 """
     c_equal(a,b): a,b are the same card (same color, and same kind)
 """
-card_equal(a, b) = (a & 0xfc) == (b & 0xFC)
+card_equal(a, b) = ((a & 0xFC) == (b & 0xFC))
 global currenAction
 
 function ccompare(ar,br) 
-    compare = true
+    compare = length(ar) == length(br)
+    if !compare
+        return false
+    end
+
     for i in 1:length(ar)
         if ar[i] != br[i]
             compare = false
@@ -893,6 +921,10 @@ function printAllInfo()
     @assert ccompare(TuSacCards.getDeckArray(player2_hand),all_hands[2])
     @assert ccompare(TuSacCards.getDeckArray(player3_hand),all_hands[3])
     @assert ccompare(TuSacCards.getDeckArray(player4_hand),all_hands[4])
+    println(player1_hand)
+    println(player2_hand)
+    println(player3_hand)
+    println(player4_hand)
     println("==========Hands")
     for ah in all_hands
         for a in ah
@@ -1059,6 +1091,7 @@ function scanCards(inHand, silence = false)
     pairOf = 0
     rhand = []
     chot1 = []
+    chot1Special = []
     chotP = [[],[],[]]
     all_chots =[]
     if is_c(prevAcard)
@@ -1164,12 +1197,18 @@ function scanCards(inHand, silence = false)
             # a single
             if !is_T(prevAcard) # Tuong
                 if is_c(prevAcard)
-                    push!(chot1, prevAcard)
+                    push!(chot1Special, prevAcard)
                 else
                     push!(single, prevAcard)
                 end
             end
         end
+    end
+    cTrsh = c_scan(chotP,chot1Special)
+    if length(cTrsh) == 0
+        chot1 = []
+    else
+        chot1 = chot1Special
     end
     if silence == false
         for c in ahand
@@ -1217,7 +1256,7 @@ function scanCards(inHand, silence = false)
 
         println()
     end
-    return allPairs, single, chot1, miss1, missT, miss1Card, chotP
+    return allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special
 end
 global rQ = Vector{Any}(undef,4)
 global rReady = Vector{Bool}(undef,4)
@@ -1612,7 +1651,9 @@ end
             )
             global currentPlayer = nPlayer
             println("Active5 = ", currentPlayer)
-            removeCards!(all_hands, nPlayer, r)
+            if winner != -1 # leave it there for GUI
+                removeCards!(all_hands, nPlayer, r)
+            end
             if (winner == 0) && (length(r) == 0) # nobody match
               
                 if is_T(glNewCard)
@@ -1751,6 +1792,9 @@ end
                 end
             end
         else
+            bombPic = Actors("bomb.jpeg")
+            bombPic.pos = tableGridXY(10,10)
+            draw(bombPic)
             println("GAME OVER --- bai thui")
             openAllCard = true
             gameOver(true)
@@ -2061,6 +2105,7 @@ function hgamePlay(
 )
     global rQ, rReady
     global currentAction = gpAction
+    global currentPlayCard = pcard
     rReady[gpPlayer] = false
     rQ[gpPlayer] = []
     print(
@@ -2328,28 +2373,64 @@ still buggy!
         global prevYportion = yPortion
     end
    
-    function badResponse(cards,hand,action)
-        if (action == gpPlay1card)&&(length(cards)==0)
-            return true
-        else 
-            allfound = true
-            for c in cards
-                found = false
-                for h in hand
-                    if c == h
-                        found = true
-                        break
-                    end
+    function badResponse(cards,hand,action,pc)
+        println((cards,hand,action,pc))
+        allfound = true
+        for c in cards
+            found = false
+            for h in hand
+                if c == h
+                    found = true
+                    break
                 end
-                allfound = allfound & found
             end
-            return !allfound
+            if !found
+                println(c," is not found in Player hand")
+            end
+            allfound = allfound && found
+        end
+        if !allfound
+            return true
+        end
+     
+        if action == gpPlay1card
+            return (length(cards) != 1) || is_T(cards[1])
+        elseif length(cards) == 0
+            return false
+        else
+            all_in_pairs = true
+            all_in_suit = true
+            pcard = pc[1]
+            if card_equal(pcard,cards[1])
+                for c in cards
+                    all_in_pairs = all_in_pairs && card_equal(pcard,c)
+                end
+                if !all_in_pairs
+                    println(cards," not pairs")
+                end
+            else 
+                if length(cards) > 1
+                    if !is_c(pcard)
+                        all_in_suit= card_equal(pcard, missPiece(cards[1],cards[2]))
+                    else
+                        all_in_suit = all_chots(cards,pcard)
+                    end
+                    if !all_in_suit
+                        println(cards," is not in suit")
+                    end
+                else
+                    println(cards, " not pairs or in-suit")
+                    return true
+                end
+            end
+            return !( all_in_pairs && all_in_suit)
         end
     end
 
-    global tusacState,gpAction
+    global tusacState
     x = pos[1] << 1
     y = pos[2] << 1
+  
     if tusacState == tsSdealCards
         global cardsIndxArr = []
         gsStateMachine(gsOrganize)
@@ -2362,20 +2443,28 @@ still buggy!
         if cindx != 0
             click_card(cindx, yPortion, player1_hand)
         end
-        cindx, yPortion = mouseDownOnBox(x, y, deckState)
+        if currentAction == gpPlay1card 
+            cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+        else
+            bc = ActiveCard 
+            bx,by = big_actors[bc].pos
+            hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
+            cindx, yPortion = mouseDownOnBox(x, y, hotseat)
+        end
+       
         if cindx != 0
             global GUI_array, GUI_ready
             GUI_array = []
             for ci in cardsIndxArr
                 ac= TuSacCards.getCards(player1_hand, ci)
-                
                 push!(GUI_array,ac)
                 print(" ",ts(ac))
             end
             println("\nDanh Bai XONG ROI")
             setupDrawDeck(player1_hand, 7, 18, 100, false)
-            if badResponse(GUI_array,player1_hand,currentAction)
+            if badResponse(GUI_array,all_hands[1],currentAction,currentPlayCard)
                 updateErrorPic(1)
+                cardsIndxArr = []
                 GUI_ready = false
             else 
                 updateErrorPic(0)
@@ -2408,22 +2497,47 @@ function update(g)
     end
 end
 
-function draw(g)
-    global BIGcard, ActiveCard
-    global cardSelect
-    fill(colorant"ivory4")
-
-    saveI = 0
-    for i = 1:112
+function drawAhand(hand)
+    sI = 0
+    for c in hand
+        i = mapToActors[c]
         if ((cardSelect == false)) && (i == BIGcard)
-            #       if ((cardSelect == false)||(length(cardsIndxArr)==0)) && (i == BIGcard)
-            saveI = i
+            sI = i
         elseif (openAllCard == true) || ((mask[i] & 0x1) == 0)
             draw(actors[i])
         else
             draw(fc_actors[i])
         end
     end
+    return sI
+end
+
+function draw(g)
+    global BIGcard, ActiveCard
+    global cardSelect
+    fill(colorant"ivory4")
+
+    saveI = 0
+
+    if tusacState != tsGameLoop
+        for i = 1:112
+            if ((cardSelect == false)) && (i == BIGcard)
+                saveI = i
+            elseif (openAllCard == true) || ((mask[i] & 0x1) == 0)
+                draw(actors[i])
+            else
+                draw(fc_actors[i])
+            end
+        end
+    elseif tusacState == tsGameLoop
+        for i in 1:4
+            saveI = saveI + drawAhand(all_hands[i])
+            saveI = saveI + drawAhand(all_assets[i])
+            saveI = saveI + drawAhand(all_discards[i])
+        end
+        saveI = saveI + drawAhand(TuSacCards.getDeckArray(gameDeck))
+    end
+  
     if saveI != 0
         draw(big_actors[saveI])
     end
