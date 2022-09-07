@@ -869,6 +869,7 @@ missPiece(s1, s2) =
     c_equal(a,b): a,b are the same card (same color, and same kind)
 """
 card_equal(a, b) = (a & 0xfc) == (b & 0xFC)
+global currenAction
 
 function ccompare(ar,br) 
     compare = true
@@ -1232,6 +1233,29 @@ function updateHandPic(cp)
         gx,gy = 3,14
     end
     handPic.pos = tableGridXY(gx, gy)
+end
+function  updateErrorPic(cp)
+    if cp == 0
+        gx,gy = 20,20
+    else
+        gx,gy = 10,10
+    end
+    errorPic.pos = tableGridXY(gx, gy)
+end
+
+function updateWinnerPic(cp) 
+if cp == 0
+    gx,gy = 20,20
+elseif cp == 1 
+    gx,gy = 7, 14
+elseif cp == 2
+    gx,gy = 17,14
+elseif cp == 3
+    gx,gy = 14, 3
+else 
+    gx,gy = 3,14
+end
+winnerPic.pos = tableGridXY(gx, gy)
 end
 """
 gsStateMachine(gameActions)
@@ -1609,7 +1633,7 @@ end
             elseif winner == -1
                 println("GAME OVER, player", 
                 nPlayer, " win")
-                updateHandPic(2)
+                updateWinnerPic(nPlayer)
                 gameOverCnt = 1
                 openAllCard = true
 
@@ -1637,7 +1661,11 @@ end
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
             tusacState = tsSdealCards
             global handPic = Actor("hand.jpeg")
+            global winnerPic = Actor("winner.png")
+            global errorPic = Actor("error.png")
             updateHandPic(1)
+            updateWinnerPic(0)
+            updateErrorPic(0)
         end
         global gameOverCnt = 0
         global openAllCard = false
@@ -2032,6 +2060,7 @@ function hgamePlay(
     rReady
 )
     global rQ, rReady
+    global currentAction = gpAction
     rReady[gpPlayer] = false
     rQ[gpPlayer] = []
     print(
@@ -2299,8 +2328,26 @@ still buggy!
         global prevYportion = yPortion
     end
    
+    function badResponse(cards,hand,action)
+        if (action == gpPlay1card)&&(length(cards)==0)
+            return true
+        else 
+            allfound = true
+            for c in cards
+                found = false
+                for h in hand
+                    if c == h
+                        found = true
+                        break
+                    end
+                end
+                allfound = allfound & found
+            end
+            return !allfound
+        end
+    end
 
-    global tusacState
+    global tusacState,gpAction
     x = pos[1] << 1
     y = pos[2] << 1
     if tusacState == tsSdealCards
@@ -2318,8 +2365,6 @@ still buggy!
         cindx, yPortion = mouseDownOnBox(x, y, deckState)
         if cindx != 0
             global GUI_array, GUI_ready
-            
-
             GUI_array = []
             for ci in cardsIndxArr
                 ac= TuSacCards.getCards(player1_hand, ci)
@@ -2327,11 +2372,16 @@ still buggy!
                 push!(GUI_array,ac)
                 print(" ",ts(ac))
             end
-
             println("\nDanh Bai XONG ROI")
             setupDrawDeck(player1_hand, 7, 18, 100, false)
-            cardsIndxArr = []
-            GUI_ready = true
+            if badResponse(GUI_array,player1_hand,currentAction)
+                updateErrorPic(1)
+                GUI_ready = false
+            else 
+                updateErrorPic(0)
+                cardsIndxArr = []
+                GUI_ready = true
+            end
         end
     end
 end
@@ -2381,4 +2431,6 @@ function draw(g)
         draw(big_actors[ActiveCard])
     end
     draw(handPic)
+    draw(winnerPic)
+    draw(errorPic)
 end
