@@ -45,10 +45,26 @@ global currentPlayer = 1
 gotClick = false
 GUI_array=[]
 GUI_ready=false
+global HISTORY = []
 global waitForHuman = false
 global handPic
 global A_hand = (7,18)
 global pBseat = []
+global gsHArray = []
+global gsHHistArray = []
+
+const gpPlay1card = 1
+const gpCheckMatch1or2 = 3
+const gpCheckMatch2 = 2
+const gpPopCards = 4
+
+const gsHarrayNamehands = 1
+const gsHarrayNamediscards = 2
+const gsHarrayNameassets = 3
+const gsHarrayNamegameDeck = 4
+
+
+gsHcnt = 1
 """
 table-grid, giving x,y return grid coordinate
 """
@@ -600,7 +616,7 @@ end # module
 all_hands = []
 all_discards = []
 all_assets = []
-
+gameDeckArray =[]
 
 
 """
@@ -818,6 +834,7 @@ const tsSinitial = 0
 const tsSdealCards = 1
 const tsSstartGame = 2
 const tsGameLoop = 3
+const tsHistory = 4
 
 tusacState = tsSinitial
 
@@ -919,36 +936,22 @@ function ccompare(ar,br)
 end
 
 function printAllInfo()
-    
-    @assert ccompare(TuSacCards.getDeckArray(player1_hand),all_hands[1])
-    @assert ccompare(TuSacCards.getDeckArray(player2_hand),all_hands[2])
-    @assert ccompare(TuSacCards.getDeckArray(player3_hand),all_hands[3])
-    @assert ccompare(TuSacCards.getDeckArray(player4_hand),all_hands[4])
+    println("==========Hands")
     println(player1_hand)
     println(player2_hand)
     println(player3_hand)
     println(player4_hand)
     println("==========Hands")
     for ah in all_hands
-        for a in ah
-            print(ts(a), " ")
-        end
-        println()
+        ts_s(ah)
     end
     println("==========Discards")
     for ah in all_discards
-        for a in ah
-            print(ts(a), " ")
-        end
-        println()
+        ts_s(ah)
     end
     println("===========Assets")
-
     for ah in all_assets
-        for a in ah
-            print(ts(a), " ")
-        end
-        println()
+        ts_s(ah)
     end
     println("gameDeck")
     println(gameDeck)
@@ -1286,19 +1289,20 @@ function  updateErrorPic(cp)
 end
 
 function updateWinnerPic(cp) 
-if cp == 0
-    gx,gy = 20,20
-elseif cp == 1 
-    gx,gy = 8, 13
-elseif cp == 2
-    gx,gy = 16,11
-elseif cp == 3
-    gx,gy = 12, 3
-else 
-    gx,gy = 3,12
+    if cp == 0
+        gx,gy = 20,20
+    elseif cp == 1 
+        gx,gy = 8, 13
+    elseif cp == 2
+        gx,gy = 16,11
+    elseif cp == 3
+        gx,gy = 12, 3
+    else 
+        gx,gy = 3,11
+    end
+    winnerPic.pos = tableGridXY(gx, gy)
 end
-winnerPic.pos = tableGridXY(gx, gy)
-end
+
 """
 gsStateMachine(gameActions)
 
@@ -1452,6 +1456,8 @@ function gsStateMachine(gameActions)
         return n, w, r
     end
 
+
+    
    prevIter = 0
     function gamePlay1Iteration()
         global glNewCard, ActiveCard 
@@ -1460,35 +1466,43 @@ function gsStateMachine(gameActions)
         global glIterationCnt
         global t1Player,t2Player,t3Player,t4Player
         global n1c,n2c,n3c,n4c
-function checkHumanResponse(player)
-    global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
-    if playerIsHuman(player)
-        if humanIsGUI
-            if GUI_ready
-                rReady[player] = true
-                rQ[player]=GUI_array
-                print("PlayCard = ", )
-                ts_s(rQ[player])
-                GUI_ready = false
+        function checkHumanResponse(player)
+            global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
+            if playerIsHuman(player)
+                if humanIsGUI
+                    if GUI_ready
+                        rReady[player] = true
+                        rQ[player]=GUI_array
+                        print("PlayCard = ", )
+                        ts_s(rQ[player])
+                        GUI_ready = false
+                    end
+                else  
+                    cards = humanResponse(player)
+                    ts_s(cards)
+                    rQ[player]=cards
+                    rReady[player] = true
+                    println("PlayCard = ", (cards))
+                    ts_s(cards)
+                end
             end
-        else  
-            cards = humanResponse(player)
-            ts_s(cards)
-            rQ[player]=cards
-            rReady[player] = true
-            println("PlayCard = ", (cards))
-            ts_s(cards)
         end
-    end
-end
-        function All_hand_updateActor(card, player) 
-            mmm = mapToActors[card]
-            ActiveCard = mmm
-            mask[mmm] = mask[mmm] & 0xFE
+        function All_hand_updateActor(card,facedown) 
+            if facedown == FaceDown
+                mmm = mapToActors[card]
+                ActiveCard = mmm
+                mask[mmm] = mask[mmm] & 0xFE
+            else
+                mmm = mapToActors[card]
+                ActiveCard = mmm
+                mask[mmm] = mask[mmm] | 0x1
+            end
         end
-
         if(rem(glIterationCnt,4) ==0)
+         
             glIterationCnt += 1
+
+           
             println(
                 "++++++++++++++++++++++++++",
                 (glIterationCnt, glNeedaPlayCard, glPrevPlayer),
@@ -1510,12 +1524,10 @@ end
                     rReady
                 )
             end
-          
-
+    
         elseif(rem(glIterationCnt,4) ==1)
-            glIterationCnt += 1
 
-         
+            glIterationCnt += 1
             if glNeedaPlayCard
                 checkHumanResponse(glPrevPlayer)
                 if rReady[glPrevPlayer]
@@ -1531,24 +1543,20 @@ end
                     glIterationCnt -= 1
                     return
                 end
-
                 removeCards!(all_hands, glPrevPlayer, glNewCard)
-                All_hand_updateActor(glNewCard[1],glPrevPlayer)
-             
+                All_hand_updateActor(glNewCard[1],!FaceDown)
             else
                 nc = pop!(gameDeck, 1)
+                nca = pop!(gameDeckArray)
+
                 global gd = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
-          
-                mmm = mapToActors[nc[1].value]
-                ActiveCard = mmm
-                mask[mmm] = mask[mmm] & 0xFE
+                All_hand_updateActor(nc[1].value, !FaceDown)
 
                 println("pick a card from Deck=", nc[1], " for player", nextPlayer(glPrevPlayer))
                 glNewCard = nc[1].value
                 global currentPlayer = nextPlayer(glPrevPlayer)
                 println("Active6 = ", currentPlayer)
-            end
-          
+            end  
         elseif(rem(glIterationCnt,4) ==2)
             t1Player = nextPlayer(glPrevPlayer)
             glIterationCnt += 1
@@ -1665,7 +1673,8 @@ end
                     glPrevPlayer = nPlayer
                 else
                     if glNeedaPlayCard
-                        addCards!(all_discards, 1,glPrevPlayer, glNewCard)
+                        addCards!(all_discards, 1,glPrevPlayer, 
+                        glNewCard)
                   
                     else
                         addCards!(all_discards, 1,nPlayer, glNewCard)
@@ -1755,6 +1764,7 @@ end
             TuSacCards.getDeckArray(player3_assets),
             TuSacCards.getDeckArray(player4_assets),
         )
+        global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
 
         discard1 = setupDrawDeck(player1_discards, 16, 16, 8, false)
         discard2 = setupDrawDeck(player2_discards, 16, 2, 8, false)
@@ -1788,17 +1798,22 @@ end
         global glPrevPlayer = 1
         global glIterationCnt = 0
     elseif tusacState == tsGameLoop
-        if length(gameDeck) >= gameDeckMinimum
-            for i in 1:100
+        if length(gameDeckArray) >= gameDeckMinimum
                 if !isGameOver()
+                    if(rem(glIterationCnt,4)==0)
+                        currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer]
+                        anE= []
+                        anE = deepcopy([all_hands,all_assets,all_discards,[gameDeckArray],currentStates])
+                        push!(HISTORY,anE)
+                    end
                     gamePlay1Iteration()
                 end
-            end
         else
-            bombPic = Actors("bomb.jpeg")
+            #=
+            bombPic = Actor("bomb.jpeg")
             bombPic.pos = tableGridXY(10,10)
             draw(bombPic)
-            println("GAME OVER --- bai thui")
+            =#
             openAllCard = true
             gameOver(true)
         end
@@ -1956,10 +1971,6 @@ function ts_s(rt)
     println()
     return
 end
-const gpPlay1card = 1
-const gpCheckMatch1or2 = 3
-const gpCheckMatch2 = 2
-const gpPopCards = 4
 
 
 function strToVal(ahand, str)
@@ -2333,6 +2344,128 @@ function chk1(playCard)
     end
 end
 
+function restoreDeck(deck,ar)
+    deck = []
+    for a in ar
+        push!(deck,ts(a))
+    end
+end
+
+function printHistory(n)
+    ar = HISTORY[n]
+    for i in 1:length(ar)-1
+        for b in ar[i]
+            ts_s(b)
+        end
+    end
+end
+
+function replayHistory(index)
+    global HISTORY,all_hands,all_assets,all_discards,gameDeckArray, glIterationCnt,glNeedaPlayCard,glPrevPlayer
+    global player1_hand, player1_discards, player1_assets
+    global player2_hand, player2_discards, player2_assets
+    global player3_hand, player3_discards, player3_assets
+    global player4_hand, player4_discards, player4_assets
+    global gameDeckArray
+
+
+    println("Index-",index)
+    a = HISTORY[index]
+    printHistory(a)
+
+    all_hands[1] = a[1][1]
+    restoreDeck(player1_hand,a[1][1])
+    ts_s(all_hands[1])
+    all_hands[2] = a[1][2]
+    restoreDeck(player2_hand,a[1][2])
+    all_hands[3] = a[1][3]
+    restoreDeck(player3_hand,a[1][3])
+    all_hands[4] = a[1][4]
+    restoreDeck(player4_hand,a[1][4])
+
+    all_assets[1] = a[2][1]
+    restoreDeck(player1_assets,a[2][1])
+    all_assets[2] = a[2][2]
+    restoreDeck(player2_assets,a[2][2])
+    all_assets[3] = a[2][3]
+    restoreDeck(player3_assets,a[2][3])
+    all_assets[4] = a[2][4]
+    restoreDeck(player4_assets,a[2][4])
+
+    all_discards[1] = a[3][1]
+    restoreDeck(player1_discards,a[3][1])
+    all_discards[2] = a[3][2]
+    restoreDeck(player2_discards,a[3][2])
+    all_discards[3] = a[3][3]
+    restoreDeck(player3_discards,a[3][3])
+    all_discards[4] = a[3][4]
+    restoreDeck(player4_discards,a[3][4])
+
+    gameDeckArray = a[4]
+    restoreDeck(gameDeck,a[4])
+    printAllInfo()
+
+    global glIterationCnt,glNeedaPlayCard,glPrevPlayer = a[5]
+    setupDrawDeck(player1_discards, 16, 16, 8, false)
+    setupDrawDeck(player2_discards, 16, 2, 8, false)
+    setupDrawDeck(player3_discards, 3, 2, 8, false)
+    setupDrawDeck(player4_discards, 3, 16, 8, false)
+
+    setupDrawDeck(player1_assets, 8, 14, 30, false)
+    setupDrawDeck(player2_assets, 16, 7, 4, false)
+    setupDrawDeck(player3_assets, 8, 4, 30, false)
+    setupDrawDeck(player4_assets, 4, 7, 4, false)
+
+    setupDrawDeck(player1_hand, 7, 18, 100, false)
+    setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
+    setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
+    setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
+    setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+end
+
+function adjustCnt(cnt,max,dir)
+    if dir == 0
+        cnt -= 1
+        cnt = cnt < 1 ? 1 : cnt
+    elseif dir == 1
+        cnt -= 4
+        cnt = cnt < 1 ? 1 : cnt
+    elseif dir == 3
+        cnt += 4
+        cnt = cnt > max ? max : cnt
+    else
+        cnt += 1
+        cnt = cnt > max ? max : cnt
+    end
+    return cnt
+end
+
+function on_key_down(g)
+    global tusacState
+        if g.keyboard.RETURN
+            println("Return")
+        elseif g.keyboard.SPACE
+            println("SPACE")
+        end
+    if tusacState == tsHistory
+        dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
+        global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
+        println(HistCnt)
+        printHistory(HistCnt)
+        if g.keyboard.SPACE
+            println("Exiting History mode")
+            resize(HISTORY,HistCnt)
+            tusacState = tsGameLoop
+        end
+    elseif tusacState == tsGameLoop
+        if g.keyboard.RETURN
+            HistCnt = length(HISTORY)
+            tusacState = tsHistory
+            println("Entering History mode, size=",HistCnt)
+        end
+    end
+end
+
 """
     on_mouse_down(g, pos)
 
@@ -2455,7 +2588,6 @@ still buggy!
             hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
             cindx, yPortion = mouseDownOnBox(x, y, hotseat)
         end
-       
         if cindx != 0
             global GUI_array, GUI_ready
             GUI_array = []
@@ -2490,14 +2622,13 @@ function update(g)
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
         end
     elseif tusacState == tsSstartGame
-        gsStateMachine(gsStartGame)
+            gsStateMachine(gsStartGame)
     elseif (tusacState == tsSdealCards)
     elseif (tusacState == tsSdealCards)
     
     elseif tusacState == tsGameLoop
-        updateHandPic(currentPlayer)
-
-           gsStateMachine(gsGameLoop)
+            updateHandPic(currentPlayer)
+            gsStateMachine(gsGameLoop)
     end
 end
 
@@ -2523,7 +2654,7 @@ function draw(g)
 
     saveI = 0
 
-    if tusacState != tsGameLoop
+    if !((tusacState == tsGameLoop)||(tusacState == tsHistory))
         for i = 1:112
             if ((cardSelect == false)) && (i == BIGcard)
                 saveI = i
@@ -2533,7 +2664,7 @@ function draw(g)
                 draw(fc_actors[i])
             end
         end
-    elseif tusacState == tsGameLoop
+    elseif (tusacState == tsGameLoop)||(tusacState == tsHistory)
         for i in 1:4
             saveI = saveI + drawAhand(all_hands[i])
             saveI = saveI + drawAhand(all_assets[i])
