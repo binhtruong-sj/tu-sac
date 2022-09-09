@@ -834,7 +834,8 @@ const tsSinitial = 0
 const tsSdealCards = 1
 const tsSstartGame = 2
 const tsGameLoop = 3
-const tsHistory = 4
+const tsTest = 4
+const tsHistory = 5
 
 tusacState = tsSinitial
 
@@ -1039,9 +1040,9 @@ function c_scan(p,s)
 end
 
 function c_match(p,s,n)
-    println("c-match",(p,s,n))
+    println("c-match ",(p,s,n))
 
-   if length(s) > 1
+    if length(s) > 1
         for es in s
             if card_equal(es,n)
                 if length(s) == 3
@@ -1057,12 +1058,12 @@ function c_match(p,s,n)
             return s
         else
         # now we have 2 uniq chots
-            if length(p[2])>0
-                return [p[2][1][1],s[1]]
+            if length(p[2])>0 # at least 1 3-pair
+                    return [p[2][1][1],s[1]] # use 1 of the 3-pair
             else
-                if length(p[1])>1
+                if length(p[1])>1 # at least 2 2-pair and 1-single
                     return [p[1][1][1],p[1][2][1]]
-                elseif length(p[1])==1
+                elseif length(p[1])==1 && !card_equal(n,p[1][1][1])
                     return [p[1][1][1],s[1]]
                 else 
                     return []
@@ -1070,7 +1071,7 @@ function c_match(p,s,n)
             end
         end
     else 
-        if length(p[2])>1
+        if length(p[2])>1  #not sure about this
             return [p[2][1][1],p[2][2][1]]
         elseif length(p[2])==1
             return []
@@ -1224,23 +1225,8 @@ function scanCards(inHand, silence = false)
         for c in ahand
             print(ts(c), " ")
         end
-        
         print("\nallPairs=    ")
-        for p = 1:3
-            for ap in allPairs[p]
-                print((p + 1, ts(ap[1])))
-                if p == 1 
-                    for m in miss1Card
-                        if card_equal(m,ap[1])
-                            if !inTSuit(m)
-                                println("SAKI")
-                                push!(ap,-1)
-                            end
-                        end
-                    end
-                end
-            end
-        end
+      
         print("\nsingle=       ")
         for c in single
             print(" ", ts(c))
@@ -2010,53 +1996,65 @@ function ts_s(rt)
 end
 
 
-function strToVal(ahand, str)
+function strToVal(hand, str)
     grank = "Tstcxpm"
     gcolor = "TVDX"
-function find1(c, str)
-    for i = 1:length(str)
-        if c == str[i]
-            return i
+    function find1(c, str)
+        for i = 1:length(str)
+            if c == str[i]
+                return i
+            end
         end
+        return 0
     end
-    return 0
-end
 aStrToVal(s) =
 (UInt8(find1(s[1], grank)) << 2) | (UInt8(find1(s[2], gcolor) - 1) << 5)
 
-hand = ahand
-local r = []
-for s in str
-    v = aStrToVal(s)
-    for i = 1:length(hand)
-        c = hand[i]
-        found = false
-        for ar in r
-            if ar == c
-                found = true
+    local r = []
+    for s in str
+        v = aStrToVal(s)
+        for i = 1:length(hand)
+            c = hand[i]
+            found = false
+            for ar in r
+                if ar == c
+                    found = true
+                end
+            end
+            if !found && card_equal(c, v)
+                push!(r, c)
+                break
             end
         end
-        if !found && card_equal(c, v)
-            push!(r, c)
-            break
-        end
     end
+    return r
 end
-return r
-end
+
 function humanResponse(gpPlayer)
     global GUI_array, GUI_ready
-    if !humanIsGUI
-        local al = readline()
-        if length(al) > 1
-            local rl = split(al, ' ')
-            local card = strToVal(all_hands[gpPlayer], rl)
-        else
-            card = []
-        end
+    local al = readline()
+    if length(al) > 1
+        local rl = split(al, ' ')
+        local card = strToVal(all_hands[gpPlayer], rl)
+    else
+        card = []
     end
     return card
 end
+
+function humanInput()
+    testDeck = TuSacCards.getDeckArray(TuSacCards.ordered_deck())
+    local al = readline()
+    if length(al) > 1
+        local rl = split(al, ' ')
+        println(rl)
+        local card = strToVal(testDeck, rl)
+    else
+        card = []
+    end
+    return card
+end
+
 """
     human_gamePlay(
     all_hands,
@@ -2174,10 +2172,8 @@ function hgamePlay(
 
     """
     chk1(playCard)
-
-TBW
-"""
-function chk1(playCard)
+    """
+    function chk1(playCard)
         if is_c(playCard)
                  r  = c_match(chotPs,chot1Specials,playCard)
                  ts_s(r)
@@ -2211,11 +2207,6 @@ function chk1(playCard)
             m = missPiece(m1[1], m1[2])
             print(" m1=", ts(m))
             if card_equal(m, playCard)
-                    for ap in allPairs[1]
-                        if card_equal(ap[1],m)
-                            println("FOUND SAKI")
-                        end
-                    end
                 return m1
             elseif card_equal(m1[1], playCard) && !is_T(playCard)
                 return m1[1]
@@ -2226,7 +2217,11 @@ function chk1(playCard)
         return []
     end
 
-    function chk2(playCard; chk2only = true)
+    """
+    chk2(playCard) check for pairs -- also check for P XX ? M
+
+"""
+    function chk2(playCard)
         inSuitArr = []
         found = false
         for m1 in miss1s # CAAE XX PM ? X
@@ -2244,16 +2239,17 @@ function chk1(playCard)
                 print(" ",ts(ap[1]))
                 if is_T(playCard)
                     if p == 3 && card_equal(ap[1], playCard)
-                        return ap
+                        return ap # TTTT
                     end
                 elseif card_equal(ap[1], playCard)
                     if (p == 1) && found
-                        return []
+                        print(" SAKI ")
+                        return []  # SAKI -- return nothing
                     else
                         return ap
                     end
-                elseif !chk2only && inSuit(ap[1], playCard)  # CASE X PP ? M
-                    push!(inSuitArr, ap[1])
+                elseif inSuit(ap[1], playCard)  # CASE X PP ? M
+                    push!(inSuitArr, ap[1]) # put in array to check
                     print("  inSuitArr =", inSuitArr)
                 end
             end
@@ -2263,7 +2259,7 @@ function chk1(playCard)
                 if inSuit(s, playCard)
                     push!(inSuitArr, s)
                     print("  inSuitArr =", inSuitArr)
-                    return (inSuitArr)
+                    return inSuitArr
                 end
             end
         end
@@ -2278,49 +2274,47 @@ function chk1(playCard)
         ts_s(trsh1)
         if length(trsh1) == 1
             push!(singles, trsh1)
-            push!(singles, trsh1)
-        elseif length(missTs) > 0
-            for mt in missTs
-                for m in mt
-                    # cheesy way to get dut-dau-tuong to play first
-                    push!(singles, m)
-                    push!(singles, m)
-                end
-                break
-            end
-        end
-       if length(singles) > 0
-            card = singles[rand(1:length(singles))]
         else
-            if length(miss1s) > 0
-                for m1 in miss1s
-                    for m in m1
-                        if !is_T(m)
-                            push!(singles,m)
-                            if inTSuit(m)
+            if length(singles) == 0
+                if length(missTs) > 0
+                    mt = missTs[1]
+                    for m in mt
+                        # cheesy way to get dut-dau-tuong to play first
+                        push!(singles, m)
+                    end
+                end
+                if length(miss1s) > 0
+                    for m1 in miss1s
+                        for m in m1
+                            if !is_T(m)
                                 push!(singles,m)
-                                push!(singles,m)
+                                if inTSuit(m)
+                                    push!(singles,m)
+                                end
                             end
                         end
                     end
-                end
-                if length(chot1s) > 0
-                    for m in chot1s
-                        push!(singles,m)
+                    if length(chot1s) > 0
+                        for m in chot1s
+                            push!(singles,m)
+                        end
                     end
                 end
-                println("final singles=")
-                ts_s(singles)
-                card = singles[rand(1:length(singles))]
-            else
-                card = []
             end
         end
+        if length(singles) > 0
+            println("final singles=")
+            println(singles)
+            card = singles[rand(1:length(singles))]
+        else
+            card = []
+        end
         return card
-    end
+    end 
     function gpHandleMatch2Card(pcard)
         card1 = chk1(pcard)
-        card2 = chk2(pcard, chk2only = true)
+        card2 = chk2(pcard)
+        println("chk1-",ts_s(card1)," chk2-",ts_s(card2))
         if length(card1) == 0
             return card2
         elseif length(card2) == 0
@@ -2333,7 +2327,7 @@ function chk1(playCard)
     function gpHandleMatch1or2Card(pcard)
         cards = chk1(pcard)
         if length(cards) == 0
-            cards = chk2(pcard, chk2only = false)
+            cards = chk2(pcard)
         end
         return cards
     end
@@ -2444,6 +2438,8 @@ function on_key_down(g)
             println("Return")
         elseif g.keyboard.SPACE
             println("SPACE")
+        elseif g.keyboard.T
+            println("key-T")
         end
     if tusacState == tsHistory
         dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
@@ -2462,11 +2458,44 @@ function on_key_down(g)
             printHistory(l)
             tusacState = tsGameLoop
         end
+    elseif tusacState == tsTest
+        if g.keyboard.T
+            println("Exiting Test mode")
+            tusacState = tsGameLoop
+        end
+        p = [[],[],[]]
+        s = []
+        n = []
+        while true
+            println("enter string of cards, last 1 is the match one")
+            c = humanInput()
+            l = length(c)
+            if l == 1
+                if length(s) > 0
+                    push!(n,c)
+                    break
+                else
+                    push!(s,c)
+                end
+            elseif card_equal(c[1],c[1])
+                push!(p[l],c)
+            else
+                push!(s,c)
+            end
+            println(c)
+        end
+        println((p,s,n))
+        c = c_match(p,s,n)
+        println(ts_s(c))
+
     elseif tusacState == tsGameLoop
         if g.keyboard.RETURN
             HistCnt = length(HISTORY)
             tusacState = tsHistory
             println("Entering History mode, size=",HistCnt)
+        elseif g.keyboard.T
+            println("Entering Test mode")
+            tusacState = tsTest
         end
     end
 end
@@ -2685,6 +2714,7 @@ function draw(g)
         global csx,csy = big_actors[ActiveCard].pos
         if drawCnt >20
             draw(big_actors[ActiveCard])
+     #=
         else
             if glIterationCnt > 4
                 big_actors[ActiveCard].pos = lsx,lsy
@@ -2692,7 +2722,9 @@ function draw(g)
                draw(big_actors[ActiveCard])
                big_actors[ActiveCard].pos = csx,csy
             end
+            =#
         end
+        
     end
     draw(handPic)
     draw(winnerPic)
