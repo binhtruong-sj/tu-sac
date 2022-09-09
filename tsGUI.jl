@@ -63,7 +63,7 @@ const gsHarrayNamediscards = 2
 const gsHarrayNameassets = 3
 const gsHarrayNamegameDeck = 4
 
-
+drawCnt = 1
 gsHcnt = 1
 """
 table-grid, giving x,y return grid coordinate
@@ -1520,6 +1520,7 @@ function gsStateMachine(gameActions)
             end
         end
         function All_hand_updateActor(card,facedown) 
+            prevActiveCard = ActiveCard
             if facedown == FaceDown
                 mmm = mapToActors[card]
                 ActiveCard = mmm
@@ -1541,7 +1542,8 @@ function gsStateMachine(gameActions)
                 "+++++++++++++++++++++++++++",
             )
             printAllInfo()
-
+              
+            
             if glNeedaPlayCard
                 waitForHuman = true
                 glNewCard = hgamePlay(
@@ -1815,27 +1817,30 @@ function gsStateMachine(gameActions)
     elseif tusacState == tsGameLoop
         if length(gameDeckArray) >= gameDeckMinimum
                 if !isGameOver()
-                    if(rem(glIterationCnt,4)==0)
-                        currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard]
-                        anE= []
-                        anE = deepcopy(
-                            [player1_hand,
-                            player2_hand,
-                            player3_hand,
-                            player4_hand,
-                            player1_assets,
-                            player2_assets,
-                            player3_assets,
-                            player4_assets,
-                            player1_discards,
-                            player2_discards,
-                            player3_discards,
-                            player4_discards,
-                            gameDeck,currentStates])
+                   
+                    if(rem(glIterationCnt,4) ==0)
 
-                        push!(HISTORY,anE)
+                    currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard]
+                    anE= []
+                    anE = deepcopy(
+                        [player1_hand,
+                        player2_hand,
+                        player3_hand,
+                        player4_hand,
+                        player1_assets,
+                        player2_assets,
+                        player3_assets,
+                        player4_assets,
+                        player1_discards,
+                        player2_discards,
+                        player3_discards,
+                        player4_discards,
+                        gameDeck,currentStates])
+    
+                    push!(HISTORY,anE)
                     end
                     gamePlay1Iteration()
+
                 end
         else
             #=
@@ -1857,9 +1862,10 @@ game start here
 gsStateMachine(gsSetupGame)
 BIGcard = 0
 ActiveCard = 0
+prevActiveCard = 0
 cardSelect = false
 playCard = 0
-
+global lsx,lsy
 
 function on_mouse_move(g, pos)
     global tusacState, gameDeck, ad, deckState
@@ -2643,10 +2649,14 @@ end
 function draw(g)
     global BIGcard, ActiveCard
     global cardSelect
+    global drawCnt,lsx,lsy
     fill(colorant"ivory4")
 
     saveI = 0
-
+    drawCnt += 1
+    if drawCnt > 40
+        drawCnt = 0
+    end
     if !((tusacState == tsGameLoop)||(tusacState == tsHistory))
         for i = 1:112
             if ((cardSelect == false)) && (i == BIGcard)
@@ -2670,7 +2680,9 @@ function draw(g)
         draw(big_actors[saveI])
     end
     if ActiveCard != 0
-        draw(big_actors[ActiveCard])
+        if drawCnt >20
+            draw(big_actors[ActiveCard])
+        end
     end
     draw(handPic)
     draw(winnerPic)
