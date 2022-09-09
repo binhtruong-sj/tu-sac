@@ -1249,6 +1249,10 @@ function scanCards(inHand, silence = false)
         for c in chot1
             print(" ", ts(c))
         end
+        print(" --- Chot1Special=         ")
+        for c in chot1Special
+            print(" ", ts(c))
+        end
         print("\nmissT=       ")
         for tc in missT
             for c in tc
@@ -2313,14 +2317,19 @@ function chk1(playCard)
         end
         return card
     end
-    function gpHandleMatch1or2Card(pcard)
-        cards = chk1(pcard)
-        if length(cards) == 0
-            cards = chk2(pcard, chk2only = false)
-        end
-        return cards
-    end
     function gpHandleMatch2Card(pcard)
+        card1 = chk1(pcard)
+        card2 = chk2(pcard, chk2only = true)
+        if length(card1) == 0
+            return card2
+        elseif length(card2) == 0
+            return card1
+        else
+            return card2
+        end
+    end
+
+    function gpHandleMatch1or2Card(pcard)
         cards = chk1(pcard)
         if length(cards) == 0
             cards = chk2(pcard, chk2only = false)
