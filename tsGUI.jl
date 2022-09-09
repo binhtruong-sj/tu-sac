@@ -1398,6 +1398,8 @@ function gsStateMachine(gameActions)
             if (l > 1) && !card_equal(r[1], r[2]) # not pairs
                 l = 1
             end
+           
+
             win = false
             if l > 0 || is_T(card)# only check winner that has matched cards
                 thand = deepcopy(all_hands[n])
@@ -1406,6 +1408,15 @@ function gsStateMachine(gameActions)
                     filter!(x -> x != e, thand)
                 end
                 ps, ss, cs, m1s, mts, mbs = scanCards(thand, true)
+
+                if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
+                    for mb in mbs
+                        if card_equal(mb,missPiece(r[1],r[1]))
+                            println("match ",mb," is SAKI, not accepted")
+                            l = 0
+                        end
+                    end
+                end
                 if length(union(ss, cs, m1s, mts, mbs)) == 0
                     println("WINWINWINWINWINWINWINWINWINWIWN")
                     l = 4
