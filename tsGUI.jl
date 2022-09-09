@@ -1392,7 +1392,7 @@ function gsStateMachine(gameActions)
 
     nextPlayer(p) = p == 4 ? 1 : p + 1
 
-    function whoWinRound(card, n1, r1, n2, r2, n3, r3, n4, r4)
+    function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
         function getl(card, n, r)
             l = length(r)
             if (l > 1) && !card_equal(r[1], r[2]) # not pairs
@@ -1410,9 +1410,9 @@ function gsStateMachine(gameActions)
                 ps, ss, cs, m1s, mts, mbs = scanCards(thand, true)
 
                 if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
-                    for mb in mbs
-                        if card_equal(mb,missPiece(r[1],r[1]))
-                            println("match ",mb," is SAKI, not accepted")
+                    for p in ps[1]
+                        if card_equal(p[1],missPiece(r[1],r[1]))
+                            println("match ",ts_s(p)," is SAKI, not accepted")
                             l = 0
                         end
                     end
@@ -1423,6 +1423,7 @@ function gsStateMachine(gameActions)
                     win = true
                     gameOver(true)
                 end
+                
             end
             return l, win
         end
@@ -1430,6 +1431,9 @@ function gsStateMachine(gameActions)
         l2, w2 = getl(card, n2, r2)
         l3, w3 = getl(card, n3, r3)
         l4, w4 = getl(card, n4, r4)
+        if !play4 && (l2 == 1)
+                l2 = 0
+        end
 
         if l1 == 4
             w = 0
@@ -1457,7 +1461,7 @@ function gsStateMachine(gameActions)
         if w1 || w2 || w3 || w4   # game over
             w = -1
         end
-        println("Who win ?  n,w,r", (n, w, r), (l1, l2, l3, l4))
+        println("Who win ?  n,w,r", (n, w, r), (l1, l2, l3, l4),(r1,r2,r3,r4))
         return n, w, r
     end
 
@@ -1604,6 +1608,11 @@ function gsStateMachine(gameActions)
                 rQ,
                 rReady
             )
+            if glNeedaPlayCard
+                cmd = gpCheckMatch2
+            else
+                cmd = gpCheckMatch1or2
+            end
             t2Player = nextPlayer(t1Player)
             hgamePlay(
                 all_hands,
@@ -1612,7 +1621,7 @@ function gsStateMachine(gameActions)
                 gameDeck,
                 glNewCard;
                 gpPlayer = t2Player,
-                gpAction = gpCheckMatch2,
+                gpAction = cmd,
                 rQ,
                 rReady
             )
@@ -1681,9 +1690,11 @@ function gsStateMachine(gameActions)
                 glIterationCnt -= 1
                 return
             end
+            play4 = !glNeedaPlayCard
             println("AT",(n1c,n2c,n3c,n4c,glNewCard))
             nPlayer, winner, r = whoWinRound(
                 glNewCard,
+                play4,
                 t1Player,
                 n1c,
                 t2Player,
@@ -2550,8 +2561,8 @@ function on_mouse_down(g, pos)
         global prevYportion = yPortion
     end
    
-    function badResponse(cards,hand,action,pc)
-        println((cards,hand,action,pc))
+    function badResponse(cards,hand,action,matchC)
+        println("Chk GUI ",(cards,matchC))
         allfound = true
         for c in cards
             found = false
@@ -2575,10 +2586,16 @@ function on_mouse_down(g, pos)
         elseif length(cards) == 0
             return false
         else
+            if length(cards) == 0 # nothing to check
+                return false
+            end
             all_in_pairs = true
             all_in_suit = true
-            pcard = pc[1]
+            pcard = matchC[1]
             if card_equal(pcard,cards[1])
+                if length(cards) == 1
+                    return false
+                end
                 for c in cards
                     all_in_pairs = all_in_pairs && card_equal(pcard,c)
                 end
@@ -2600,7 +2617,21 @@ function on_mouse_down(g, pos)
                     return true
                 end
             end
-            return !( all_in_pairs && all_in_suit)
+            moreTrash = false
+            ops,oss,ocs,om1s,omts,ombs =  scanCards(hand, true)
+            TrashCnt = length(union(oss,ocs,om1s,omts))
+            thand = deepcopy(hand)
+
+            for e in cards
+                filter!(x -> x != e, thand)
+            end
+            ps, ss, cs, m1s, mts, mbs = scanCards(thand, true)
+            l = length(union(ss, cs, m1s, mts))
+            if TrashCnt < l
+                println("Illegal match -- creating more trash ",(TrashCnt,l))
+                moreTrash = true
+            end
+            return !( all_in_pairs && all_in_suit) || moreTrash
         end
     end
 
