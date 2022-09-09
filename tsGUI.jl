@@ -38,8 +38,8 @@ function gameOver(gameE)
     end
 end
 isGameOver() = gameEnd
-const humanIsGUI = true
-global humanPlayer =[true,false,false,false]
+const humanIsGUI = false
+global humanPlayer =[false,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 global currentPlayer = 1
 gotClick = false
@@ -2265,19 +2265,15 @@ function chk1(playCard)
 
     function gpHandlePlay1Card()
         println()
-        println("Chot,",(chotPs,chot1s))
-        c1s = copy(chot1Specials)
-        trsh1 = c_scan(chotPs, c1s)
+        println("Chot,",(chotPs,chot1s,chot1Specials))
+        trsh1 = c_scan(chotPs, chot1Specials)
         ts_s(trsh1)
-        c1s = copy(chot1s)
-        if length(trsh1) > 1
-            for e in trsh1
-                push!(singles, e)
-                if length(trsh1) == 1
-                    push!(singles, e)
-                    push!(singles, e)
-                end
-            end
+        if length(trsh1) == 1
+            push!(singles, trsh1)
+            push!(singles, trsh1)
+        elseif length(trsh1) == 2
+            chot1s = []
+            chot1s = deepcopy(trsh1)
         elseif length(missTs) > 0
             for mt in missTs
                 for m in mt
@@ -2288,9 +2284,7 @@ function chk1(playCard)
                 break
             end
         end
-        if length(chot1s) == 1
-            card = chot1s[rand(1:length(chot1s))]
-        elseif length(singles) > 0
+       if length(singles) > 0
             card = singles[rand(1:length(singles))]
         else
             if length(miss1s) > 0
@@ -2401,7 +2395,6 @@ function replayHistory(index)
     gameDeck = deepcopy(a[13])
 
     global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
-    println("STATES:",a[14])
     updateHandPic(glPrevPlayer)
 
     setupDrawDeck(player1_discards, 16, 16, 8, false)
@@ -2450,6 +2443,7 @@ function on_key_down(g)
         global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
         println(HistCnt)
         replayHistory(HistCnt)
+        printHistory(HistCnt)
         if g.keyboard.b
             println("Exiting History mode")
             resize(HISTORY,HistCnt)
@@ -2458,6 +2452,7 @@ function on_key_down(g)
             println("Exiting History mode")
             l = length(HISTORY)
             replayHistory(l)
+            printHistory(l)
             tusacState = tsGameLoop
         end
     elseif tusacState == tsGameLoop
