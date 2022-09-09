@@ -38,8 +38,8 @@ function gameOver(gameE)
     end
 end
 isGameOver() = gameEnd
-const humanIsGUI = false
-global humanPlayer =[false,false,false,false]
+const humanIsGUI = true
+global humanPlayer =[true,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 global currentPlayer = 1
 gotClick = false
@@ -1519,17 +1519,19 @@ function gsStateMachine(gameActions)
                 end
             end
         end
+
         function All_hand_updateActor(card,facedown) 
-            prevActiveCard = ActiveCard
+            global lsx,lsy
+            global prevActiveCard = ActiveCard
+            mmm = mapToActors[card]
+            ActiveCard = mmm
+            lsx, lsy = actors[mmm].pos
             if facedown == FaceDown
-                mmm = mapToActors[card]
-                ActiveCard = mmm
                 mask[mmm] = mask[mmm] & 0xFE
             else
-                mmm = mapToActors[card]
-                ActiveCard = mmm
                 mask[mmm] = mask[mmm] | 0x1
             end
+            
         end
         if(rem(glIterationCnt,4) ==0)
          
@@ -2277,9 +2279,6 @@ function chk1(playCard)
         if length(trsh1) == 1
             push!(singles, trsh1)
             push!(singles, trsh1)
-        elseif length(trsh1) == 2
-            chot1s = []
-            chot1s = deepcopy(trsh1)
         elseif length(missTs) > 0
             for mt in missTs
                 for m in mt
@@ -2310,6 +2309,8 @@ function chk1(playCard)
                         push!(singles,m)
                     end
                 end
+                println("final singles=")
+                ts_s(singles)
                 card = singles[rand(1:length(singles))]
             else
                 card = []
@@ -2674,17 +2675,27 @@ function draw(g)
             saveI = saveI + drawAhand(all_discards[i])
         end
         saveI = saveI + drawAhand(TuSacCards.getDeckArray(gameDeck))
-    end
+    
   
     if saveI != 0
         draw(big_actors[saveI])
     end
+    
     if ActiveCard != 0
+        global csx,csy = big_actors[ActiveCard].pos
         if drawCnt >20
             draw(big_actors[ActiveCard])
+        else
+            if glIterationCnt > 4
+                big_actors[ActiveCard].pos = lsx,lsy
+            else
+               draw(big_actors[ActiveCard])
+               big_actors[ActiveCard].pos = csx,csy
+            end
         end
     end
     draw(handPic)
     draw(winnerPic)
     draw(errorPic)
+end
 end
