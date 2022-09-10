@@ -12,7 +12,6 @@ const macOSconst = 1
     zoomCardYdim = 400
 else
     const macOSconst = 0
-
     gameW = 820
     HEIGHT = gameW
     WIDTH = div(gameW * 16, 9)
@@ -21,7 +20,6 @@ else
     cardXdim = 24
     cardYdim = 80
     zoomCardYdim = 110
-    
 end
 zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
 BACKGROUND = colorant"red"
@@ -31,27 +29,25 @@ const tableYgrid = 20
 const FaceDown = false
 const cardGrid = 4
 const gameDeckMinimum = 9
-gameEnd = false
 function gameOver(gameE) 
     if gameE
         global gameEnd = true
     end
 end
 isGameOver() = gameEnd
-const humanIsGUI = true
-global humanPlayer =[true,false,false,false]
+const humanIsGUI = false
+global humanPlayer =[false,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 global currentPlayer = 1
 gotClick = false
 GUI_array=[]
 GUI_ready=false
+gameEnd = false
+
 global HISTORY = []
 global waitForHuman = false
 global handPic
-global A_hand = (7,18)
 global pBseat = []
-global gsHArray = []
-global gsHHistArray = []
 
 const gpPlay1card = 1
 const gpCheckMatch1or2 = 3
@@ -1872,6 +1868,7 @@ game start here
 
 
 gsStateMachine(gsSetupGame)
+
 BIGcard = 0
 ActiveCard = 0
 prevActiveCard = 0
