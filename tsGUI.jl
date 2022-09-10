@@ -1,5 +1,5 @@
 macOS = true
-
+noGUI = true
 if macOS
 const macOSconst = 1
     gameW = 900
@@ -22,7 +22,7 @@ else
     zoomCardYdim = 110
 end
 zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
-BACKGROUND = colorant"red"
+BACKGROUND = colorant"white"
 
 const tableXgrid = 20
 const tableYgrid = 20
@@ -32,6 +32,9 @@ const gameDeckMinimum = 9
 function gameOver(gameE) 
     if gameE
         global gameEnd = true
+    end
+    if noGUI
+        exit()
     end
 end
 isGameOver() = gameEnd
@@ -679,7 +682,10 @@ dims: 0: Vertical
       mx0,my0,mx1,my1 are place holder for state usage
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
 """
-function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false)
+function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui = true)
+    if gui == false
+        return
+    end
     i = 0
     x, y = tableGridXY(gx, gy)
    
@@ -846,10 +852,13 @@ tusacState = tsSinitial
 function ts(a)
         TuSacCards.Card(a)
 end
-function tsa(a)
-    for e in a
-        TuSacCards.Card(e)
+
+function ts_s(rt)
+    for r in rt
+        print(ts(r), " ")
     end
+    println()
+    return
 end
 
 is_T(v) = (v & 0x1C) == 0x4
@@ -923,26 +932,6 @@ end
 """
 card_equal(a, b) = ((a & 0xFC) == (b & 0xFC))
 global currenAction
-
-function ccompare(ar,br) 
-    compare = length(ar) == length(br)
-    if !compare
-        return false
-    end
-
-    for i in 1:length(ar)
-        if ar[i] != br[i]
-            compare = false
-            break
-        end
-    end
-    if !compare
-        for i in 1:length(ar)
-            print((ar[i],br[i]))
-        end
-    end
-    return true
-end
 
 function printAllInfo()
     println("==========Hands")
@@ -1546,9 +1535,7 @@ function gamePlay1Iteration()
                 rReady
             )
         end
-
     elseif(rem(glIterationCnt,4) ==1)
-
         glIterationCnt += 1
         if glNeedaPlayCard
             checkHumanResponse(glPrevPlayer)
@@ -1570,10 +1557,8 @@ function gamePlay1Iteration()
         else
             nc = pop!(gameDeck, 1)
             nca = pop!(gameDeckArray)
-
             global gd = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
             All_hand_updateActor(nc[1].value, !FaceDown)
-
             println("pick a card from Deck=", nc[1], " for player", nextPlayer(glPrevPlayer))
             glNewCard = nc[1].value
             global currentPlayer = nextPlayer(glPrevPlayer)
@@ -1622,7 +1607,6 @@ function gamePlay1Iteration()
             rQ,
             rReady
         )
-       
         t4Player = nextPlayer(t3Player)
         if !glNeedaPlayCard
             hgamePlay(
@@ -1636,10 +1620,7 @@ function gamePlay1Iteration()
                 rQ,
                 rReady
             )
-          
         end
-   
-
     else
         glIterationCnt += 1
         aplayer = t1Player
@@ -1649,7 +1630,6 @@ function gamePlay1Iteration()
             end
             aplayer = nextPlayer(aplayer)
         end
-
         if  rReady[t1Player] &&
             rReady[t2Player] &&
             rReady[t3Player] &&
@@ -1711,23 +1691,18 @@ function gamePlay1Iteration()
                 end
                 glNeedaPlayCard = false
             end
-          
         elseif winner == -1
             println("GAME OVER, player", 
             nPlayer, " win")
             updateWinnerPic(nPlayer)
             gameOverCnt = 1
             openAllCard = true
-
         else
             addCards!(all_assets, 0, nPlayer, glNewCard)
             addCards!(all_assets, 0, nPlayer, r)
             glPrevPlayer = nPlayer
             glNeedaPlayCard = true
-           
         end
-       
-
     end
 end
 
@@ -1787,8 +1762,9 @@ function gsStateMachine(gameActions)
 
     elseif tusacState == tsSdealCards
 # -------------------A
+global cardsIndxArr = []
+global GUI_ready = false
         if gameActions == gsOrganize
-            tusacState = tsSstartGame
             tusacDeal()
             organizeHand(player1_hand)
             organizeHand(player2_hand)
@@ -1797,11 +1773,8 @@ function gsStateMachine(gameActions)
       
             getData_all_hands()
             setupDrawDeck(player1_hand, 7, 18, 100, false)
-        
+
         end
-# -------------------A
-    elseif tusacState == tsSstartGame
-# -------------------A
 
         println("Dealing is completed")
     
@@ -1843,9 +1816,7 @@ function gsStateMachine(gameActions)
     elseif tusacState == tsGameLoop
         if length(gameDeckArray) >= gameDeckMinimum
                 if !isGameOver()
-                   
                     if(rem(glIterationCnt,4) ==0)
-
                     currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard]
                     anE= []
                     anE = deepcopy(
@@ -1862,18 +1833,11 @@ function gsStateMachine(gameActions)
                         player3_discards,
                         player4_discards,
                         gameDeck,currentStates])
-    
                     push!(HISTORY,anE)
                     end
                     gamePlay1Iteration()
-
                 end
         else
-            #=
-            bombPic = Actor("bomb.jpeg")
-            bombPic.pos = tableGridXY(10,10)
-            draw(bombPic)
-            =#
             openAllCard = true
             gameOver(true)
         end
@@ -2009,8 +1973,6 @@ function on_mouse_move(g, pos)
     end
 end
 
-
-
 function mouseDownOnBox(x, y, boxState)
     loc = 0
     up = 0
@@ -2030,13 +1992,6 @@ actionStr(a) =
     a == gpCheckMatch1or2 ? "gpCheckMatch1or2" :
     a == gpCheckMatch2 ? "gpCheckMatch2" : "gpPopCards"
 
-function ts_s(rt)
-    for r in rt
-        print(ts(r), " ")
-    end
-    println()
-    return
-end
 
 
 function strToVal(hand, str)
@@ -2219,8 +2174,6 @@ function hgamePlay(
         println()
     allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
         scanCards(all_hands[gpPlayer])
-println((gpAction,gpPlay1card))
- 
 
     """
     chk1(playCard)
@@ -2383,12 +2336,12 @@ println((gpAction,gpPlay1card))
         end
         return cards
     end
-    #@assert ((length(union(singles, chot1s, miss1s, missTs)) != 0) && (gpAction == gpPlay1card))
-
+    
     println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
     rReady[gpPlayer] = false
 
     if gpAction == gpPlay1card
+        @assert length(union(singles, chot1s, miss1s, missTs)) > 0 0
         cards = gpHandlePlay1Card()
         println("Enter card to play")
     elseif gpAction == gpCheckMatch1or2
@@ -2712,12 +2665,10 @@ function on_mouse_down(g, pos)
     y = pos[2] << macOSconst
   
     if tusacState == tsSdealCards
-        global cardsIndxArr = []
+      
        gsStateMachine(gsOrganize)
-        global GUI_ready = false
-        tusacState = tsSstartGame
-    elseif tusacState == tsSstartGame
-        cindx, remy = mouseDownOnBox(x, y, human_state)
+       
+      #  cindx, remy = mouseDownOnBox(x, y, human_state)
         tusacState = tsGameLoop
     elseif tusacState == tsGameLoop    
         cindx, yPortion = mouseDownOnBox(x, y, human_state)
@@ -2795,6 +2746,9 @@ function draw(g)
     global BIGcard, ActiveCard
     global cardSelect
     global drawCnt,lsx,lsy
+    if noGUI 
+        return
+    end
     fill(colorant"ivory4")
 
     saveI = 0
