@@ -896,6 +896,10 @@ missPiece(s1, s2) = (s2 > s1) ? (((((s2 & 0xc) - (s1 & 0xc)) == 4 ) ?
                                 ( ((s2 & 0xc) == 4) ? 0xc : 4 ) : 8) |
                                     (s2 & 0xF3))
 
+"""
+    all_chots(cards,pc)
+all is Chots
+"""
 function all_chots(cards,pc) 
     for c in cards
         if card_equal(pc,c)
@@ -1726,6 +1730,9 @@ function gamePlay1Iteration()
 
     end
 end
+
+global openAllCard = false
+
 """
 gsStateMachine(gameActions)
 
@@ -1775,8 +1782,6 @@ function gsStateMachine(gameActions)
             updateWinnerPic(0)
             updateErrorPic(0)
         end
-        global gameOverCnt = 0
-        global openAllCard = false
 
 # -------------------A
 
@@ -2618,7 +2623,7 @@ function click_card(cardIndx, yPortion, hand)
     global prevYportion = yPortion
 end
 
-function badResponse(cards,hand,action,matchC)
+function badPlay(cards,hand,action,matchC)
     println("Chk GUI ",(cards,matchC))
     allfound = true
     for c in cards
@@ -2737,7 +2742,7 @@ function on_mouse_down(g, pos)
             end
             println("\nDanh Bai XONG ROI")
             setupDrawDeck(player1_hand, 7, 18, 100, false)
-            if badResponse(GUI_array,all_hands[1],currentAction,currentPlayCard)
+            if badPlay(GUI_array,all_hands[1],currentAction,currentPlayCard)
                 updateErrorPic(1)
                 cardsIndxArr = []
                 GUI_ready = false
