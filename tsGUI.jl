@@ -38,17 +38,30 @@ isGameOver() = gameEnd
 const humanIsGUI = false
 global humanPlayer =[false,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
-global currentPlayer = 1
-gotClick = false
-GUI_array=[]
-GUI_ready=false
-gameEnd = false
 
-global HISTORY = []
-global waitForHuman = false
-global handPic
-global pBseat = []
+function RESET1()
+        
+    global currentPlayer = 1
+    global gotClick = false
+    global GUI_array=[]
+    global GUI_ready=false
+    global gameEnd = false
 
+    global HISTORY = []
+    global waitForHuman = false
+    global handPic
+    global pBseat = []
+
+    global drawCnt = 1
+    global gsHcnt = 1
+
+
+global all_hands = []
+global all_discards = []
+global all_assets = []
+global gameDeckArray =[]
+
+end
 const gpPlay1card = 1
 const gpCheckMatch1or2 = 3
 const gpCheckMatch2 = 2
@@ -59,8 +72,6 @@ const gsHarrayNamediscards = 2
 const gsHarrayNameassets = 3
 const gsHarrayNamegameDeck = 4
 
-drawCnt = 1
-gsHcnt = 1
 """
 table-grid, giving x,y return grid coordinate
 """
@@ -606,11 +617,7 @@ end
 
 end # module
 ######################################################################
-
-all_hands = []
-all_discards = []
-all_assets = []
-gameDeckArray =[]
+RESET1()
 
 
 """
@@ -654,9 +661,12 @@ function setupActorgameDeck()
     end
     return a, b, big, mapToActor
 end
-mask = zeros(UInt8, 112)
-actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
-
+function RESET3()
+    global actors, fc_actors, big_actors, mapToActors , mask
+    mask = zeros(UInt8, 112)
+    actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
+end
+RESET3()
 """
 setupDrawDeck:
 x,y: starting location
@@ -1401,7 +1411,7 @@ function gsStateMachine(gameActions)
                 for e in r
                     filter!(x -> x != e, thand)
                 end
-                ps, ss, cs, m1s, mts, mbs = scanCards(thand, true)
+                ps, ss, cs, m1s, mts, mbs = scanCards(thand, false)
 
                 if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
                     for p in ps[1]
@@ -1411,7 +1421,8 @@ function gsStateMachine(gameActions)
                         end
                     end
                 end
-                if length(union(ss, cs, m1s, mts, mbs)) == 0
+                ll = length(union(ss, cs, m1s, mts, mbs)) 
+                if ll == 0
                     println("WINWINWINWINWINWINWINWINWINWIWN")
                     l = 4
                     win = true
@@ -1869,12 +1880,16 @@ game start here
 
 gsStateMachine(gsSetupGame)
 
-BIGcard = 0
-ActiveCard = 0
-prevActiveCard = 0
-cardSelect = false
-playCard = 0
+function RESET2()
+    global BIGcard = 0
+    global ActiveCard = 0
+    global prevActiveCard = 0
+    global cardSelect = false
+    global playCard = 0
+end
 global lsx,lsy
+
+RESET2()
 
 function on_mouse_move(g, pos)
     global tusacState, gameDeck, ad, deckState
@@ -2197,6 +2212,8 @@ function hgamePlay(
         println()
     allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
         scanCards(all_hands[gpPlayer])
+println((gpAction,gpPlay1card))
+ 
 
     """
     chk1(playCard)
@@ -2359,7 +2376,8 @@ function hgamePlay(
         end
         return cards
     end
-
+    @assert (length(union(singles, chot1s, miss1s, missTs)) != 0) && (gpAction == gpPlay1card)
+    
     println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
     rReady[gpPlayer] = false
 
