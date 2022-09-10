@@ -33,9 +33,9 @@ function gameOver(gameE)
     if gameE
         global gameEnd = true
     end
-    if noGUI
-        exit()
-    end
+   if noGUI
+    exit()
+   end
 end
 isGameOver() = gameEnd
 const humanIsGUI = false
@@ -1391,7 +1391,6 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                 println("WINWINWINWINWINWINWINWINWINWIWN")
                 l = 4
                 win = true
-                gameOver(true)
             end
             
         end
@@ -1695,6 +1694,8 @@ function gamePlay1Iteration()
             println("GAME OVER, player", 
             nPlayer, " win")
             updateWinnerPic(nPlayer)
+            gameOver(true)
+
             gameOverCnt = 1
             openAllCard = true
         else
@@ -1749,13 +1750,15 @@ function gsStateMachine(gameActions)
         if gameActions == gsSetupGame
             gameDeck = TuSacCards.ordered_deck()
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
-            tusacState = tsSdealCards
             global handPic = Actor("hand.jpeg")
             global winnerPic = Actor("winner.png")
             global errorPic = Actor("error.png")
             updateHandPic(1)
             updateWinnerPic(0)
             updateErrorPic(0)
+
+            tusacState = tsSdealCards
+
         end
 
 # -------------------A
@@ -1839,6 +1842,7 @@ global GUI_ready = false
                 end
         else
             openAllCard = true
+            println("Bai thui!")
             gameOver(true)
         end
     end
@@ -2668,8 +2672,6 @@ function on_mouse_down(g, pos)
       
        gsStateMachine(gsOrganize)
        
-      #  cindx, remy = mouseDownOnBox(x, y, human_state)
-        tusacState = tsGameLoop
     elseif tusacState == tsGameLoop    
         cindx, yPortion = mouseDownOnBox(x, y, human_state)
         if cindx != 0
@@ -2715,6 +2717,9 @@ function update(g)
         if (deckState[5] > 10)
             TuSacCards.humanShuffle!(gameDeck, 14, deckState[5])
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+        end
+        if noGUI 
+            gsStateMachine(gsOrganize)
         end
     elseif tusacState == tsSstartGame
             gsStateMachine(gsStartGame)
