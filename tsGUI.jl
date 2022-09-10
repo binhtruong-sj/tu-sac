@@ -121,7 +121,7 @@ export suit, rank, high_value, low_value, color
 export ranks, suits, duplicate
 
 # Deck & deck-related methods
-export Deck, shuffle!, ssort, full_deck, ordered_deck, ordered_deck_chot, autoShuffle!, dealCards, full_deck_chot
+export Deck, shuffle!, ssort, full_deck, ordered_deck, ordered_deck_chot, humanShuffle!, dealCards, full_deck_chot
 export getCards, rearrange, sort!, rcut, moveCards!
 export test_deck, getDeckArray
 #####
@@ -539,7 +539,7 @@ autoShuffle:
     - is up/left
     + is down/right
 """
-function autoShuffle!(deck::Deck, ySize, gradienDir)
+function humanShuffle!(deck::Deck, ySize, gradienDir)
     """
         deckCut(dir, a)
         direction: 1,0 ->  hor+right
@@ -563,7 +563,6 @@ function autoShuffle!(deck::Deck, ySize, gradienDir)
                     Grid = div(c, cardGrid)
                 end
                 rangeL, rangeH = g * Grid + 1, (g + 1) * Grid
-
             end
             crl, crh = lowhi(rand(rangeL:rangeH), rand(rangeL:rangeH))
             if dr < 30
@@ -593,7 +592,6 @@ function autoShuffle!(deck::Deck, ySize, gradienDir)
                 end
             end
         end
-
     end
     ###-------------------------------------------
 
@@ -604,7 +602,7 @@ function autoShuffle!(deck::Deck, ySize, gradienDir)
     a = reshape(b, :, 1)
     deck.cards .= deck.cards[a]
     r = rand(1:100)
-    if r < 20
+    if r < 10
         deck = rcut(deck)
     end
     deck
@@ -1453,7 +1451,11 @@ function gsStateMachine(gameActions)
             elseif l4 > 1
                 w = 3
             else
-                w = 0
+                if play4 && (l2 > 0) && (l1 == 0)
+                    w = 1
+                else 
+                    w = 0
+                end
             end
         end
         r = w == 0 ? r1 : w == 1 ? r2 : w == 2 ? r3 : r4
@@ -2151,7 +2153,14 @@ function human_gamePlay(
     rReady[gpPlayer] = true
     return
 end
-
+function autoHumanShuffle(n)
+    for i in 1:n
+        rl = rand(17:23)
+        rh = rand(37:43)
+        sh = rand(0:1) > 0 ? rl : rh
+        TuSacCards.humanShuffle!(gameDeck,14,sh)
+    end
+end
 """
 hgamePlay:
     actions: 0 - inital cards dealt - before any play
@@ -2455,7 +2464,21 @@ function adjustCnt(cnt,max,dir)
 end
 
 function on_key_down(g)
-    global tusacState
+    global tusacState, gameDeck,
+    player1_hand,
+    player2_hand,
+    player3_hand,
+    player4_hand,
+    player1_assets,
+    player2_assets,
+    player3_assets,
+    player4_assets,
+    player1_discards,
+    player2_discards,
+    player3_discards,
+    player4_discards
+
+
         if g.keyboard.RETURN
             println("Return")
         elseif g.keyboard.SPACE
@@ -2463,12 +2486,20 @@ function on_key_down(g)
         elseif g.keyboard.T
             println("key-T")
         end
-    if tusacState == tsHistory
-        dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
-        global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
-        println(HistCnt)
-        replayHistory(HistCnt)
-        printHistory(HistCnt)
+
+        if tusacState == tsSdealCards
+            if g.keyboard.S
+                println("Auto Shuffle")
+                autoHumanShuffle(10)
+                setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+
+            end
+        elseif tusacState == tsHistory
+            dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
+            global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
+            println(HistCnt)
+            replayHistory(HistCnt)
+            printHistory(HistCnt)
         if g.keyboard.b
             println("Exiting History mode")
             resize(HISTORY,HistCnt)
@@ -2518,6 +2549,25 @@ function on_key_down(g)
         elseif g.keyboard.T
             println("Entering Test mode")
             tusacState = tsTest
+        elseif g.keyboard.R
+            println("Reset Game, merge all-hands")
+            newDeck = (union(
+                player1_hand,
+                player2_hand,
+                player3_hand,
+                player4_hand,
+
+                player1_assets,
+                player2_assets,
+                player3_assets,
+                player4_assets,
+
+                player1_discards,
+                player2_discards,
+                player3_discards,
+                player4_discards,
+                gameDeck))
+                println("Deck=",newDeck)
         end
     end
 end
@@ -2689,7 +2739,7 @@ function update(g)
    
     if tusacState == tsSdealCards
         if (deckState[5] > 10)
-            TuSacCards.autoShuffle!(gameDeck, 14, deckState[5])
+            TuSacCards.humanShuffle!(gameDeck, 14, deckState[5])
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
         end
     elseif tusacState == tsSstartGame
