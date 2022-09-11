@@ -1,5 +1,5 @@
 macOS = true
-noGUI = true
+noGUI = false
 if macOS
 const macOSconst = 1
     gameW = 900
@@ -38,8 +38,8 @@ function gameOver(gameE)
    end
 end
 isGameOver() = gameEnd
-const humanIsGUI = false
-global humanPlayer =[false,false,false,false]
+const humanIsGUI = true
+global humanPlayer =[true,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 
 function RESET1()
