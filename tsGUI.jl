@@ -1,5 +1,5 @@
 macOS = true
-noGUI = true
+noGUI = false
 if macOS
 const macOSconst = 1
     gameW = 900
@@ -1314,18 +1314,12 @@ function removeCards!(array, n, cards)
         @assert found
             if n== 1
                 pop!(player1_hand,ts(c))
-                global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
             elseif n == 2
                 pop!(player2_hand,ts(c))
-                setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
-
             elseif n == 3
                 pop!(player3_hand,ts(c))
-                setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
-
             elseif n == 4
                 pop!(player4_hand,ts(c))
-                setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
             end
 
     end
@@ -1336,30 +1330,22 @@ function addCards!(array,arrNo, n, cards)
         if arrNo == 0
             if n== 1
                 push!(player1_assets,ts(c))
-                global asset1 = setupDrawDeck(player1_assets, 8, 14, 30, false)
             elseif n == 2
                 push!(player2_assets,ts(c))
-                global asset2 = setupDrawDeck(player2_assets, 16, 7, 4, false)
             elseif n == 3
                 push!(player3_assets,ts(c))
-                global asset3 = setupDrawDeck(player3_assets, 8, 4, 30, false)
             elseif n == 4
                 push!(player4_assets,ts(c))
-                global asset4 = setupDrawDeck(player4_assets, 4, 7, 4, false)
             end
         else
             if n== 1
                 push!(player1_discards,ts(c))
-                global discard1 = setupDrawDeck(player1_discards, 16, 16, 8, false)
             elseif n == 2
                 push!(player2_discards,ts(c))
-                global discard2 = setupDrawDeck(player2_discards, 16, 2, 8, false)
             elseif n == 3
                 push!(player3_discards,ts(c))
-                global discard3 = setupDrawDeck(player3_discards, 3, 2, 8, false)
             elseif n == 4
                 push!(player4_discards,ts(c))
-                global discard4 = setupDrawDeck(player4_discards, 3, 16, 8, false)
             end
         end
     end
@@ -1717,7 +1703,25 @@ function gamePlay1Iteration()
 end
 
 global openAllCard = false
-
+function SNAPSHOT()
+    currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard]
+    anE= []
+    anE = deepcopy(
+        [player1_hand,
+        player2_hand,
+        player3_hand,
+        player4_hand,
+        player1_assets,
+        player2_assets,
+        player3_assets,
+        player4_assets,
+        player1_discards,
+        player2_discards,
+        player3_discards,
+        player4_discards,
+        gameDeck,currentStates])
+    push!(HISTORY,anE)
+end
 """
 gsStateMachine(gameActions)
 
@@ -1832,23 +1836,7 @@ global GUI_ready = false
         if length(gameDeckArray) >= gameDeckMinimum
                 if !isGameOver()
                     if(rem(glIterationCnt,4) ==0)
-                    currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard]
-                    anE= []
-                    anE = deepcopy(
-                        [player1_hand,
-                        player2_hand,
-                        player3_hand,
-                        player4_hand,
-                        player1_assets,
-                        player2_assets,
-                        player3_assets,
-                        player4_assets,
-                        player1_discards,
-                        player2_discards,
-                        player3_discards,
-                        player4_discards,
-                        gameDeck,currentStates])
-                    push!(HISTORY,anE)
+                    SNAPSHOT()
                     end
                     gamePlay1Iteration()
                 end
@@ -2181,6 +2169,29 @@ function hgamePlay(
     global rQ, rReady
     global currentAction = gpAction
     global currentPlayCard = pcard
+    if gpPlayer == 1 
+        global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
+        discard1 = setupDrawDeck(player1_discards, 16, 16, 8, false)
+        asset1 = setupDrawDeck(player1_assets, 8, 14, 30, false)
+
+    elseif gpPlayer == 2
+        setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
+        discard2 = setupDrawDeck(player2_discards, 16, 2, 8, false)
+        asset2 = setupDrawDeck(player2_assets, 16, 7, 4, false)
+
+    elseif gpPlayer == 3
+        setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
+        discard3 = setupDrawDeck(player3_discards, 3, 2, 8, false)
+        asset3 = setupDrawDeck(player3_assets, 8, 4, 30, false)
+
+    else
+        setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
+        discard4 = setupDrawDeck(player4_discards, 3, 16, 8, false)
+        asset4 = setupDrawDeck(player4_assets, 4, 7, 4, false)
+
+    end
+
+
     rReady[gpPlayer] = false
     rQ[gpPlayer] = []
     print(
