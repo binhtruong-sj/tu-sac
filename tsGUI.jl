@@ -1,5 +1,5 @@
 macOS = true
-noGUI = false
+noGUI = true
 if macOS
 const macOSconst = 1
     gameW = 900
@@ -22,7 +22,10 @@ else
     zoomCardYdim = 110
 end
 zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
-BACKGROUND = colorant"white"
+
+if noGUI == false 
+   # BACKGROUND = colorant"white"
+end 
 
 const tableXgrid = 20
 const tableYgrid = 20
@@ -38,8 +41,8 @@ function gameOver(gameE)
    end
 end
 isGameOver() = gameEnd
-const humanIsGUI = true
-global humanPlayer =[true,false,false,false]
+const humanIsGUI = true & !noGUI
+global humanPlayer =[true & !noGUI,false,false,false]
 playerIsHuman(p) = humanPlayer[p]
 
 function RESET1()
@@ -629,6 +632,9 @@ setupActorgameDeck:
     Card.value
 """
 function setupActorgameDeck()
+    if noGUI
+        return
+    end
     a = []
     b = []
     big = []
@@ -667,7 +673,9 @@ end
 function RESET3()
     global actors, fc_actors, big_actors, mapToActors , mask
     mask = zeros(UInt8, 112)
-    actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
+    if noGUI == false
+        actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
+    end
 end
 RESET3()
 """
@@ -683,7 +691,7 @@ dims: 0: Vertical
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
 """
 function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui = true)
-    if gui == false
+    if noGUI
         return
     end
     i = 0
@@ -934,11 +942,6 @@ card_equal(a, b) = ((a & 0xFC) == (b & 0xFC))
 global currenAction
 
 function printAllInfo()
-    println("==========Hands")
-    println(player1_hand)
-    println(player2_hand)
-    println(player3_hand)
-    println(player4_hand)
     println("==========Hands")
     for ah in all_hands
         ts_s(ah)
@@ -1280,6 +1283,9 @@ function  updateErrorPic(cp)
 end
 
 function updateWinnerPic(cp) 
+    if noGUI
+        return
+    end
     if cp == 0
         gx,gy = 20,20
     elseif cp == 1 
@@ -1495,6 +1501,9 @@ function gamePlay1Iteration()
     end
 
     function All_hand_updateActor(card,facedown) 
+        if noGUI
+            return
+        end
         global lsx,lsy
         global prevActiveCard = ActiveCard
         mmm = mapToActors[card]
@@ -1749,14 +1758,17 @@ function gsStateMachine(gameActions)
 
         if gameActions == gsSetupGame
             gameDeck = TuSacCards.ordered_deck()
-            deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
-            global handPic = Actor("hand.jpeg")
-            global winnerPic = Actor("winner.png")
-            global errorPic = Actor("error.png")
-            updateHandPic(1)
-            updateWinnerPic(0)
-            updateErrorPic(0)
-
+            if noGUI == false
+                deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+                global handPic = Actor("hand.jpeg")
+                global winnerPic = Actor("winner.png")
+                global errorPic = Actor("error.png")
+                updateHandPic(1)
+                updateWinnerPic(0)
+                updateErrorPic(0)
+            else
+                autoHumanShuffle(rand(8:15))
+            end
             tusacState = tsSdealCards
 
         end
@@ -1779,7 +1791,7 @@ global GUI_ready = false
 
         end
 
-        println("Dealing is completed")
+        println("\nDealing is completed")
     
         getData_all_discard_assets()
 
@@ -1851,9 +1863,17 @@ end
 #=
 game start here
 =#
-
+function autoHumanShuffle(n)
+    for i in 1:n
+        rl = rand(17:23)
+        rh = rand(37:43)
+        sh = rand(0:1) > 0 ? rl : rh
+        TuSacCards.humanShuffle!(gameDeck,14,sh)
+    end
+end
 
 gsStateMachine(gsSetupGame)
+    
 
 function RESET2()
     global BIGcard = 0
@@ -1865,7 +1885,11 @@ end
 global lsx,lsy
 
 RESET2()
+if noGUI
 
+    gsStateMachine(gsOrganize)
+   
+end
 function on_mouse_move(g, pos)
     global tusacState, gameDeck, ad, deckState
     """
@@ -2131,14 +2155,7 @@ function human_gamePlay(
     rReady[gpPlayer] = true
     return
 end
-function autoHumanShuffle(n)
-    for i in 1:n
-        rl = rand(17:23)
-        rh = rand(37:43)
-        sh = rand(0:1) > 0 ? rl : rh
-        TuSacCards.humanShuffle!(gameDeck,14,sh)
-    end
-end
+
 """
 hgamePlay:
     actions: 0 - inital cards dealt - before any play
@@ -2707,7 +2724,12 @@ function on_mouse_down(g, pos)
         end
     end
 end
-
+if noGUI
+    println("HERE")
+    while(true)
+        gsStateMachine(gsGameLoop)
+    end
+end
 function update(g)
     global waitForHuman
     global ad, deckState, gameDeck, tusacState
@@ -2754,7 +2776,7 @@ function draw(g)
     if noGUI 
         return
     end
-    fill(colorant"ivory4")
+   # fill(colorant"ivory4")
 
     saveI = 0
     drawCnt += 1
@@ -2804,4 +2826,6 @@ function draw(g)
     draw(winnerPic)
     draw(errorPic)
 end
+
+
 end
