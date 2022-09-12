@@ -2499,7 +2499,6 @@ function on_key_down(g)
                 println("Auto Shuffle")
                 autoHumanShuffle(10)
                 setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
-
             end
         elseif tusacState == tsHistory
             dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
@@ -2507,17 +2506,17 @@ function on_key_down(g)
             println(HistCnt)
             replayHistory(HistCnt)
             printHistory(HistCnt)
-        if g.keyboard.b
-            println("Exiting History mode")
-            resize(HISTORY,HistCnt)
-            tusacState = tsGameLoop
-        elseif g.keyboard.SPACE
-            println("Exiting History mode")
-            l = length(HISTORY)
-            replayHistory(l)
-            printHistory(l)
-            tusacState = tsGameLoop
-        end
+            if g.keyboard.b
+                println("Exiting History mode")
+                resize(HISTORY,HistCnt)
+                tusacState = tsGameLoop
+            elseif g.keyboard.SPACE
+                println("Exiting History mode")
+                l = length(HISTORY)
+                replayHistory(l)
+                printHistory(l)
+                tusacState = tsGameLoop
+            end
     elseif tusacState == tsTest
         if g.keyboard.T
             println("Exiting Test mode")
@@ -2550,6 +2549,7 @@ function on_key_down(g)
 
     elseif tusacState == tsGameLoop
         if g.keyboard.RETURN
+            SNAPSHOT() #taking last SNAPSHOT 
             HistCnt = length(HISTORY)
             tusacState = tsHistory
             println("Entering History mode, size=",HistCnt)
