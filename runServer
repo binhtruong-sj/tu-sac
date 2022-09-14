@@ -1,0 +1,2 @@
+rm client.txt
+julia runTUSAC.jl > afile1
