@@ -120,14 +120,14 @@ function nw_sendToMaster(connection,arr)
     end
     
     if l != 112
-        s_arr = Vector{UInt8}(undef,8)
+        s_arr = Vector{Int8}(undef,8)
 
         s_arr[1] = l
         for (i,a) in enumerate(arr)
             s_arr[i+1] = a
         end
     else
-        s_arr = Vector{UInt8}(undef,l)
+        s_arr = Vector{Int8}(undef,l)
 
         for (i,a) in enumerate(arr)
             s_arr[i] = a
@@ -174,13 +174,13 @@ function nw_sendToPlayer(connection, arr)
     end
      
     if l != 112
-        s_arr = Vector{UInt8}(undef,8)
+        s_arr = Vector{Int8}(undef,8)
         s_arr[1] = l
         for (i,a) in enumerate(arr)
             s_arr[i+1] = a
         end
     else
-        s_arr = Vector{UInt8}(undef,l)
+        s_arr = Vector{Int8}(undef,l)
         for (i,a) in enumerate(arr)
             s_arr[i] = a
         end
@@ -246,7 +246,7 @@ export test_deck, getDeckArray, newDeckUsingArray
 """
     In TuSac, cards has 4 suit of color: White,Yellow,Red,Green
 
-Encode a suit as a 2-bit value (low bits of a `UInt8`):
+Encode a suit as a 2-bit value (low bits of a `Int8`):
 - 0 = T rang (White)
 - 1 = X anh (Greed)
 - 2 = V ang (Yellow)
@@ -255,7 +255,7 @@ Encode a suit as a 2-bit value (low bits of a `UInt8`):
 Suits have global constant bindings: `T`, `V`, `D`, `X`.
 """
 struct Suit
-    i::UInt8
+    i::Int8
     Suit(s::Integer) =
         0 ≤ s ≤ 3 ? new(s) : throw(ArgumentError("invalid suit number: $s"))
 end
@@ -292,14 +292,14 @@ bit[6:5] encodes the colors
 """
 
 struct Card
-    value::UInt8
+    value::Int8
     function Card(r::Integer, s::Integer)
         (0 <= r <= 31 && ((r & 0x1c) != 0)) ||
             throw(ArgumentError("invalid card : $r"))
-        return new(UInt8((s << 5) | r))
+        return new(Int8((s << 5) | r))
     end
     function Card(i::Integer)
-        return new(UInt8(i))
+        return new(Int8(i))
     end
     #=
     function Card(v::Vector{Any})
@@ -321,8 +321,8 @@ suit(c::Card) = Suit((0x60 & c.value) >>> 5)
 
 The rank of a card
 """
-rank(c::Card) = UInt8((c.value & 0x1f))
-getvalue(c::Card) = UInt8(c.value)
+rank(c::Card) = Int8((c.value & 0x1f))
+getvalue(c::Card) = Int8(c.value)
 const T = Suit(0)
 const V = Suit(1)
 const D = Suit(2)
@@ -339,7 +339,7 @@ function Base.show(io::IO, c::Card)
     print(io, suit(c))
 end
 
-function rank_string(r::UInt8)
+function rank_string(r::Int8)
     rr = r >> 2
     @assert rr > 0
 
@@ -634,7 +634,7 @@ nextWrap(n::Int, d::Int, max::Int) = ((n + d) > max) ? 1 : (n + d)
 """
 function getDeckArray(deck::Deck)
     l = length(deck)
-    a = Vector{UInt8}(undef,l)
+    a = Vector{Int8}(undef,l)
     i = 1
     for card in deck
         a[i] = card.value
@@ -646,7 +646,7 @@ end
 """
 function getDeckArray(deck::Vector{Card})
     l = length(deck)
-    a = Vector{UInt8}(undef,l)
+    a = Vector{Int8}(undef,l)
     i = 1
     for card in deck
         a[i] = card.value
@@ -759,7 +759,7 @@ function setupActorgameDeck()
     a = []
     b = []
     big = []
-    mapToActor = Vector{UInt8}(undef, 128)
+    mapToActor = Vector{Int8}(undef, 128)
     ind = 1
     sc = 0
     for s in ['w', 'y', 'r', 'g']
@@ -793,7 +793,7 @@ function setupActorgameDeck()
 end
 function RESET3()
     global actors, fc_actors, big_actors, mapToActors , mask
-    mask = zeros(UInt8, 112)
+    mask = zeros(Int8, 112)
     if noGUI == false
         actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
     end
@@ -1582,7 +1582,7 @@ function getData_all_hands()
 end
 
 function toDeck(arr,brr,crr,d) 
-    r = Vector{UInt8}(undef,112+12)
+    r = Vector{Int8}(undef,112+12)
     i = 1
     for mr in [arr,brr,crr]
         for m in mr
@@ -1704,6 +1704,10 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
                 push!(r,rmsg[i+4])
             end
             println("received =" , (nPlayer, winner, l, r))
+            if winner&0xFF == 0xFF
+                println("Game Over, player ", nPlayer, " win")
+                gameOver(true)
+            end
         end
     end
     return nPlayer, winner, r
@@ -1766,7 +1770,7 @@ function gamePlay1Iteration()
             else
                 return
             end
-            println((ts(cards[1]),UInt8(cards[1])))
+            println((ts(cards[1]),Int8(cards[1])))
             isMaster = (PlayerList[myPlayer] != plSocket) 
             if isMaster  
                 if PlayerList[gpPlayer] == plSocket 
@@ -2425,7 +2429,7 @@ function strToVal(hand, str)
         return 0
     end
 aStrToVal(s) =
-(UInt8(find1(s[1], grank)) << 2) | (UInt8(find1(s[2], gcolor) - 1) << 5)
+(Int8(find1(s[1], grank)) << 2) | (Int8(find1(s[2], gcolor) - 1) << 5)
 
     local r = []
     for s in str
