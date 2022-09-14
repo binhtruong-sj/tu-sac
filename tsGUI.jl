@@ -1,7 +1,7 @@
 const macOS = true
 const noGUI = true
 myPlayer = 1
-client = false
+client = isfile("client.txt")
 
 if macOS
 const macOSconst = 1
@@ -101,6 +101,7 @@ using Sockets
 export nw_sendToMaster,nw_receiveFromMaster,nw_receiveFromPlayer, nw_sentToPlayer, nw_getR, serverSetup, clientSetup
 
 function serverSetup()
+        write("client.txt","you are client! remove this file to run as a server")
         return(listen(ip"192.168.0.53",11029))
 end
 
