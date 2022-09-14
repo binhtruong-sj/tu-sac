@@ -1,7 +1,7 @@
 const macOS = true
 const noGUI = true
-const myPlayer = 1
-
+myPlayer = 1
+client = false
 
 if macOS
 const macOSconst = 1
@@ -52,7 +52,7 @@ const plBot3 = 3
 const plSocket = 5
 
 const humanIsGUI = true & !noGUI
-global PlayerList =[plHuman,plSocket,plBot1,plBot1]
+global PlayerList =[plHuman,plBot1,plBot1,plBot1]
 playerIsHuman(p) = PlayerList[p] == plHuman && !noGUI
 
 function RESET1()
@@ -97,66 +97,97 @@ reverseTableGridXY(x, y) = div(x, div(realWIDTH, tableXgrid)) + 1,
 div(y, div(realHEIGHT, tableYgrid)) + 1
 
 module nwAPI
-export sendToMaster,receiveFromMaster,receiveFromPlayer, sentToPlayer, nw_getR
+using Sockets
+export nw_sendToMaster,nw_receiveFromMaster,nw_receiveFromPlayer, nw_sentToPlayer, nw_getR, serverSetup, clientSetup
 
-function sendToMaster(p, arr)
-    fn = string("send",p,".dat")
-    l = length(arr)
-    println("NNNNSend ",fn," DATA=",(arr,l))
+function serverSetup()
+        return(listen(ip"192.168.0.53",11029))
+end
+
+function acceptClient(s)
+    return(accept(s))
+end
+function clientSetup()
+    return(connect("baobinh.tplinkdns.com",11029))
+end
+
+function nw_sendToMaster(connection,arr)
+   l = length(arr)
+    println("NNNNSend  DATA=",(arr,l))
     for (i,a) in enumerate(arr)
         println((i,a))
     end
-    s_arr = Vector{UInt8}(undef,l)
-    for (i,a) in enumerate(arr)
-        s_arr[i] = a
-    end
-    write(fn,s_arr)
-end
-function receiveFromMaster(p)
-    fn = string("receive",p,".dat")
-    println("Waiting for file =",fn)
+    
+    if l != 112
+        s_arr = Vector{UInt8}(undef,8)
 
-    while(isfile(fn)==false)
-        sleep(1)
+        s_arr[1] = l
+        for (i,a) in enumerate(arr)
+            s_arr[i+1] = a
+        end
+    else
+        s_arr = Vector{UInt8}(undef,l)
+
+        for (i,a) in enumerate(arr)
+            s_arr[i] = a
+        end
     end
-    sleep(1)
+    write(connection,s_arr)
+end
+function nw_receiveFromMaster(connection,bytecnt)
     arr = []
-    arr = read(fn)
-    println(p," NNNNreceived ",arr," from master ")
+   while true
+        arr = read(connection,bytecnt)
+        if length(arr) != bytecnt
+            println(length(arr),"!=",bytecnt)
 
-    rm(fn)
-    return(arr)
-end
-
-function receiveFromPlayer(p)
-    fn = string("send",p,".dat")
-    println("NNNNWaiting for file =",fn)
-
-    if(isfile(fn)==false)
-        return []
+            sleep(1)
+        else
+            break
+        end
     end
-    sleep(1)
-    arr = read(fn)
-    println("NNNNmaster received ",arr," from ",p)
-    rm(fn)
+    println("NNNNreceived ",arr," from master ")
     return(arr)
 end
 
-function sendToPlayer(p,arr)
-    fn = string("receive",p,".dat")
+function nw_receiveFromPlayer(connection,bytecnt)
+    arr = []
+    while true
+        arr = read(connection,bytecnt)
+        if length(arr) != bytecnt
+            println(length(arr),"!=",bytecnt)
+            sleep(1)
+        else
+            break
+        end
+    end
+    println("NNNNmaster received ",arr)
+return(arr)
+end
+
+function nw_sendToPlayer(connection, arr)
     l = length(arr)
-    println("NNNNSend ",fn," DATA=",(arr,l))
+    println("NNNNSend DATA=",(arr,l))
     for (i,a) in enumerate(arr)
         println((i,a))
     end
-    s_arr = Vector{UInt8}(undef,l)
-    for (i,a) in enumerate(arr)
-        s_arr[i] = a
+     
+    if l != 112
+        s_arr = Vector{UInt8}(undef,8)
+        s_arr[1] = l
+        for (i,a) in enumerate(arr)
+            s_arr[i+1] = a
+        end
+    else
+        s_arr = Vector{UInt8}(undef,l)
+        for (i,a) in enumerate(arr)
+            s_arr[i] = a
+        end
     end
-   
-    write(fn,s_arr)
+    
+    write(connection,s_arr)
 end
-function nw_getR(n,nw)
+function nw_getR(nw)
     n = []
      for i in 1:nw[1]
         push!(n,nw[i+1])
@@ -471,6 +502,7 @@ deck .= deck[idx]
 deck
 end
 function rcut(deck::Deck)
+    println("\nRCUT")
     r = rand(30:90)
     idx = union(collect(r:112), collect(1:r-1))
     deck.cards .= deck.cards[idx]
@@ -589,6 +621,7 @@ Shuffle the deck! `shuffle!` uses
 `Random.randperm` to shuffle the deck.
 """
 function shuffle!(deck::Deck)
+    println("\nSHUFFLE -- random")
     deck.cards .= deck.cards[randperm(length(deck.cards))]
     deck
 end
@@ -639,6 +672,7 @@ autoShuffle:
     + is down/right
 """
 function humanShuffle!(deck::Deck, ySize, gradienDir)
+    println("\nHUMAN-shuffle")
     """
         deckCut(dir, a)
         direction: 1,0 ->  hor+right
@@ -884,7 +918,8 @@ println(rs)
 println(gameDeck)
 """
 function tusacDeal()
-    TuSacCards.rcut(gameDeck)
+    println()
+    println(gameDeck)
     global player1_hand = TuSacCards.Deck(pop!(gameDeck, 6))
     global player2_hand = TuSacCards.Deck(pop!(gameDeck, 5))
     global player3_hand = TuSacCards.Deck(pop!(gameDeck, 5))
@@ -1597,65 +1632,20 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
         glIterationCnt -= 1
         return
     end
-    println("AT",(n1c,n2c,n3c,n4c,glNewCard))
+    println("AT whoWin",(n1c,n2c,n3c,n4c,glNewCard))
     
-    if (PlayerList[myPlayer] != plSocket) # socket is a remote player
-        if PlayerList[t1Player] == plSocket 
-            nw_n1c = []
-        else
-            nw_n1c = [0]
-        end
-        if PlayerList[t2Player] == plSocket 
-            nw_n2c = []
-        else
-            nw_n2c = [0]
-        end
-        if PlayerList[t3Player] == plSocket 
-            nw_n3c = []
-        else
-            nw_n3c = [0]
-        end
-        if PlayerList[t4Player] == plSocket 
-            nw_n4c = []
-        else
-            nw_n4c = [0]
-        end
+    if (PlayerList[myPlayer] != plSocket) 
         println("Getting all Results back")
-        while true
-            if length(nw_n1c) == 0
-                nw_n1c = nwAPI.receiveFromPlayer(t1Player)
+        if PlayerList[t1Player] == plSocket
+            n1c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(nwPlayer[t1Player],8))
+        elseif PlayerList[t2Player] == plSocket
+            n2c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(nwPlayer[t2Player],8))
+        elseif PlayerList[t3Player] == plSocket
+            n3c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(nwPlayer[t3Player],8))
+        elseif PlayerList[t4Player] == plSocket
+            if !play3
+                n4c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(nwPlayer[t4Player],8))
             end
-            if length(nw_n2c) == 0
-                nw_n2c = nwAPI.receiveFromPlayer(t2Player)
-            end
-            if length(nw_n3c) == 0
-                nw_n3c = nwAPI.receiveFromPlayer(t3Player)
-            end
-            if !play3 && length(nw_n4c) == 0
-                nw_n4c = nwAPI.receiveFromPlayer(t4Player)
-            end
-            if  length(nw_n1c) != 0 &&
-                length(nw_n2c) != 0 &&
-                length(nw_n3c) != 0 &&
-                length(nw_n4c) != 0 
-                break
-            else
-                sleep(1)
-            end
-        end
-        
-
-        if PlayerList[t1Player] == plSocket 
-            nwAPI.nw_getR(n1c,nw_n1c)
-        end
-        if PlayerList[t2Player] == plSocket 
-            nwAPI.nw_getR(n2c,nw_n2c)
-        end
-        if PlayerList[t3Player] == plSocket 
-            nwAPI.nw_getR(n3c,nw_n3c)
-        end
-        if PlayerList[t4Player] == plSocket 
-            nwAPI.nw_getR(n4c,nw_n4c)
         end
 
         nPlayer, winner, r = whoWinRound(
@@ -1681,35 +1671,37 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
         msg = nw_makeR2(nPlayer, winner, r )
         for i in 1:4
             if(PlayerList[i] == plSocket)
-                nwAPI.sendToPlayer(i,msg)
+                nwAPI.nw_sendToPlayer(nwPlayer[i],msg)
             end
         end
     else
         if PlayerList[myPlayer] == plSocket
+
             r =[]
-            if myPlayer == 1
+            if t1Player == myPlayer
                 r = n1c
-            elseif myPlayer == 2
+                nwAPI.nw_sendToMaster(nwMaster,r)
+            elseif t2Player == myPlayer
                 r = n2c
-            elseif myPlayer == 2
+                nwAPI.nw_sendToMaster(nwMaster,r)
+            elseif t3Player == myPlayer
                 r = n3c
+                nwAPI.nw_sendToMaster(nwMaster,r)
             else
-                r = n4c
-            end
-            function nw_makeR(r) 
-                s_ar = []
-                push!(s_ar,length(r))
-                for ar in r 
-                    push!(s_ar,ar)
+                if !play3
+                    r = n4c
+                    nwAPI.nw_sendToMaster(nwMaster,r)
                 end
-                return s_ar
             end
-            nw_r = nw_makeR(r)
             println(myPlayer," Sending result",(length(r),r))
-            nwAPI.sendToMaster(myPlayer,nw_r)
-            println("Getting master -- Winner")
-            rmsg = nwAPI.receiveFromMaster(myPlayer)
-            nPlayer, winner, l, r = rmsg[1],rmsg[2],rmsg[3],rmsg[4]
+
+            println("Getting from master -- result of who win")
+            rmsg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+            nPlayer, winner, l= rmsg[2],rmsg[3],rmsg[4]
+            r = []
+            for i in 1:l
+                push!(r,rmsg[i+4])
+            end
             println("received =" , (nPlayer, winner, l, r))
         end
     end
@@ -1725,6 +1717,7 @@ function gamePlay1Iteration()
     global n1c,n2c,n3c,n4c
     function checkHumanResponse(player)
         global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
+       
         if playerIsHuman(player)
             if humanIsGUI
                 if GUI_ready
@@ -1743,8 +1736,8 @@ function gamePlay1Iteration()
                 ts_s(cards)
             end
         end
-    end
 
+    end
     function All_hand_updateActor(card,facedown) 
         if noGUI
             return
@@ -1761,6 +1754,49 @@ function gamePlay1Iteration()
         end
         
     end
+    function checkMaster(action,gpPlayer)
+        # socket is a remote player
+        # for The master: if the currentPlayer (gpPlayer) is a socket, then we need its pcard. If not, our bot has the card. After getting the right card, we need to send to other computers/Players so they can update/override their bots result
+        println("in CheckMaster ",(action,gpPlayer))
+
+        if(action == gpPlay1card)
+            if rReady[gpPlayer] == true
+                cards = rQ[gpPlayer]
+            else
+                return
+            end
+            println((ts(cards[1]),UInt8(cards[1])))
+            isMaster = (PlayerList[myPlayer] != plSocket) 
+            if isMaster  
+                if PlayerList[gpPlayer] == plSocket 
+                    msg = nwAPI.nw_receiveFromPlayer(nwPlayer[gpPlayer], 8)
+                    final_card = msg[2]
+                else
+                    final_card = cards 
+                end
+                for p in 1:4
+                    if PlayerList[p] == plSocket
+                        if(gpPlayer != p)
+                            nwAPI.nw_sendToPlayer(nwPlayer[p],final_card)
+                        end
+                    end
+                end
+            else 
+                if gpPlayer == myPlayer 
+                    final_card = cards
+                    nwAPI.nw_sendToMaster(nwMaster,final_card)
+                else
+                    msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+                    final_card =msg[2]
+                end
+            end
+            rReady[gpPlayer] = true
+            rQ[gpPlayer] = final_card
+            return
+        end
+       
+    end
+
     if(rem(glIterationCnt,4) ==0)
      
         glIterationCnt += 1
@@ -1785,10 +1821,15 @@ function gamePlay1Iteration()
                 rReady
             )
         end
+
+
     elseif(rem(glIterationCnt,4) ==1)
+
         glIterationCnt += 1
         if glNeedaPlayCard
             checkHumanResponse(glPrevPlayer)
+            checkMaster(gpPlay1card,glPrevPlayer)
+
             if rReady[glPrevPlayer]
                 glNewCard = rQ[glPrevPlayer]
                 if length(glNewCard) == 0
@@ -1802,8 +1843,7 @@ function gamePlay1Iteration()
                 glIterationCnt -= 1
                 return
             end
-            removeCards!(all_hands, glPrevPlayer, glNewCard)
-            All_hand_updateActor(glNewCard[1],!FaceDown)
+        
         else
             nc = pop!(gameDeck, 1)
             nca = pop!(gameDeckArray)
@@ -1881,8 +1921,10 @@ function gamePlay1Iteration()
             aplayer = nextPlayer(aplayer)
         end
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
-
-    
+        if glNeedaPlayCard
+            removeCards!(all_hands, glPrevPlayer, glNewCard)
+            All_hand_updateActor(glNewCard[1],!FaceDown)
+        end
         global currentPlayer = nPlayer
         println("Active5 = ", currentPlayer)
         if winner != -1 # leave it there for GUI
@@ -1945,53 +1987,43 @@ end
 
 function playersSyncDeck!(deck::TuSacCards.Deck)
     global myPlayer
+    println("MY player", myPlayer)
     isMaster = (PlayerList[myPlayer] != plSocket) 
+    println(PlayerList)
     if isMaster
-        gotDeck = !(PlayerList[2] == plSocket)
-        if !gotDeck
-            dplayer = 2
-            while true
-                dArray = nwAPI.receiveFromPlayer(dplayer)
-                if length(dArray) == 0
-                    sleep(1)
-                else
-                    break
-                end
-            end
+            println("MASTER")
+            shufflePlayer = 2
+            dArray = nwAPI.nw_receiveFromPlayer(nwPlayer[shufflePlayer],112)
             println("\nold Deck",deck)
             deck = []
             deck = TuSacCards.newDeckUsingArray(dArray)
-            println("\nNewDeck=",deck)
+            println("\nNew Deck=",deck)
             for i in 1:4
                     if PlayerList[i] == plSocket
-                        if i != dplayer 
-                            while true
-                               a = nwAPI.receiveFromPlayer(i)
-                                if length(a) == 0
-                                    sleep(1)
-                                else
-                                    break
-                                end
-                            end
+                        if i != shufflePlayer
+                            a = nwAPI.nw_receiveFromPlayer(nwPlayer[i],112)
                         end
-                        nwAPI.sendToPlayer(i,dArray)
+                        nwAPI.nw_sendToPlayer(nwPlayer[i],dArray)
                     end
             end
-        end
     else
+        println("PLAYER")
+
         if PlayerList[myPlayer] == plSocket
             dArray = TuSacCards.getDeckArray(deck)
-            nwAPI.sendToMaster(2,dArray)
+            println("Sending to Master the deck")
+            nwAPI.nw_sendToMaster(nwMaster,dArray)
             dArray =[]
-            dArray = nwAPI.receiveFromMaster(2)
+            dArray = nwAPI.nw_receiveFromMaster(nwMaster,112)
             println("oldDeck",deck)
             deck = []
             deck = TuSacCards.newDeckUsingArray(dArray)
             println("D2=",deck)
         end
     end
+return(deck)
 end
-
+global nwPlayer = Vector{Any}(undef,4)
 """
 gsStateMachine(gameActions)
 
@@ -2064,7 +2096,7 @@ The goal is to have one code to handle all mode/variation of plays:
                 card-dealing will result in match hands. 
             
     II) on Step 5a) : new function needed to sync all-player on the same deck.
-            - noted, on the computer that is act as a player, the game behave as if it is a master, playing 1-human against 3 bots. 
+            - noted, on the computer that is act as a player, the game behave as if it is a master, playing 1-human (the human is also a socket player) against 3 bots. 
             The game is sync because they all have the same deck-of-card, The bots decision/play -- wil be dropped -- substitude by
             the real-network player (if it is configured to be)
              on 5a) a request wil be send to the player computer which has the real human player. 
@@ -2072,6 +2104,9 @@ The goal is to have one code to handle all mode/variation of plays:
              than the bots player (asynchronously)
 
                 5b) here 3/or2 calls are made to network to get the results back.
+            Noted that the computers are synchronized on the flow of the game.  Only the results of the call to "hgamePlay" that is need to be update/overrided by the master. 
+            In a round, there are 2 place of synchronization of results.  First, "play1card", it is send to just 1 player to get a card as the result.  We dont need to send command+card.  The Master need the Player to send the pcard back. Then it send it out to other players as command+card.  However, it does not need to send command, just the card (for simplication). The PLAYER will automatically wait to receive Card. 
+
             in similar way, their results are wait till ready ()
                 function whoWin() will need to be 'network' awared.  Making call to master/player 
                 to get all result backs. 
@@ -2089,7 +2124,7 @@ The goal is to have one code to handle all mode/variation of plays:
 function gsStateMachine(gameActions)
     global tusacState
     global gameDeck, ad, deckState
-
+    global nwPlayer,nwMaster
    prevIter = 0
    
     #=
@@ -2101,6 +2136,29 @@ function gsStateMachine(gameActions)
 # -------------------A
 
         if gameActions == gsSetupGame
+            if client == false
+                println("SERVER")
+                global myS = nwAPI.serverSetup()
+                global p = nwAPI.acceptClient(myS)
+                for i in 2:4
+                    if PlayerList[i] != plSocket
+                        PlayerList[i] = plSocket
+                        nwPlayer[i] = p
+                        nwAPI.nw_sendToPlayer(p,i)
+                        println("Accepting Player ",i)
+                        break
+                    end
+                end
+            else
+                println("CLIENT")
+                global nwMaster = nwAPI.clientSetup()
+                msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+                println(msg)
+                global myPlayer = msg[2]
+                PlayerList[myPlayer] = plSocket
+                println("Accepted as Player number ",myPlayer)
+            end
+
             gameDeck = TuSacCards.ordered_deck()
             if noGUI == false
                 deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
@@ -2114,8 +2172,10 @@ function gsStateMachine(gameActions)
                 autoHumanShuffle(rand(8:15))
             end
             
-            playersSyncDeck!(gameDeck)
-
+            anewDeck = deepcopy(playersSyncDeck!(gameDeck))
+            pop!(gameDeck,112)
+            push!(gameDeck,anewDeck)
+          #  println("anew",anewDeck)
             tusacState = tsSdealCards
 
         end
@@ -2196,6 +2256,7 @@ end
 game start here
 =#
 function autoHumanShuffle(n)
+    println("\nAUTO-HUMAN-SHUFFLE")
     for i in 1:n
         rl = rand(17:23)
         rh = rand(37:43)
@@ -2527,60 +2588,13 @@ function hgamePlay(
         setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
         discard3 = setupDrawDeck(player3_discards, 3, 2, 8, false)
         asset3 = setupDrawDeck(player3_assets, 8, 4, 30, false)
-
     else
         setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
         discard4 = setupDrawDeck(player4_discards, 3, 16, 8, false)
         asset4 = setupDrawDeck(player4_assets, 4, 7, 4, false)
 
     end
-    if PlayerList[gpPlayer] == plSocket
-        isMaster = (PlayerList[myPlayer] != plSocket) # socket is a remote player
-        if isMaster
-            while true
-                println("Wait for player to say ready")
-                global dArray = nwAPI.receiveFromPlayer(gpPlayer)
-                if length(dArray) == 0
-                    sleep(1)
-                else
-                    break
-                end
-            end
-
-            if failCheckPoint(dArray,all_hands,all_assets,all_discards) 
-                println(dArray)
-                println(all_hands)
-                println(all_assets)
-                println(all_discards)
-                gameOver(true)
-            end
-            cmd = [gpAction,pcard]
-            println("s-NW=",(actionStr(gpAction),ts(pcard)))
-
-            nwAPI.sendToPlayer(gpPlayer,cmd)
-        else
-            if  (gpPlayer == myPlayer) && 
-                (PlayerList[gpPlayer] == plSocket)
-                println("Sending ready")
-                wholeDeck = toDeck(all_hands,all_assets, all_discards,gameDeckArray)
-                nwAPI.sendToMaster(gpPlayer,wholeDeck)
-                println("Getting cmd")
-                cmd = []
-                cmd = nwAPI.receiveFromMaster(gpPlayer)
-                println("cmd=",length(cmd))
-                for (i,a) in enumerate(cmd)
-                    println((i,a))
-                end
-                 nwAction,nwPcard = cmd[1],cmd[2]
-                println("r-NW=",(actionStr(nwAction),nwPcard))
-                if(gpAction != nwAction)
-                    gameOver(true)
-                end
-                pcard = nwPcard
-            end
-        end
-    end
-
+    
     rReady[gpPlayer] = false
     rQ[gpPlayer] = []
     print(
@@ -2757,14 +2771,16 @@ function hgamePlay(
         end
         return cards
     end
-    
-    println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
-    rReady[gpPlayer] = false
 
     if gpAction == gpPlay1card
         @assert length(union(singles, chot1s, miss1s, missTs)) > 0 0
+        print("play: ")
         cards = gpHandlePlay1Card()
-        println("Enter card to play")
+     
+    println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
+    rReady[gpPlayer] = false
+
+        #--------------------------------------HERE
     elseif gpAction == gpCheckMatch1or2
         cards = gpHandleMatch1or2Card(pcard)
         println("Enter cards to match")
@@ -2772,8 +2788,8 @@ function hgamePlay(
         cards = gpHandleMatch2Card(pcard)
         println("Enter cards to match")
     end
+    println(cards)
     ts_s(cards)
-
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
         rReady[gpPlayer] = true
