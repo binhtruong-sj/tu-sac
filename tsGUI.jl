@@ -1,8 +1,10 @@
 const macOS = true
-const noGUI = true
 myPlayer = 1
-numberOfPlayer = 2
+noGUI_list = [false,true,true,true]
+noGUI() = noGUI_list[myPlayer]
+numberOfPlayer = 1
 client = isfile("client.txt")
+shufflePlayer = 2
 
 if macOS
 const macOSconst = 1
@@ -27,9 +29,7 @@ else
 end
 zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
 const its_me = 1
-if noGUI == false 
-   # BACKGROUND = colorant"white"
-end 
+
 
 const tableXgrid = 20
 const tableYgrid = 20
@@ -40,7 +40,7 @@ function gameOver(gameE)
     if gameE
         global gameEnd = true
     end
-   if noGUI
+   if noGUI()
     exit()
    end
 end
@@ -52,9 +52,9 @@ const plBot2 = 2
 const plBot3 = 3
 const plSocket = 5
 
-const humanIsGUI = true & !noGUI
+ humanIsGUI() = true & !noGUI()
 global PlayerList =[plHuman,plBot1,plBot1,plBot1]
-playerIsHuman(p) = PlayerList[p] == plHuman && !noGUI
+playerIsHuman(p) = PlayerList[p] == plHuman && !noGUI()
 
 function RESET1()
         
@@ -122,7 +122,7 @@ function nw_sendToMaster(id,connection,arr)
     end
     
     if l != 112
-        s_arr = Vector{Int8}(undef,8)
+        s_arr = Vector{UInt8}(undef,8)
 
         s_arr[1] = l
         for (i,a) in enumerate(arr)
@@ -130,7 +130,7 @@ function nw_sendToMaster(id,connection,arr)
         end
         println("Data = ",s_arr)        
     else
-        s_arr = Vector{Int8}(undef,l)
+        s_arr = Vector{UInt8}(undef,l)
 
         for (i,a) in enumerate(arr)
             s_arr[i] = a
@@ -179,14 +179,14 @@ function nw_sendToPlayer(id, connection, arr)
     end
      
     if l != 112
-        s_arr = Vector{Int8}(undef,8)
+        s_arr = Vector{UInt8}(undef,8)
         s_arr[1] = l
         for (i,a) in enumerate(arr)
             s_arr[i+1] = a
         end
         println("Data = ",s_arr)        
     else
-        s_arr = Vector{Int8}(undef,l)
+        s_arr = Vector{UInt8}(undef,l)
         for (i,a) in enumerate(arr)
             s_arr[i] = a
         end
@@ -252,7 +252,7 @@ export test_deck, getDeckArray, newDeckUsingArray
 """
     In TuSac, cards has 4 suit of color: White,Yellow,Red,Green
 
-Encode a suit as a 2-bit value (low bits of a `Int8`):
+Encode a suit as a 2-bit value (low bits of a `UInt8`):
 - 0 = T rang (White)
 - 1 = X anh (Greed)
 - 2 = V ang (Yellow)
@@ -261,7 +261,7 @@ Encode a suit as a 2-bit value (low bits of a `Int8`):
 Suits have global constant bindings: `T`, `V`, `D`, `X`.
 """
 struct Suit
-    i::Int8
+    i::UInt8
     Suit(s::Integer) =
         0 ≤ s ≤ 3 ? new(s) : throw(ArgumentError("invalid suit number: $s"))
 end
@@ -298,14 +298,14 @@ bit[6:5] encodes the colors
 """
 
 struct Card
-    value::Int8
+    value::UInt8
     function Card(r::Integer, s::Integer)
         (0 <= r <= 31 && ((r & 0x1c) != 0)) ||
             throw(ArgumentError("invalid card : $r"))
-        return new(Int8((s << 5) | r))
+        return new(UInt8((s << 5) | r))
     end
     function Card(i::Integer)
-        return new(Int8(i))
+        return new(UInt8(i))
     end
     #=
     function Card(v::Vector{Any})
@@ -327,8 +327,8 @@ suit(c::Card) = Suit((0x60 & c.value) >>> 5)
 
 The rank of a card
 """
-rank(c::Card) = Int8((c.value & 0x1f))
-getvalue(c::Card) = Int8(c.value)
+rank(c::Card) = UInt8((c.value & 0x1f))
+getvalue(c::Card) = UInt8(c.value)
 const T = Suit(0)
 const V = Suit(1)
 const D = Suit(2)
@@ -345,7 +345,7 @@ function Base.show(io::IO, c::Card)
     print(io, suit(c))
 end
 
-function rank_string(r::Int8)
+function rank_string(r::UInt8)
     rr = r >> 2
     @assert rr > 0
 
@@ -640,7 +640,7 @@ nextWrap(n::Int, d::Int, max::Int) = ((n + d) > max) ? 1 : (n + d)
 """
 function getDeckArray(deck::Deck)
     l = length(deck)
-    a = Vector{Int8}(undef,l)
+    a = Vector{UInt8}(undef,l)
     i = 1
     for card in deck
         a[i] = card.value
@@ -652,7 +652,7 @@ end
 """
 function getDeckArray(deck::Vector{Card})
     l = length(deck)
-    a = Vector{Int8}(undef,l)
+    a = Vector{UInt8}(undef,l)
     i = 1
     for card in deck
         a[i] = card.value
@@ -759,13 +759,13 @@ setupActorgameDeck:
     Card.value
 """
 function setupActorgameDeck()
-    if noGUI
+    if noGUI()
         return
     end
     a = []
     b = []
     big = []
-    mapToActor = Vector{Int8}(undef, 128)
+    mapToActor = Vector{UInt8}(undef, 128)
     ind = 1
     sc = 0
     for s in ['w', 'y', 'r', 'g']
@@ -799,8 +799,8 @@ function setupActorgameDeck()
 end
 function RESET3()
     global actors, fc_actors, big_actors, mapToActors , mask
-    mask = zeros(Int8, 112)
-    if noGUI == false
+    mask = zeros(UInt8, 112)
+    if noGUI() == false
         actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
     end
 end
@@ -818,7 +818,7 @@ dims: 0: Vertical
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
 """
 function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui = true)
-    if noGUI
+    if noGUI()
         return
     end
     i = 0
@@ -1413,7 +1413,7 @@ function  updateErrorPic(cp)
 end
 
 function updateWinnerPic(cp) 
-    if noGUI
+    if noGUI()
         return
     end
     if cp == 0
@@ -1502,7 +1502,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
 
             if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
                 for p in ps[1]
-                    if card_equal(p[1],missPiece(r[1],r[1]))
+                    if card_equal(p[1],missPiece(r[1],r[2]))
                         println("match ",ts_s(p)," is SAKI, not accepted")
                         l = 0
                     end
@@ -1554,7 +1554,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     r = w == 0 ? r1 : w == 1 ? r2 : w == 2 ? r3 : r4
     n = rem((n1 - 1 + w), 4) + 1
     if w1 || w2 || w3 || w4   # game over
-        w = -1
+        w = 0xFE
     end
     println("Who win ?  n,w,r", (n, w, r), (l1, l2, l3, l4),(r1,r2,r3,r4))
     return n, w, r
@@ -1588,7 +1588,7 @@ function getData_all_hands()
 end
 
 function toDeck(arr,brr,crr,d) 
-    r = Vector{Int8}(undef,112+12)
+    r = Vector{UInt8}(undef,112+12)
     i = 1
     for mr in [arr,brr,crr]
         for m in mr
@@ -1742,18 +1742,19 @@ function gamePlay1Iteration()
     global n1c,n2c,n3c,n4c
     function checkHumanResponse(player)
         global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
-       
         if playerIsHuman(player)
-            if humanIsGUI
+            if humanIsGUI()
                 if GUI_ready
                     rReady[player] = true
                     rQ[player]=GUI_array
                     print("PlayCard = ", )
                     ts_s(rQ[player])
                     GUI_ready = false
+                else
+                    return false
                 end
             else  
-                cards = humanResponse(player)
+                cards = keyboardInput(player)
                 ts_s(cards)
                 rQ[player]=cards
                 rReady[player] = true
@@ -1761,10 +1762,10 @@ function gamePlay1Iteration()
                 ts_s(cards)
             end
         end
-
+        return true
     end
     function All_hand_updateActor(card,facedown) 
-        if noGUI
+        if noGUI()
             return
         end
         global lsx,lsy
@@ -1782,7 +1783,7 @@ function gamePlay1Iteration()
     function checkMaster(action,gpPlayer)
         # socket is a remote player
         # for The master: if the currentPlayer (gpPlayer) is a socket, then we need its pcard. If not, our bot has the card. After getting the right card, we need to send to other computers/Players so they can update/override their bots result
-        println("in CheckMaster ",(action,gpPlayer))
+       # println("in CheckMaster ",(action,gpPlayer))
 
         if(action == gpPlay1card)
             if rReady[gpPlayer] == true
@@ -1790,7 +1791,7 @@ function gamePlay1Iteration()
             else
                 return
             end
-            println((ts(cards[1]),Int8(cards[1])))
+            println((ts(cards[1]),UInt8(cards[1])))
             isMaster = (PlayerList[myPlayer] != plSocket) 
             if isMaster  
                 if PlayerList[gpPlayer] == plSocket 
@@ -1826,7 +1827,7 @@ function gamePlay1Iteration()
      
         glIterationCnt += 1
         println(
-            "++++++++++++++++++++++++++",
+            "^+++++++++++++++++++++++++",
             (glIterationCnt, glNeedaPlayCard, glPrevPlayer),
             "+++++++++++++++++++++++++++",
         )
@@ -1868,7 +1869,8 @@ function gamePlay1Iteration()
                 glIterationCnt -= 1
                 return
             end
-        
+            All_hand_updateActor(glNewCard[1],!FaceDown)
+
         else
             nc = pop!(gameDeck, 1)
             nca = pop!(gameDeckArray)
@@ -1939,12 +1941,19 @@ function gamePlay1Iteration()
     else
         glIterationCnt += 1
         aplayer = t1Player
+        
+        gotHumanInput = true
         for i in  1:4
             if !(glNeedaPlayCard && (i == 4 ))
-                checkHumanResponse(aplayer)
+                gotHumanInput = gotHumanInput && checkHumanResponse(aplayer) 
             end
             aplayer = nextPlayer(aplayer)
         end
+        if gotHumanInput == false
+            glIterationCnt -= 1
+            return
+        end
+
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
         if glNeedaPlayCard
             removeCards!(all_hands, glPrevPlayer, glNewCard)
@@ -1952,7 +1961,7 @@ function gamePlay1Iteration()
         end
         global currentPlayer = nPlayer
         println("Active5 = ", currentPlayer)
-        if winner != -1 # leave it there for GUI
+        if winner != 0xFE # leave it there for GUI
             removeCards!(all_hands, nPlayer, r)
         end
         if (winner == 0) && (length(r) == 0) # nobody match
@@ -1972,7 +1981,7 @@ function gamePlay1Iteration()
                 end
                 glNeedaPlayCard = false
             end
-        elseif winner == -1
+        elseif winner == 0xFE
             println("GAME OVER, player", 
             nPlayer, " win")
             updateWinnerPic(nPlayer)
@@ -2012,12 +2021,11 @@ end
 
 function playersSyncDeck!(deck::TuSacCards.Deck)
     global myPlayer
-    println("MY player", myPlayer)
+    println("in SYNC DECK MY player", myPlayer)
     isMaster = (PlayerList[myPlayer] != plSocket) 
     println(PlayerList)
     if isMaster
             println("MASTER")
-            shufflePlayer = 2
             dArray = nwAPI.nw_receiveFromPlayer(shufflePlayer, nwPlayer[shufflePlayer],112)
             println("\nold Deck",deck)
             deck = []
@@ -2162,7 +2170,7 @@ function gsStateMachine(gameActions)
 
         if gameActions == gsSetupGame
             global numberOfPlayer
-            if client == false
+            if client == false 
                 println("SERVER")
                 global myS = nwAPI.serverSetup()
                 while numberOfPlayer > 0
@@ -2189,7 +2197,7 @@ function gsStateMachine(gameActions)
             end
 
             gameDeck = TuSacCards.ordered_deck()
-            if noGUI == false
+            if noGUI() == false
                 deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
                 global handPic = Actor("hand.jpeg")
                 global winnerPic = Actor("winner.png")
@@ -2200,7 +2208,7 @@ function gsStateMachine(gameActions)
             else
                 autoHumanShuffle(rand(8:15))
             end
-            
+            println("GET  TO   HERE")
             anewDeck = deepcopy(playersSyncDeck!(gameDeck))
             pop!(gameDeck,112)
             push!(gameDeck,anewDeck)
@@ -2306,7 +2314,7 @@ end
 global lsx,lsy
 
 RESET2()
-if noGUI
+if noGUI()
     gsStateMachine(gsOrganize)
 end
 function on_mouse_move(g, pos)
@@ -2383,9 +2391,12 @@ function on_mouse_move(g, pos)
         y = pos[2] << macOSconst
     
 
-    if (tusacState == tsSdealCards)
-        mouseDirOnBox(x, y, deckState)
+    if (tusacState == tsSinitial)
 
+    elseif tusacState > tsSdealCards
+        if(myPlayer == shufflePlayer)
+            mouseDirOnBox(x, y, deckState)
+        end
     elseif tusacState > tsSstartGame
         boxId, cardIndx = withinBoxes(x, y, boxes)
         if boxId == 0
@@ -2453,7 +2464,7 @@ function strToVal(hand, str)
         return 0
     end
 aStrToVal(s) =
-(Int8(find1(s[1], grank)) << 2) | (Int8(find1(s[2], gcolor) - 1) << 5)
+(UInt8(find1(s[1], grank)) << 2) | (UInt8(find1(s[2], gcolor) - 1) << 5)
 
     local r = []
     for s in str
@@ -2475,7 +2486,7 @@ aStrToVal(s) =
     return r
 end
 
-function humanResponse(gpPlayer)
+function keyboardInput(gpPlayer)
     global GUI_array, GUI_ready
     local al = readline()
     if length(al) > 1
@@ -2651,35 +2662,40 @@ function hgamePlay(
           end
         end
         for s in singles
-            print(" s=",ts(s))
+            print(" s",(ts(s)))
             @assert !is_c(s)
             if card_equal(s, playCard)
+                print("@")
                 return s
             end
         end
-        println()
 
         for mt in missTs
             m = missPiece(mt[1], mt[2])
             print(" mT=", ts(m))
             if card_equal(m, playCard)
+                print("@")
                 return mt
             elseif card_equal(mt[1], playCard) && !is_T(playCard)
+                print("@")
                 return mt[1]
             elseif card_equal(mt[2], playCard) && !is_T(playCard)
+                print("@")
                 return mt[2]
             end
         end
-        println()
 
         for m1 in miss1s
             m = missPiece(m1[1], m1[2])
             print(" m1=", ts(m))
             if card_equal(m, playCard)
+                print("@")
                 return m1
             elseif card_equal(m1[1], playCard) && !is_T(playCard)
+                print("@")
                 return m1[1]
             elseif card_equal(m1[2], playCard) && !is_T(playCard)
+                print("@")
                 return m1[2]
             end
         end
@@ -2708,13 +2724,18 @@ function hgamePlay(
                 print(" ",ts(ap[1]))
                 if is_T(playCard)
                     if p == 3 && card_equal(ap[1], playCard)
+                        print("@")
                         return ap # TTTT
                     end
                 elseif card_equal(ap[1], playCard)
                     if (p == 1) && found
                         print(" SAKI ")
+                        print("@")
+
                         return []  # SAKI -- return nothing
                     else
+                        print("@")
+
                         return ap
                     end
                 elseif inSuit(ap[1], playCard)  # CASE X PP ? M
@@ -2728,6 +2749,8 @@ function hgamePlay(
                 if inSuit(s, playCard)
                     push!(inSuitArr, s)
                     print("  inSuitArr =", inSuitArr)
+                    print("@")
+
                     return inSuitArr
                 end
             end
@@ -2783,11 +2806,11 @@ function hgamePlay(
     function gpHandleMatch2Card(pcard)
         card1 = chk1(pcard)
         card2 = chk2(pcard)
-        println("chk1-",ts_s(card1)," chk2-",ts_s(card2))
+        println("chk1-",(card1)," chk2-",(card2))
         if length(card1) == 0
             return card2
-        elseif length(card2) == 0
-            return card1
+        elseif length(card2) == 0 || !card_equal(card2[1],card2[2])
+                return card1
         else
             return card2
         end
@@ -2802,7 +2825,7 @@ function hgamePlay(
     end
 
     if gpAction == gpPlay1card
-        @assert length(union(singles, chot1s, miss1s, missTs)) > 0 0
+        @assert length(union(singles, chot1s, miss1s, missTs)) > 0
         print("play: ")
         cards = gpHandlePlay1Card()
      
@@ -2812,13 +2835,15 @@ function hgamePlay(
         #--------------------------------------HERE
     elseif gpAction == gpCheckMatch1or2
         cards = gpHandleMatch1or2Card(pcard)
-        println("Enter cards to match")
     else
         cards = gpHandleMatch2Card(pcard)
-        println("Enter cards to match")
     end
-    println(cards)
+    if length(cards) == 3
+        print("--------->>>>")
+    end
+    print(cards," --  ")
     ts_s(cards)
+    
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
         rReady[gpPlayer] = true
@@ -3169,8 +3194,7 @@ function on_mouse_down(g, pos)
         end
     end
 end
-if noGUI
-    println("HERE")
+if noGUI()
     while(true)
         gsStateMachine(gsGameLoop)
     end
@@ -3185,7 +3209,7 @@ function update(g)
             TuSacCards.humanShuffle!(gameDeck, 14, deckState[5])
             deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
         end
-        if noGUI 
+        if noGUI()
             gsStateMachine(gsOrganize)
         end
     elseif tusacState == tsSstartGame
@@ -3218,7 +3242,7 @@ function draw(g)
     global BIGcard, ActiveCard
     global cardSelect
     global drawCnt,lsx,lsy
-    if noGUI 
+    if noGUI()
         return
     end
    # fill(colorant"ivory4")
