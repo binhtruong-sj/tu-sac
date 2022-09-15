@@ -1,11 +1,11 @@
 const macOS = true
 myPlayer = 1
-noGUI_list = [false,false,true,true]
+noGUI_list = [false,true,true,true]
 noGUI() = noGUI_list[myPlayer]
-numberOfPlayer = 1
+numberOfSocketPlayer = 0
 client = isfile("client.txt")
-shufflePlayer = 2
-
+shufflePlayer = 1
+isServer() = !client && numberOfSocketPlayer > 0
 if macOS
 const macOSconst = 1
     gameW = 900
@@ -1644,7 +1644,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
     PlayerList[t3Player],PlayerList[t4Player])
     )
     
-    if (PlayerList[myPlayer] != plSocket) 
+    if (PlayerList[myPlayer] != plSocket) && isServer()
         println("Getting ALL remote-Results back")
         if PlayerList[t1Player] == plSocket
             println("mr-t1")
@@ -1691,9 +1691,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
                 nwAPI.nw_sendToPlayer(i,nwPlayer[i],msg)
             end
         end
-    else
-        if PlayerList[myPlayer] == plSocket
-
+    elseif PlayerList[myPlayer] == plSocket
             r =[]
             if t1Player == myPlayer
                 println("sm-t1")
@@ -1728,7 +1726,19 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
                 println("Game Over, player ", nPlayer, " win")
                 gameOver(true)
             end
-        end
+    else
+        nPlayer, winner, r = whoWinRound(
+            pcard,
+            !play3,
+            t1Player,
+            n1c,
+            t2Player,
+            n2c,
+            t3Player,
+            n3c,
+            t4Player,
+            n4c,
+        )
     end
     return nPlayer, winner, r
 end
@@ -2021,6 +2031,7 @@ end
 
 function playersSyncDeck!(deck::TuSacCards.Deck)
     global myPlayer
+   
     println("in SYNC DECK MY player", myPlayer)
     isMaster = (PlayerList[myPlayer] != plSocket) 
     println(PlayerList)
@@ -2169,11 +2180,12 @@ function gsStateMachine(gameActions)
 # -------------------A
 
         if gameActions == gsSetupGame
-            global numberOfPlayer
+            global numberOfSocketPlayer
             if client == false 
                 println("SERVER")
                 global myS = nwAPI.serverSetup()
-                while numberOfPlayer > 0
+                signedOnPlayer = 0
+                while signedOnPlayer < numberOfSocketPlayer 
                     global p = nwAPI.acceptClient(myS)
                     for i in 2:4
                         if PlayerList[i] != plSocket
@@ -2184,7 +2196,7 @@ function gsStateMachine(gameActions)
                             break
                         end
                     end
-                    numberOfPlayer -= 1
+                    signedOnPlayer += 1
                 end
             else
                 println("CLIENT")
@@ -2208,10 +2220,12 @@ function gsStateMachine(gameActions)
             else
                 autoHumanShuffle(rand(8:15))
             end
-            println("GET  TO   HERE")
-            anewDeck = deepcopy(playersSyncDeck!(gameDeck))
-            pop!(gameDeck,112)
-            push!(gameDeck,anewDeck)
+            if numberOfSocketPlayer > 0
+                println("GET  TO   HERE")
+                anewDeck = deepcopy(playersSyncDeck!(gameDeck))
+                pop!(gameDeck,112)
+                push!(gameDeck,anewDeck)
+            end
           #  println("anew",anewDeck)
             tusacState = tsSdealCards
 
@@ -2390,11 +2404,8 @@ function on_mouse_move(g, pos)
         x = pos[1] << macOSconst
         y = pos[2] << macOSconst
     
-
-    if (tusacState == tsSinitial)
-
-    elseif tusacState > tsSdealCards
-        if(myPlayer == shufflePlayer)
+   if tusacState == tsSdealCards
+        if myPlayer == shufflePlayer
             mouseDirOnBox(x, y, deckState)
         end
     elseif tusacState > tsSstartGame
