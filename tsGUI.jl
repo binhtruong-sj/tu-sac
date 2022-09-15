@@ -1,6 +1,6 @@
 const macOS = true
 myPlayer = 1
-noGUI_list = [false,true,true,true]
+noGUI_list = [false,false,true,true]
 noGUI() = noGUI_list[myPlayer]
 numberOfPlayer = 1
 client = isfile("client.txt")
