@@ -805,6 +805,11 @@ function RESET3()
     end
 end
 RESET3()
+
+global playerA_hand,playerB_hand,playerC_hand,playerD_hand
+global playerA_discards,playerB_discards,playerC_discards,playerD_discards
+global playerA_assets,playerB_assets,playerC_assets,playerD_assets
+
 """
 setupDrawDeck:
 x,y: starting location
@@ -925,47 +930,74 @@ println(rs)
 println(gameDeck)
 """
 function tusacDeal()
+    global playerA_hand,playerB_hand,playerC_hand,playerD_hand
+    global playerA_discards,playerB_discards,playerC_discards,playerD_discards
+    global playerA_assets,playerB_assets,playerC_assets,playerD_assets
+
     println()
     println(gameDeck)
-    global player1_hand = TuSacCards.Deck(pop!(gameDeck, 6))
-    global player2_hand = TuSacCards.Deck(pop!(gameDeck, 5))
-    global player3_hand = TuSacCards.Deck(pop!(gameDeck, 5))
-    global player4_hand = TuSacCards.Deck(pop!(gameDeck, 5))
+    P0_hand = TuSacCards.Deck(pop!(gameDeck, 6))
+    P1_hand = TuSacCards.Deck(pop!(gameDeck, 5))
+    P2_hand = TuSacCards.Deck(pop!(gameDeck, 5))
+    P3_hand = TuSacCards.Deck(pop!(gameDeck, 5))
     for i = 2:4
-        push!(player1_hand, pop!(gameDeck, 5))
-        push!(player2_hand, pop!(gameDeck, 5))
-        push!(player3_hand, pop!(gameDeck, 5))
-        push!(player4_hand, pop!(gameDeck, 5))
+        push!(P0_hand, pop!(gameDeck, 5))
+        push!(P1_hand, pop!(gameDeck, 5))
+        push!(P2_hand, pop!(gameDeck, 5))
+        push!(P3_hand, pop!(gameDeck, 5))
     end
-    print(player1_hand)
+    if myPlayer == 1
+        playerA_hand = P0_hand
+        playerB_hand = P1_hand
+        playerC_hand = P2_hand
+        playerD_hand = P3_hand
+    elseif myPlayer == 2
+        playerB_hand = P0_hand
+        playerC_hand = P1_hand
+        playerD_hand = P2_hand
+        playerA_hand = P3_hand
+    elseif myPlayer == 3
+        playerC_hand = P0_hand
+        playerD_hand = P1_hand
+        playerA_hand = P2_hand
+        playerB_hand = P3_hand
+    else
+        playerD_hand = P0_hand
+        playerA_hand = P1_hand
+        playerB_hand = P2_hand
+        playerC_hand = P3_hand
+    end
+
+
+    print(playerA_hand)
     setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
 
-    setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
-    setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
+    setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+    setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
 
-    global pBseat = setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
-    global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
+    global pBseat = setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
+    global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
 
     push!(boxes, human_state)
-    global player1_discards = TuSacCards.Deck(pop!(gameDeck, 1))
-    global player2_discards = TuSacCards.Deck(pop!(gameDeck, 1))
-    global player3_discards = TuSacCards.Deck(pop!(gameDeck, 1))
-    global player4_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerA_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerB_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerC_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerD_discards = TuSacCards.Deck(pop!(gameDeck, 1))
  
-    global player1_assets = TuSacCards.Deck(pop!(gameDeck, 1))
-    global player2_assets = TuSacCards.Deck(pop!(gameDeck, 1))
-    global player3_assets = TuSacCards.Deck(pop!(gameDeck, 1))
-    global player4_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerA_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerB_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerC_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+    global playerD_assets = TuSacCards.Deck(pop!(gameDeck, 1))
 
-    push!(gameDeck,pop!(player4_assets,1))
-    push!(gameDeck,pop!(player3_assets,1))
-    push!(gameDeck,pop!(player2_assets,1))
-    push!(gameDeck,pop!(player1_assets,1))
+    push!(gameDeck,pop!(playerD_assets,1))
+    push!(gameDeck,pop!(playerC_assets,1))
+    push!(gameDeck,pop!(playerB_assets,1))
+    push!(gameDeck,pop!(playerA_assets,1))
 
-    push!(gameDeck,pop!(player4_discards,1))
-    push!(gameDeck,pop!(player3_discards,1))
-    push!(gameDeck,pop!(player2_discards,1))
-    push!(gameDeck,pop!(player1_discards,1))
+    push!(gameDeck,pop!(playerD_discards,1))
+    push!(gameDeck,pop!(playerC_discards,1))
+    push!(gameDeck,pop!(playerB_discards,1))
+    push!(gameDeck,pop!(playerA_discards,1))
 
 end
 
@@ -1443,13 +1475,13 @@ function removeCards!(array, n, cards)
         end
         @assert found
             if n== 1
-                pop!(player1_hand,ts(c))
+                pop!(playerA_hand,ts(c))
             elseif n == 2
-                pop!(player2_hand,ts(c))
+                pop!(playerB_hand,ts(c))
             elseif n == 3
-                pop!(player3_hand,ts(c))
+                pop!(playerC_hand,ts(c))
             elseif n == 4
-                pop!(player4_hand,ts(c))
+                pop!(playerD_hand,ts(c))
             end
 
     end
@@ -1459,23 +1491,23 @@ function addCards!(array,arrNo, n, cards)
         push!(array[n], c)
         if arrNo == 0
             if n== 1
-                push!(player1_assets,ts(c))
+                push!(playerA_assets,ts(c))
             elseif n == 2
-                push!(player2_assets,ts(c))
+                push!(playerB_assets,ts(c))
             elseif n == 3
-                push!(player3_assets,ts(c))
+                push!(playerC_assets,ts(c))
             elseif n == 4
-                push!(player4_assets,ts(c))
+                push!(playerD_assets,ts(c))
             end
         else
             if n== 1
-                push!(player1_discards,ts(c))
+                push!(playerA_discards,ts(c))
             elseif n == 2
-                push!(player2_discards,ts(c))
+                push!(playerB_discards,ts(c))
             elseif n == 3
-                push!(player3_discards,ts(c))
+                push!(playerC_discards,ts(c))
             elseif n == 4
-                push!(player4_discards,ts(c))
+                push!(playerD_discards,ts(c))
             end
         end
     end
@@ -1563,27 +1595,27 @@ end
 function getData_all_discard_assets()
     push!(
         all_discards,
-        TuSacCards.getDeckArray(player1_discards),
-        TuSacCards.getDeckArray(player2_discards),
-        TuSacCards.getDeckArray(player3_discards),
-        TuSacCards.getDeckArray(player4_discards),
+        TuSacCards.getDeckArray(playerA_discards),
+        TuSacCards.getDeckArray(playerB_discards),
+        TuSacCards.getDeckArray(playerC_discards),
+        TuSacCards.getDeckArray(playerD_discards),
     )
 
     push!(
         all_assets,
-        TuSacCards.getDeckArray(player1_assets),
-        TuSacCards.getDeckArray(player2_assets),
-        TuSacCards.getDeckArray(player3_assets),
-        TuSacCards.getDeckArray(player4_assets),
+        TuSacCards.getDeckArray(playerA_assets),
+        TuSacCards.getDeckArray(playerB_assets),
+        TuSacCards.getDeckArray(playerC_assets),
+        TuSacCards.getDeckArray(playerD_assets),
     )
 end
 function getData_all_hands()
     push!(
         all_hands,
-        TuSacCards.getDeckArray(player1_hand),
-        TuSacCards.getDeckArray(player2_hand),
-        TuSacCards.getDeckArray(player3_hand),
-        TuSacCards.getDeckArray(player4_hand),
+        TuSacCards.getDeckArray(playerA_hand),
+        TuSacCards.getDeckArray(playerB_hand),
+        TuSacCards.getDeckArray(playerC_hand),
+        TuSacCards.getDeckArray(playerD_hand),
     )
 end
 
@@ -2013,18 +2045,18 @@ function SNAPSHOT()
     currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard]
     anE= []
     anE = deepcopy(
-        [player1_hand,
-        player2_hand,
-        player3_hand,
-        player4_hand,
-        player1_assets,
-        player2_assets,
-        player3_assets,
-        player4_assets,
-        player1_discards,
-        player2_discards,
-        player3_discards,
-        player4_discards,
+        [playerA_hand,
+        playerB_hand,
+        playerC_hand,
+        playerD_hand,
+        playerA_assets,
+        playerB_assets,
+        playerC_assets,
+        playerD_assets,
+        playerA_discards,
+        playerB_discards,
+        playerC_discards,
+        playerD_discards,
         gameDeck,currentStates])
     push!(HISTORY,anE)
 end
@@ -2169,6 +2201,9 @@ function gsStateMachine(gameActions)
     global tusacState
     global gameDeck, ad, deckState
     global nwPlayer,nwMaster
+    global playerA_hand,playerB_hand,playerC_hand,playerD_hand
+    global playerA_discards,playerB_discards,playerC_discards,playerD_discards
+    global playerA_assets,playerB_assets,playerC_assets,playerD_assets
    prevIter = 0
    
     #=
@@ -2239,13 +2274,13 @@ global cardsIndxArr = []
 global GUI_ready = false
         if gameActions == gsOrganize
             tusacDeal()
-            organizeHand(player1_hand)
-            organizeHand(player2_hand)
-            organizeHand(player3_hand)
-            organizeHand(player4_hand)
+            organizeHand(playerA_hand)
+            organizeHand(playerB_hand)
+            organizeHand(playerC_hand)
+            organizeHand(playerD_hand)
       
             getData_all_hands()
-            setupDrawDeck(player1_hand, 7, 18, 100, false)
+            setupDrawDeck(playerA_hand, 7, 18, 100, false)
            
 
         end
@@ -2256,20 +2291,20 @@ global GUI_ready = false
 
         global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
 
-        discard1 = setupDrawDeck(player1_discards, 16, 16, 8, false)
-        discard2 = setupDrawDeck(player2_discards, 16, 2, 8, false)
-        discard3 = setupDrawDeck(player3_discards, 3, 2, 8, false)
-        discard4 = setupDrawDeck(player4_discards, 3, 16, 8, false)
+        discard1 = setupDrawDeck(playerA_discards, 16, 16, 8, false)
+        discard2 = setupDrawDeck(playerB_discards, 16, 2, 8, false)
+        discard3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
+        discard4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
 
-        asset1 = setupDrawDeck(player1_assets, 8, 14, 30, false)
-        asset2 = setupDrawDeck(player2_assets, 16, 7, 4, false)
-        asset3 = setupDrawDeck(player3_assets, 8, 4, 30, false)
-        asset4 = setupDrawDeck(player4_assets, 4, 7, 4, false)
+        asset1 = setupDrawDeck(playerA_assets, 8, 14, 30, false)
+        asset2 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
+        asset3 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
+        asset4 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
 
-        global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
-        setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
-        setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
-        setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
+        global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
+        setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+        setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+        setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
         deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
         push!(
             boxes,
@@ -2413,23 +2448,23 @@ function on_mouse_move(g, pos)
         if boxId == 0
             v = 0
         elseif boxId == 1
-            v = TuSacCards.getCards(player1_hand, cardIndx)
+            v = TuSacCards.getCards(playerA_hand, cardIndx)
         elseif boxId == 2
-            v = TuSacCards.getCards(player1_discards, cardIndx)
+            v = TuSacCards.getCards(playerA_discards, cardIndx)
         elseif boxId == 3
-            v = TuSacCards.getCards(player2_discards, cardIndx)
+            v = TuSacCards.getCards(playerB_discards, cardIndx)
         elseif boxId == 4
-            v = TuSacCards.getCards(player3_discards, cardIndx)
+            v = TuSacCards.getCards(playerC_discards, cardIndx)
         elseif boxId == 5
-            v = TuSacCards.getCards(player4_discards, cardIndx)
+            v = TuSacCards.getCards(playerD_discards, cardIndx)
         elseif boxId == 6
-            v = TuSacCards.getCards(player1_assets, cardIndx)
+            v = TuSacCards.getCards(playerA_assets, cardIndx)
         elseif boxId == 7
-            v = TuSacCards.getCards(player2_assets, cardIndx)
+            v = TuSacCards.getCards(playerB_assets, cardIndx)
         elseif boxId == 8
-            v = TuSacCards.getCards(player3_assets, cardIndx)
+            v = TuSacCards.getCards(playerC_assets, cardIndx)
         else
-            v = TuSacCards.getCards(player4_assets, cardIndx)
+            v = TuSacCards.getCards(playerD_assets, cardIndx)
         end
         if v != 0
             m = mapToActors[v]
@@ -2626,23 +2661,23 @@ function hgamePlay(
     global currentAction = gpAction
     global currentPlayCard = pcard
     if gpPlayer == 1 
-        global human_state = setupDrawDeck(player1_hand, 7, 18, 100, false)
-        discard1 = setupDrawDeck(player1_discards, 16, 16, 8, false)
-        asset1 = setupDrawDeck(player1_assets, 8, 14, 30, false)
+        global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
+        discard1 = setupDrawDeck(playerA_discards, 16, 16, 8, false)
+        asset1 = setupDrawDeck(playerA_assets, 8, 14, 30, false)
 
     elseif gpPlayer == 2
-        setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
-        discard2 = setupDrawDeck(player2_discards, 16, 2, 8, false)
-        asset2 = setupDrawDeck(player2_assets, 16, 7, 4, false)
+        setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
+        discard2 = setupDrawDeck(playerB_discards, 16, 2, 8, false)
+        asset2 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
 
     elseif gpPlayer == 3
-        setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
-        discard3 = setupDrawDeck(player3_discards, 3, 2, 8, false)
-        asset3 = setupDrawDeck(player3_assets, 8, 4, 30, false)
+        setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+        discard3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
+        asset3 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
     else
-        setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
-        discard4 = setupDrawDeck(player4_discards, 3, 16, 8, false)
-        asset4 = setupDrawDeck(player4_assets, 4, 7, 4, false)
+        setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+        discard4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
+        asset4 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
 
     end
     
@@ -2880,46 +2915,46 @@ end
 
 function replayHistory(index)
     global HISTORY,all_hands,all_assets,all_discards,gameDeckArray, glIterationCnt,glNeedaPlayCard,glPrevPlayer
-    global player1_hand, player1_discards, player1_assets
-    global player2_hand, player2_discards, player2_assets
-    global player3_hand, player3_discards, player3_assets
-    global player4_hand, player4_discards, player4_assets
+    global playerA_hand, playerA_discards, playerA_assets
+    global playerB_hand, playerB_discards, playerB_assets
+    global playerC_hand, playerC_discards, playerC_assets
+    global playerD_hand, playerD_discards, playerD_assets
     global gameDeckArray
     a = HISTORY[index]
-    player1_hand = deepcopy(a[1])
-    player2_hand = deepcopy(a[2])
-    player3_hand = deepcopy(a[3])
-    player4_hand = deepcopy(a[4])
+    playerA_hand = deepcopy(a[1])
+    playerB_hand = deepcopy(a[2])
+    playerC_hand = deepcopy(a[3])
+    playerD_hand = deepcopy(a[4])
 
-    player1_asets = deepcopy(a[5])
-    player2_asets = deepcopy(a[6])
-    player3_asets = deepcopy(a[7])
-    player4_asets = deepcopy(a[8])
+    playerA_assets = deepcopy(a[5])
+    playerB_assets = deepcopy(a[6])
+    playerC_assets = deepcopy(a[7])
+    playerD_assets = deepcopy(a[8])
 
-    player1_discards = deepcopy(a[9])
-    player1_discards = deepcopy(a[10])
-    player1_discards = deepcopy(a[11])
-    player1_discards = deepcopy(a[12])
+    playerA_discards = deepcopy(a[9])
+    playerA_discards = deepcopy(a[10])
+    playerA_discards = deepcopy(a[11])
+    playerA_discards = deepcopy(a[12])
 
     gameDeck = deepcopy(a[13])
 
     global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
     updateHandPic(glPrevPlayer)
 
-    setupDrawDeck(player1_discards, 16, 16, 8, false)
-    setupDrawDeck(player2_discards, 16, 2, 8, false)
-    setupDrawDeck(player3_discards, 3, 2, 8, false)
-    setupDrawDeck(player4_discards, 3, 16, 8, false)
+    setupDrawDeck(playerA_discards, 16, 16, 8, false)
+    setupDrawDeck(playerB_discards, 16, 2, 8, false)
+    setupDrawDeck(playerC_discards, 3, 2, 8, false)
+    setupDrawDeck(playerD_discards, 3, 16, 8, false)
 
-    setupDrawDeck(player1_assets, 8, 14, 30, false)
-    setupDrawDeck(player2_assets, 16, 7, 4, false)
-    setupDrawDeck(player3_assets, 8, 4, 30, false)
-    setupDrawDeck(player4_assets, 4, 7, 4, false)
+    setupDrawDeck(playerA_assets, 8, 14, 30, false)
+    setupDrawDeck(playerB_assets, 16, 7, 4, false)
+    setupDrawDeck(playerC_assets, 8, 4, 30, false)
+    setupDrawDeck(playerD_assets, 4, 7, 4, false)
 
-    setupDrawDeck(player1_hand, 7, 18, 100, false)
-    setupDrawDeck(player4_hand, 1, 2, 2, FaceDown)
-    setupDrawDeck(player3_hand, 7, 1, 100, FaceDown)
-    setupDrawDeck(player2_hand, 20, 2, 2, FaceDown)
+    setupDrawDeck(playerA_hand, 7, 18, 100, false)
+    setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+    setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+    setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
     setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
 end
 
@@ -2942,18 +2977,18 @@ end
 
 function on_key_down(g)
     global tusacState, gameDeck,
-    player1_hand,
-    player2_hand,
-    player3_hand,
-    player4_hand,
-    player1_assets,
-    player2_assets,
-    player3_assets,
-    player4_assets,
-    player1_discards,
-    player2_discards,
-    player3_discards,
-    player4_discards
+    playerA_hand,
+    playerB_hand,
+    playerC_hand,
+    playerD_hand,
+    playerA_assets,
+    playerB_assets,
+    playerC_assets,
+    playerD_assets,
+    playerA_discards,
+    playerB_discards,
+    playerC_discards,
+    playerD_discards
 
 
         if g.keyboard.RETURN
@@ -3029,20 +3064,20 @@ function on_key_down(g)
         elseif g.keyboard.R
             println("Reset Game, merge all-hands")
             newDeck = (union(
-                player1_hand,
-                player2_hand,
-                player3_hand,
-                player4_hand,
+                playerA_hand,
+                playerB_hand,
+                playerC_hand,
+                playerD_hand,
 
-                player1_assets,
-                player2_assets,
-                player3_assets,
-                player4_assets,
+                playerA_assets,
+                playerB_assets,
+                playerC_assets,
+                playerD_assets,
 
-                player1_discards,
-                player2_discards,
-                player3_discards,
-                player4_discards,
+                playerA_discards,
+                playerB_discards,
+                playerC_discards,
+                playerD_discards,
                 gameDeck))
                 println("Deck=",newDeck)
         end
@@ -3173,7 +3208,7 @@ function on_mouse_down(g, pos)
     elseif tusacState == tsGameLoop    
         cindx, yPortion = mouseDownOnBox(x, y, human_state)
         if cindx != 0
-            click_card(cindx, yPortion, player1_hand)
+            click_card(cindx, yPortion, playerA_hand)
         end
         if currentAction == gpPlay1card 
             cindx, yPortion = mouseDownOnBox(x, y, pBseat)
@@ -3187,12 +3222,12 @@ function on_mouse_down(g, pos)
             global GUI_array, GUI_ready
             GUI_array = []
             for ci in cardsIndxArr
-                ac= TuSacCards.getCards(player1_hand, ci)
+                ac= TuSacCards.getCards(playerA_hand, ci)
                 push!(GUI_array,ac)
                 print(" ",ts(ac))
             end
             println("\nDanh Bai XONG ROI")
-            setupDrawDeck(player1_hand, 7, 18, 100, false)
+            setupDrawDeck(playerA_hand, 7, 18, 100, false)
             if badPlay(GUI_array,all_hands[1],currentAction,currentPlayCard)
                 updateErrorPic(1)
                 cardsIndxArr = []
