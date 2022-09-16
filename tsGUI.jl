@@ -1,5 +1,5 @@
 using Sockets
-macOS = true
+macOS = false
 myPlayer = 1
 
 const plHuman = 0
@@ -58,7 +58,7 @@ function config(fn)
             elseif rl[1] == "human"
                 mode_human = rl[2] == "true"
             elseif rl[1] == "server"
-                serverURL = getaddrinfo(string(rl[2]))
+                serverURL = string(rl[2])
                 serverPort = parse(Int,rl[3])
             elseif rl[1] == "myIP"
                 serverIP = getaddrinfo(string(rl[2]))
@@ -93,6 +93,7 @@ println((PlayerList, mode,mode_human,serverURL,
 serverIP,serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer))
 if macOS
+    println("macOS")
 const macOSconst = 1
     gameW = 900
     HEIGHT = gameW
@@ -103,6 +104,8 @@ const macOSconst = 1
     cardYdim = 210
     zoomCardYdim = 400
 else
+    println("NO macOS")
+
     const macOSconst = 0
     gameW = 820
     HEIGHT = gameW
@@ -1854,7 +1857,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
         glIterationCnt -= 1
         return
     end
-    println("AT whoWin",(n1c,n2c,n3c,n4c,glNewCard),(t1Player,t2Player,t3Player,t4Player),
+    println("AT whoWin",(glNeedaPlayCard),(n1c,n2c,n3c,n4c,glNewCard),(t1Player,t2Player,t3Player,t4Player),
     (PlayerList[t1Player],PlayerList[t2Player],
     PlayerList[t3Player],PlayerList[t4Player])
     )
