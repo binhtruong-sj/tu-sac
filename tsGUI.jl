@@ -1,4 +1,5 @@
-const macOS = true
+using Sockets
+macOS = true
 myPlayer = 1
 
 const plHuman = 0
@@ -10,8 +11,8 @@ const m_client = 0
 const m_server = 1
 const m_standalone = 2
 
-noGUI_list = [false,true,true,true]
-PlayerList =[plHuman,plBot1,plBot1,plBot1]
+noGUI_list = [true,true,true,true]
+PlayerList =[plBot1,plBot1,plBot1,plBot1]
 numberOfSocketPlayer = 0
 
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
@@ -26,47 +27,71 @@ n = PROGRAM_FILE
 n = chop(n,tail=3)
 fn = string(n,".cfg")
 println((fn,isfile(fn)))
-
-global mode = m_standalone
-if isfile(fn)
-    cfg_str = readlines(fn)
-    for line in cfg_str
-        global PlayerList, mode,mode_human,serverURL,serverIP,GAMEW,macOS
-
-        rl = split(line,' ')
-        println((rl))
-        if rl[1] == "name"
-            playerName = rl[2]
-        elseif rl[1] == "mode"
-            mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
-            if mode == m_standalone
-                PlayerList =[plBot1,plBot1,plBot1,plBot1]
-            elseif mode == m_client
-                PlayerList =[plBot1,plBot1,plBot1,plBot1]
-            else
-                PlayerList =[plBot1,plBot1,plBot1,plBot1]
+mode_human = false
+mode = m_standalone
+serverURL = "baobinh.tpdlinkdns.com"
+serverPort = 11029
+serverIP = ip"192.168.0.35"
+GAMEW =900
+println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
+function config(fn)
+    if !isfile(fn)
+        println(fn," does not exist, please configure one. Similar to this\n
+        name Binh
+        mode standalone
+        GUI true
+        human true
+        server baobinh.tplinkdns.com 11029
+        client 192.168.0.53
+        GAMEW 900
+        macOS true")
+    else
+        cfg_str = readlines(fn)
+        for line in cfg_str
+            global PlayerList,noGUI_list, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer
+            rl = split(line,' ')
+            println((rl))
+            if rl[1] == "name"
+                playerName = rl[2]
+            elseif rl[1] == "mode"
+                mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
+            elseif rl[1] == "human"
+                mode_human = rl[2] == "true"
+            elseif rl[1] == "server"
+                serverURL = rl[2] 
+                serverPort = parse(Int,rl[3])
+            elseif rl[1] == "client"
+                serverIP = rl[2]
+                println(serverIP)
+            elseif rl[1] == "GAMEW"
+                GAMEW = parse(Int,rl[2])
+            elseif rl[1] == "numberOfSocketPlayer"
+                numberOfSocketPlayer = parse(Int,rl[2])
+            elseif rl[1] == "myPlayer"
+                myPlayer = parse(Int,rl[2])
+                println(rl[2]," = ",myPlayer)
+            elseif rl[1] == "macOS"
+                macOS = rl[2] == "true"
+            elseif rl[1] == "GUI"
+                    global GUI = rl[2] == "true"
             end
-            println((mode,PlayerList))
-        elseif rl[1] == "human"
-            mode_human = rl[2] == "true"
-            PlayerList =[plHuman,plBot1,plBot1,plBot1]
-        elseif rl[1] == "server"
-            serverURL = rl[2] 
-            println(serverURL)
-        elseif rl[1] == "client"
-            serverIP = rl[2]
-            println(serverIP)
-        elseif rl[1] == "GAMEW"
-            GAMEW = parse(Int,rl[2])
-        elseif rl[1] == "macOS"
-            global macOS = rl[2] == "true"
         end
     end
-
+    if GUI
+        noGUI_list[myPlayer] = false
+    end
+    if mode == m_standalone && mode_human
+        PlayerList[myPlayer] = plHuman
+    end
+    return (PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer)
 end
-println("mode = ",mode)
-client = mode = m_client
 
+(PlayerList, mode,mode_human,serverURL,serverIP,
+serverPort, GAMEW,macOS,
+numberOfSocketPlayer,myPlayer) = config(fn)
+println((PlayerList, mode,mode_human,serverURL,
+serverIP,serverPort, GAMEW,macOS,
+numberOfSocketPlayer,myPlayer))
 if macOS
 const macOSconst = 1
     gameW = 900
@@ -158,16 +183,16 @@ module nwAPI
 using Sockets
 export nw_sendToMaster,nw_receiveFromMaster,nw_receiveFromPlayer, nw_sentToPlayer, nw_getR, serverSetup, clientSetup
 
-function serverSetup()
+function serverSetup(serverIP,port)
    # return(listen(ip"192.168.0.53",11029))
-    return(listen(ip(serverIP),11029))
+    return(listen(serverIP,port))
 end
 
 function acceptClient(s)
     return(accept(s))
 end
-function clientSetup()
-    return(connect(serverURL,11029))
+function clientSetup(serverURL,port)
+    return(connect(serverURL,port))
 end
 
 function nw_sendToMaster(id,connection,arr)
@@ -2379,7 +2404,7 @@ function gsStateMachine(gameActions)
             println("Mode =",(mode,mode_human))
                 if mode == m_server
                     println("SERVER")
-                    global myS = nwAPI.serverSetup()
+                    global myS = nwAPI.serverSetup(serverIP,port)
                     signedOnPlayer = 0
                     while signedOnPlayer < numberOfSocketPlayer 
                         global p = nwAPI.acceptClient(myS)
@@ -2396,7 +2421,7 @@ function gsStateMachine(gameActions)
                     end
                 elseif mode == m_client
                     println("CLIENT")
-                    global nwMaster = nwAPI.clientSetup()
+                    global nwMaster = nwAPI.clientSetup(serverURL,serverPort)
                     msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
                     println(msg)
                     global myPlayer = msg[2]
