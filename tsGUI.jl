@@ -1,11 +1,72 @@
 const macOS = true
 myPlayer = 1
+
+const plHuman = 0
+const plBot1 = 1
+const plBot2 = 2
+const plBot3 = 3
+const plSocket = 5
+const m_client = 0
+const m_server = 1
+const m_standalone = 2
+
 noGUI_list = [false,true,true,true]
-noGUI() = noGUI_list[myPlayer]
+PlayerList =[plHuman,plBot1,plBot1,plBot1]
 numberOfSocketPlayer = 0
-client = isfile("client.txt")
+
+playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
+GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
+noGUI() = noGUI_list[myPlayer]
+
+
 shufflePlayer = 1
-isServer() = !client && numberOfSocketPlayer > 0
+isServer() = mode == m_server
+println(PROGRAM_FILE)
+n = PROGRAM_FILE
+n = chop(n,tail=3)
+fn = string(n,".cfg")
+println((fn,isfile(fn)))
+
+global mode = m_standalone
+if isfile(fn)
+    cfg_str = readlines(fn)
+    for line in cfg_str
+        global PlayerList, mode,mode_human,serverURL,serverIP,GAMEW,macOS
+
+        rl = split(line,' ')
+        println((rl))
+        if rl[1] == "name"
+            playerName = rl[2]
+        elseif rl[1] == "mode"
+            mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
+            if mode == m_standalone
+                PlayerList =[plBot1,plBot1,plBot1,plBot1]
+            elseif mode == m_client
+                PlayerList =[plBot1,plBot1,plBot1,plBot1]
+            else
+                PlayerList =[plBot1,plBot1,plBot1,plBot1]
+            end
+            println((mode,PlayerList))
+        elseif rl[1] == "human"
+            mode_human = rl[2] == "true"
+            PlayerList =[plHuman,plBot1,plBot1,plBot1]
+        elseif rl[1] == "server"
+            serverURL = rl[2] 
+            println(serverURL)
+        elseif rl[1] == "client"
+            serverIP = rl[2]
+            println(serverIP)
+        elseif rl[1] == "GAMEW"
+            GAMEW = parse(Int,rl[2])
+        elseif rl[1] == "macOS"
+            global macOS = rl[2] == "true"
+        end
+    end
+
+end
+println("mode = ",mode)
+client = mode = m_client
+
 if macOS
 const macOSconst = 1
     gameW = 900
@@ -27,9 +88,8 @@ else
     cardYdim = 80
     zoomCardYdim = 110
 end
-zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
-const its_me = 1
 
+zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
 
 const tableXgrid = 20
 const tableYgrid = 20
@@ -46,15 +106,12 @@ function gameOver(gameE)
 end
 isGameOver() = gameEnd
 
-const plHuman = 0
-const plBot1 = 1
-const plBot2 = 2
-const plBot3 = 3
-const plSocket = 5
 
- humanIsGUI() = true & !noGUI()
-global PlayerList =[plHuman,plBot1,plBot1,plBot1]
-playerIsHuman(p) = PlayerList[p] == plHuman && !noGUI()
+function playerIsHuman(p) 
+    r = PlayerList[p] == plHuman && !noGUI()
+    return(r)
+end
+humanIsGUI() = true & !noGUI()
 
 function RESET1()
         
@@ -102,15 +159,15 @@ using Sockets
 export nw_sendToMaster,nw_receiveFromMaster,nw_receiveFromPlayer, nw_sentToPlayer, nw_getR, serverSetup, clientSetup
 
 function serverSetup()
-        write("client.txt","You are a client! Please remove this file to run as a server")
-        return(listen(ip"192.168.0.53",11029))
+   # return(listen(ip"192.168.0.53",11029))
+    return(listen(ip(serverIP),11029))
 end
 
 function acceptClient(s)
     return(accept(s))
 end
 function clientSetup()
-    return(connect("baobinh.tplinkdns.com",11029))
+    return(connect(serverURL,11029))
 end
 
 function nw_sendToMaster(id,connection,arr)
@@ -201,19 +258,7 @@ function nw_getR(nw)
      end
      return n
 end
-"""
-function return nothing, return immediately, not waiting for remote
 
-"""
-function nwGamePlay(
-    all_hands,
-    all_discards,
-    all_assets,
-    gameDeck,
-    pcard;
-    gpPlayer = 1,
-    gpAction = 0,
-) end
 
 """
     nwGamePlayResult(gpPlayer)
@@ -805,11 +850,6 @@ function RESET3()
     end
 end
 RESET3()
-
-global playerA_hand,playerB_hand,playerC_hand,playerD_hand
-global playerA_discards,playerB_discards,playerC_discards,playerD_discards
-global playerA_assets,playerB_assets,playerC_assets,playerD_assets
-
 """
 setupDrawDeck:
 x,y: starting location
@@ -952,20 +992,20 @@ function tusacDeal()
         playerC_hand = P2_hand
         playerD_hand = P3_hand
     elseif myPlayer == 2
-        playerB_hand = P0_hand
-        playerC_hand = P1_hand
-        playerD_hand = P2_hand
-        playerA_hand = P3_hand
-    elseif myPlayer == 3
-        playerC_hand = P0_hand
-        playerD_hand = P1_hand
-        playerA_hand = P2_hand
-        playerB_hand = P3_hand
-    else
-        playerD_hand = P0_hand
         playerA_hand = P1_hand
         playerB_hand = P2_hand
         playerC_hand = P3_hand
+        playerD_hand = P0_hand
+    elseif myPlayer == 3
+        playerA_hand = P2_hand
+        playerB_hand = P3_hand
+        playerC_hand = P0_hand
+        playerD_hand = P1_hand
+    else
+        playerA_hand = P3_hand
+        playerB_hand = P0_hand
+        playerC_hand = P1_hand
+        playerD_hand = P2_hand
     end
 
 
@@ -1018,7 +1058,11 @@ const tsHistory = 5
 tusacState = tsSinitial
 
 function ts(a)
+    if length(a) == 1
         TuSacCards.Card(a)
+    else
+        ts_s(a)
+    end
 end
 
 function ts_s(rt)
@@ -1423,7 +1467,8 @@ end
 global rQ = Vector{Any}(undef,4)
 global rReady = Vector{Bool}(undef,4)
 
-function updateHandPic(cp) 
+function updateHandPic(np)
+   cp = playerMaptoGUI(np)
     if cp == 1 
         gx,gy = 7, 14
     elseif cp == 2
@@ -1444,11 +1489,14 @@ function  updateErrorPic(cp)
     errorPic.pos = tableGridXY(gx, gy)
 end
 
-function updateWinnerPic(cp) 
+function updateWinnerPic(np) 
+
     if noGUI()
         return
     end
-    if cp == 0
+    cp = playerMaptoGUI(np)
+
+    if np == 0
         gx,gy = 20,20
     elseif cp == 1 
         gx,gy = 8, 13
@@ -1464,7 +1512,7 @@ end
 
 function removeCards!(array, n, cards)
     for c in cards
-        println("REMOVE ",ts(c)," from ",n)
+        println("REMOVE ",ts(c)," from ",n," map-> ",playerMaptoGUI(n))
         found = false
         for l = 1:length(array[n])
             if c == array[n][l]
@@ -1474,40 +1522,69 @@ function removeCards!(array, n, cards)
             end
         end
         @assert found
-            if n== 1
-                pop!(playerA_hand,ts(c))
-            elseif n == 2
-                pop!(playerB_hand,ts(c))
-            elseif n == 3
-                pop!(playerC_hand,ts(c))
-            elseif n == 4
-                pop!(playerD_hand,ts(c))
-            end
+        m = playerMaptoGUI(n)
+        if m== 1
+            pop!(playerA_hand,ts(c))
+            println((m,playerA_hand))
+            global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
+
+        elseif m == 2
+            pop!(playerB_hand,ts(c))
+            println((m,playerB_hand))
+            setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
+
+        elseif m == 3
+            pop!(playerC_hand,ts(c))
+            println((m,playerC_hand))
+            setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+
+        elseif m == 4
+            pop!(playerD_hand,ts(c))
+            println((m,playerD_hand))
+            setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+
+        end
 
     end
 end
 function addCards!(array,arrNo, n, cards)
+    m  = playerMaptoGUI(n)
     for c in cards
         push!(array[n], c)
         if arrNo == 0
-            if n== 1
+            if m== 1
                 push!(playerA_assets,ts(c))
-            elseif n == 2
+                asset1 = setupDrawDeck(playerA_assets, 8, 14, 30, false)
+
+            elseif m == 2
                 push!(playerB_assets,ts(c))
-            elseif n == 3
+                asset2 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
+
+            elseif m == 3
                 push!(playerC_assets,ts(c))
-            elseif n == 4
+                asset3 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
+
+            elseif m == 4
                 push!(playerD_assets,ts(c))
+                asset4 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
+
             end
         else
-            if n== 1
+            if m== 1
                 push!(playerA_discards,ts(c))
-            elseif n == 2
+                setupDrawDeck(playerA_discards, 16, 16, 8, false)
+            elseif m == 2
                 push!(playerB_discards,ts(c))
-            elseif n == 3
+                setupDrawDeck(playerB_discards, 16, 2, 8, false)
+
+            elseif m == 3
                 push!(playerC_discards,ts(c))
-            elseif n == 4
+                setupDrawDeck(playerC_discards, 3, 2, 8, false)
+
+            elseif m == 4
                 push!(playerD_discards,ts(c))
+                discard4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
+
             end
         end
     end
@@ -1593,6 +1670,8 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
 end
 
 function getData_all_discard_assets()
+    adjustPlayer = myPlayer
+    if adjustPlayer == 1
     push!(
         all_discards,
         TuSacCards.getDeckArray(playerA_discards),
@@ -1600,7 +1679,6 @@ function getData_all_discard_assets()
         TuSacCards.getDeckArray(playerC_discards),
         TuSacCards.getDeckArray(playerD_discards),
     )
-
     push!(
         all_assets,
         TuSacCards.getDeckArray(playerA_assets),
@@ -1608,15 +1686,96 @@ function getData_all_discard_assets()
         TuSacCards.getDeckArray(playerC_assets),
         TuSacCards.getDeckArray(playerD_assets),
     )
+    elseif adjustPlayer == 4
+        push!(
+            all_discards,
+            TuSacCards.getDeckArray(playerB_discards),
+            TuSacCards.getDeckArray(playerC_discards),
+            TuSacCards.getDeckArray(playerD_discards),
+            TuSacCards.getDeckArray(playerA_discards),
+        )
+    
+        push!(
+            all_assets,
+            TuSacCards.getDeckArray(playerB_assets),
+            TuSacCards.getDeckArray(playerC_assets),
+            TuSacCards.getDeckArray(playerD_assets),
+            TuSacCards.getDeckArray(playerA_assets),
+        )
+    elseif adjustPlayer == 3
+        push!(
+            all_discards,
+            TuSacCards.getDeckArray(playerC_discards),
+            TuSacCards.getDeckArray(playerD_discards),
+            TuSacCards.getDeckArray(playerA_discards),
+            TuSacCards.getDeckArray(playerB_discards),
+        )
+    
+        push!(
+            all_assets,
+            TuSacCards.getDeckArray(playerC_assets),
+            TuSacCards.getDeckArray(playerD_assets),
+            TuSacCards.getDeckArray(playerA_assets),
+            TuSacCards.getDeckArray(playerB_assets),
+        )
+    elseif adjustPlayer == 2
+        push!(
+            all_discards,
+            TuSacCards.getDeckArray(playerD_discards),
+            TuSacCards.getDeckArray(playerA_discards),
+            TuSacCards.getDeckArray(playerB_discards),
+            TuSacCards.getDeckArray(playerC_discards),
+        )
+    
+        push!(
+            all_assets,
+            TuSacCards.getDeckArray(playerD_assets),
+            TuSacCards.getDeckArray(playerA_assets),
+            TuSacCards.getDeckArray(playerB_assets),
+            TuSacCards.getDeckArray(playerC_assets),
+        )
+
+    end
 end
 function getData_all_hands()
-    push!(
-        all_hands,
-        TuSacCards.getDeckArray(playerA_hand),
-        TuSacCards.getDeckArray(playerB_hand),
-        TuSacCards.getDeckArray(playerC_hand),
-        TuSacCards.getDeckArray(playerD_hand),
-    )
+    adjustPlayer = myPlayer
+    if adjustPlayer == 1
+        push!(
+            all_hands,
+            TuSacCards.getDeckArray(playerA_hand),
+            TuSacCards.getDeckArray(playerB_hand),
+            TuSacCards.getDeckArray(playerC_hand),
+            TuSacCards.getDeckArray(playerD_hand),
+        )
+
+    elseif adjustPlayer == 4
+        push!(
+            all_hands,
+            TuSacCards.getDeckArray(playerB_hand),
+            TuSacCards.getDeckArray(playerC_hand),
+            TuSacCards.getDeckArray(playerD_hand),
+            TuSacCards.getDeckArray(playerA_hand),
+        )
+    
+    elseif adjustPlayer == 3
+        push!(
+            all_hands,
+            TuSacCards.getDeckArray(playerC_hand),
+            TuSacCards.getDeckArray(playerD_hand),
+            TuSacCards.getDeckArray(playerA_hand),
+            TuSacCards.getDeckArray(playerB_hand),
+        )
+    
+    elseif adjustPlayer == 2
+        push!(
+            all_hands,
+            TuSacCards.getDeckArray(playerD_hand),
+            TuSacCards.getDeckArray(playerA_hand),
+            TuSacCards.getDeckArray(playerB_hand),
+            TuSacCards.getDeckArray(playerC_hand),
+        )
+    
+    end
 end
 
 function toDeck(arr,brr,crr,d) 
@@ -1789,7 +1948,7 @@ function gamePlay1Iteration()
                 if GUI_ready
                     rReady[player] = true
                     rQ[player]=GUI_array
-                    print("PlayCard = ", )
+                    print("Human-p: ", player," PlayCard = ", )
                     ts_s(rQ[player])
                     GUI_ready = false
                 else
@@ -2213,36 +2372,38 @@ function gsStateMachine(gameActions)
     =#
     if tusacState == tsSinitial
 # -------------------A
-
+        global mode
         if gameActions == gsSetupGame
             global numberOfSocketPlayer
-            if client == false 
-                println("SERVER")
-                global myS = nwAPI.serverSetup()
-                signedOnPlayer = 0
-                while signedOnPlayer < numberOfSocketPlayer 
-                    global p = nwAPI.acceptClient(myS)
-                    for i in 2:4
-                        if PlayerList[i] != plSocket
-                            PlayerList[i] = plSocket
-                            nwPlayer[i] = p
-                            nwAPI.nw_sendToPlayer(i,p,i)
-                            println("Accepting Player ",i)
-                            break
+            global mode
+            println("Mode =",(mode,mode_human))
+                if mode == m_server
+                    println("SERVER")
+                    global myS = nwAPI.serverSetup()
+                    signedOnPlayer = 0
+                    while signedOnPlayer < numberOfSocketPlayer 
+                        global p = nwAPI.acceptClient(myS)
+                        for i in 2:4
+                            if PlayerList[i] != plSocket
+                                PlayerList[i] = plSocket
+                                nwPlayer[i] = p
+                                nwAPI.nw_sendToPlayer(i,p,i)
+                                println("Accepting Player ",i)
+                                break
+                            end
                         end
+                        signedOnPlayer += 1
                     end
-                    signedOnPlayer += 1
+                elseif mode == m_client
+                    println("CLIENT")
+                    global nwMaster = nwAPI.clientSetup()
+                    msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+                    println(msg)
+                    global myPlayer = msg[2]
+                    PlayerList[myPlayer] = plSocket
+                    println("Accepted as Player number ",myPlayer)
                 end
-            else
-                println("CLIENT")
-                global nwMaster = nwAPI.clientSetup()
-                msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
-                println(msg)
-                global myPlayer = msg[2]
-                PlayerList[myPlayer] = plSocket
-                println("Accepted as Player number ",myPlayer)
-            end
-
+            
             gameDeck = TuSacCards.ordered_deck()
             if noGUI() == false
                 deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
@@ -2583,7 +2744,7 @@ function human_gamePlay(
 )
     
     println()
-    println("=========================Player", gpPlayer, "Hand: ")
+    println("==================Player", (gpPlayer,playerMaptoGUI(gpPlayer)), "Hand: ")
     for c in all_hands[gpPlayer]
         print(ts(c), " ")
     end
@@ -2592,7 +2753,7 @@ function human_gamePlay(
     for as in all_assets
         a += 1
         print("Assets", a, ":  ")
-        for i = 2:length(as)
+        for i in 2:length(as)
             c = as[i]
             print(ts(c), " ")
         end
@@ -2603,7 +2764,7 @@ function human_gamePlay(
     for as in all_discards
         a += 1
         print("Trashs", a, ":  ")
-        for i = 2:length(as)
+        for i in 2:length(as)
             c = as[i]
             print(ts(c), " ")
         end
@@ -2932,9 +3093,9 @@ function replayHistory(index)
     playerD_assets = deepcopy(a[8])
 
     playerA_discards = deepcopy(a[9])
-    playerA_discards = deepcopy(a[10])
-    playerA_discards = deepcopy(a[11])
-    playerA_discards = deepcopy(a[12])
+    playerB_discards = deepcopy(a[10])
+    playerC_discards = deepcopy(a[11])
+    playerD_discards = deepcopy(a[12])
 
     gameDeck = deepcopy(a[13])
 
@@ -3114,7 +3275,10 @@ function click_card(cardIndx, yPortion, hand)
 end
 
 function badPlay(cards,hand,action,matchC)
-    println("Chk GUI ",(cards,matchC))
+    print("Chk GUI ,matchcard ",ts(matchC)," -- ", cards, " == ")
+    ts_s(hand)
+    ts_s(cards)
+    
     allfound = true
     for c in cards
         found = false
@@ -3125,7 +3289,7 @@ function badPlay(cards,hand,action,matchC)
             end
         end
         if !found
-            println(c," is not found in Player hand")
+            println((c)," is not found in Player hand ",hand)
         end
         allfound = allfound && found
     end
@@ -3224,11 +3388,13 @@ function on_mouse_down(g, pos)
             for ci in cardsIndxArr
                 ac= TuSacCards.getCards(playerA_hand, ci)
                 push!(GUI_array,ac)
-                print(" ",ts(ac))
+                print("click_card, index,card=",(ci,ac))
+                println(" ",ts(ac))
             end
             println("\nDanh Bai XONG ROI")
             setupDrawDeck(playerA_hand, 7, 18, 100, false)
-            if badPlay(GUI_array,all_hands[1],currentAction,currentPlayCard)
+              
+            if badPlay(GUI_array,all_hands[myPlayer],currentAction,currentPlayCard)
                 updateErrorPic(1)
                 cardsIndxArr = []
                 GUI_ready = false
@@ -3315,8 +3481,6 @@ function draw(g)
             saveI = saveI + drawAhand(all_discards[i])
         end
         saveI = saveI + drawAhand(TuSacCards.getDeckArray(gameDeck))
-    
-  
     if saveI != 0
         draw(big_actors[saveI])
     end
@@ -3325,17 +3489,7 @@ function draw(g)
         global csx,csy = big_actors[ActiveCard].pos
         if drawCnt >20
             draw(big_actors[ActiveCard])
-     #=
-        else
-            if glIterationCnt > 4
-                big_actors[ActiveCard].pos = lsx,lsy
-            else
-               draw(big_actors[ActiveCard])
-               big_actors[ActiveCard].pos = csx,csy
-            end
-            =#
         end
-        
     end
     draw(handPic)
     draw(winnerPic)
