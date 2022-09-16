@@ -20,7 +20,7 @@ GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
 
 
-shufflePlayer = 1
+shufflePlayer = 2
 isServer() = mode == m_server
 println(PROGRAM_FILE)
 n = PROGRAM_FILE
@@ -58,10 +58,10 @@ function config(fn)
             elseif rl[1] == "human"
                 mode_human = rl[2] == "true"
             elseif rl[1] == "server"
-                serverURL = rl[2] 
+                serverURL = getaddrinfo(string(rl[2]))
                 serverPort = parse(Int,rl[3])
-            elseif rl[1] == "client"
-                serverIP = rl[2]
+            elseif rl[1] == "myIP"
+                serverIP = getaddrinfo(string(rl[2]))
                 println(serverIP)
             elseif rl[1] == "GAMEW"
                 GAMEW = parse(Int,rl[2])
@@ -133,10 +133,9 @@ isGameOver() = gameEnd
 
 
 function playerIsHuman(p) 
-    r = PlayerList[p] == plHuman && !noGUI()
-    return(r)
+    return (p == myPlayer && mode_human)
 end
-humanIsGUI() = true & !noGUI()
+humanIsGUI() = mode_human & !noGUI()
 
 function RESET1()
         
@@ -2251,12 +2250,15 @@ function playersSyncDeck!(deck::TuSacCards.Deck)
     println("in SYNC DECK MY player", myPlayer)
     isMaster = (PlayerList[myPlayer] != plSocket) 
     println(PlayerList)
-    if isMaster
-            println("MASTER")
-            dArray = nwAPI.nw_receiveFromPlayer(shufflePlayer, nwPlayer[shufflePlayer],112)
-            println("\nold Deck",deck)
-            deck = []
-            deck = TuSacCards.newDeckUsingArray(dArray)
+    if mode == m_server
+            println("MASTER",(PlayerList,myPlayer))
+
+           if shufflePlayer != myPlayer
+                dArray = nwAPI.nw_receiveFromPlayer(shufflePlayer, nwPlayer[shufflePlayer],112)
+                println("\nold Deck",deck)
+                deck = []
+                deck = TuSacCards.newDeckUsingArray(dArray)
+           end
             println("\nNew Deck=",deck)
             for i in 1:4
                     if PlayerList[i] == plSocket
@@ -2266,8 +2268,8 @@ function playersSyncDeck!(deck::TuSacCards.Deck)
                         nwAPI.nw_sendToPlayer(i,nwPlayer[i],dArray)
                     end
             end
-    else
-        println("PLAYER")
+    elseif mode == m_client
+        println("PLAYER",(PlayerList,myPlayer))
 
         if PlayerList[myPlayer] == plSocket
             dArray = TuSacCards.getDeckArray(deck)
@@ -2402,33 +2404,33 @@ function gsStateMachine(gameActions)
             global numberOfSocketPlayer
             global mode
             println("Mode =",(mode,mode_human))
-                if mode == m_server
-                    println("SERVER")
-                    global myS = nwAPI.serverSetup(serverIP,port)
-                    signedOnPlayer = 0
-                    while signedOnPlayer < numberOfSocketPlayer 
-                        global p = nwAPI.acceptClient(myS)
-                        for i in 2:4
-                            if PlayerList[i] != plSocket
-                                PlayerList[i] = plSocket
-                                nwPlayer[i] = p
-                                nwAPI.nw_sendToPlayer(i,p,i)
-                                println("Accepting Player ",i)
-                                break
-                            end
+            if mode == m_server
+                println("SERVER")
+                global myS = nwAPI.serverSetup(serverIP,serverPort)
+                signedOnPlayer = 0
+                while signedOnPlayer < numberOfSocketPlayer 
+                    global p = nwAPI.acceptClient(myS)
+                    for i in 2:4
+                        if PlayerList[i] != plSocket
+                            PlayerList[i] = plSocket
+                            nwPlayer[i] = p
+                            nwAPI.nw_sendToPlayer(i,p,i)
+                            println("Accepting Player ",i)
+                            break
                         end
-                        signedOnPlayer += 1
                     end
-                elseif mode == m_client
-                    println("CLIENT")
-                    global nwMaster = nwAPI.clientSetup(serverURL,serverPort)
-                    msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
-                    println(msg)
-                    global myPlayer = msg[2]
-                    PlayerList[myPlayer] = plSocket
-                    println("Accepted as Player number ",myPlayer)
+                    signedOnPlayer += 1
                 end
-            
+            elseif mode == m_client
+                println("CLIENT")
+                global nwMaster = nwAPI.clientSetup(serverURL,serverPort)
+                msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+                println(msg)
+                global myPlayer = msg[2]
+                PlayerList[myPlayer] = plSocket
+                println("Accepted as Player number ",myPlayer)
+            end
+        
             gameDeck = TuSacCards.ordered_deck()
             if noGUI() == false
                 deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
@@ -2441,7 +2443,7 @@ function gsStateMachine(gameActions)
             else
                 autoHumanShuffle(rand(8:15))
             end
-            if numberOfSocketPlayer > 0
+            if mode != m_standalone && noGUI()
                 println("GET  TO   HERE")
                 anewDeck = deepcopy(playersSyncDeck!(gameDeck))
                 pop!(gameDeck,112)
@@ -3389,9 +3391,13 @@ function on_mouse_down(g, pos)
     global tusacState
     x = pos[1] << macOSconst
     y = pos[2] << macOSconst
-  
     if tusacState == tsSdealCards
-      
+        if mode != m_standalone && !noGUI()
+            println("GET  TO   HERE")
+            anewDeck = deepcopy(playersSyncDeck!(gameDeck))
+            pop!(gameDeck,112)
+            push!(gameDeck,anewDeck)
+        end
        gsStateMachine(gsOrganize)
        
     elseif tusacState == tsGameLoop    
