@@ -33,6 +33,7 @@ serverURL = "baobinh.tpdlinkdns.com"
 serverPort = 11029
 serverIP = ip"192.168.0.35"
 GAMEW =900
+GENERIC = 3
 println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
 function config(fn)
     if !isfile(fn)
@@ -92,6 +93,7 @@ numberOfSocketPlayer,myPlayer) = config(fn)
 println((PlayerList, mode,mode_human,serverURL,
 serverIP,serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer))
+
 if macOS
     println("macOS")
 const macOSconst = 1
@@ -103,18 +105,36 @@ const macOSconst = 1
     cardXdim = 64
     cardYdim = 210
     zoomCardYdim = 400
+    GENERIC = 0
 else
+    if GENERIC == 1    
+        gameW = 820
+        cardXdim = 24
+        cardYdim = 80
+        zoomCardYdim = 110
+    elseif GENERIC == 2
+        gameW = 820
+        cardXdim = 34
+        cardYdim = 110
+        zoomCardYdim = 210
+    elseif GENERIC == 3
+        gameW = 820
+        cardXdim = 64
+        cardYdim = 210
+        zoomCardYdim = 295
+    else
+        gameW = 820
+        cardXdim = 90
+        cardYdim = 295
+        zoomCardYdim = 400
+    end
     println("NO macOS")
-
     const macOSconst = 0
-    gameW = 820
     HEIGHT = gameW
     WIDTH = div(gameW * 16, 9)
     realHEIGHT = div(HEIGHT, 1)
     realWIDTH = div(WIDTH, 1)
-    cardXdim = 24
-    cardYdim = 80
-    zoomCardYdim = 110
+    
 end
 
 zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
@@ -850,11 +870,31 @@ function setupActorgameDeck()
                     big_st = string(s, "-", mapr, ".png")
                     afc = Actor("fc.png")
                 else
-                    local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
-                    mapr = m == 5 ? 6 : m == 6 ? 5 : m
-                    st = string(s, mapr, "xs.png")
-                    big_st = string(s, mapr, "s.png")
-                    afc = Actor("fcxs.png")
+                    if GENERIC == 1
+                        local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
+                        mapr = m == 5 ? 6 : m == 6 ? 5 : m
+                        st = string(s, mapr, "xs.png")
+                        big_st = string(s, mapr, "s.png")
+                        afc = Actor("fcxs.png")
+                    elseif GENERIC == 2
+                        local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
+                        mapr = m == 5 ? 6 : m == 6 ? 5 : m
+                        st = string(s, mapr, "s.png")
+                        big_st = string(s, m, ".png")
+                        afc = Actor("fcs.png")
+                    elseif GENERIC == 3
+                        local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
+                        mapr = m == 5 ? 6 : m == 6 ? 5 : m
+                        st = string(s, m, ".png")
+                        big_st = string(s, "-m", m, ".png")
+                        afc = Actor("fc.png")
+                    else
+                        local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
+                        mapr = m == 5 ? 6 : m == 6 ? 5 : m
+                        st = string(s, "-m", m, ".png")
+                        big_st = string(s, "-", m, ".png")
+                        afc = Actor("fc.png")
+                    end
                 end
                 act = Actor(st)
                 big_act = Actor(big_st)
@@ -1502,11 +1542,11 @@ function updateHandPic(np)
     if cp == 1 
         gx,gy = 7, 14
     elseif cp == 2
-        gx,gy = 17,14
+        gx,gy = 17,12
     elseif cp == 3
-        gx,gy = 14, 3
+        gx,gy = 12, 4
     else 
-        gx,gy = 3,14
+        gx,gy = 3,12
     end
     handPic.pos = tableGridXY(gx, gy)
 end
@@ -1525,18 +1565,19 @@ function updateWinnerPic(np)
         return
     end
     cp = playerMaptoGUI(np)
-
+    
     if np == 0
         gx,gy = 20,20
     elseif cp == 1 
-        gx,gy = 8, 13
+        gx,gy = 7, 14
     elseif cp == 2
-        gx,gy = 16,11
+        gx,gy = 17,12
     elseif cp == 3
-        gx,gy = 12, 3
+        gx,gy = 12, 4
     else 
-        gx,gy = 3,11
+        gx,gy = 3,12
     end
+
     winnerPic.pos = tableGridXY(gx, gy)
 end
 
@@ -1584,7 +1625,7 @@ function addCards!(array,arrNo, n, cards)
         if arrNo == 0
             if m== 1
                 push!(playerA_assets,ts(c))
-                asset1 = setupDrawDeck(playerA_assets, 8, 14, 30, false)
+                asset1 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
 
             elseif m == 2
                 push!(playerB_assets,ts(c))
@@ -2451,7 +2492,11 @@ function gsStateMachine(gameActions)
             gameDeck = TuSacCards.ordered_deck()
             if noGUI() == false
                 deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
-                global handPic = Actor("hand.jpeg")
+                if (GENERIC == 0)
+                    global handPic = Actor("hand.jpeg")
+                else
+                    global handPic = Actor("hand2.jpeg")
+                end
                 global winnerPic = Actor("winner.png")
                 global errorPic = Actor("error.png")
                 updateHandPic(1)
@@ -2501,7 +2546,7 @@ global GUI_ready = false
         discard3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
         discard4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
 
-        asset1 = setupDrawDeck(playerA_assets, 8, 14, 30, false)
+        asset1 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
         asset2 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
         asset3 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
         asset4 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
@@ -2868,7 +2913,7 @@ function hgamePlay(
     if gpPlayer == 1 
         global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
         discard1 = setupDrawDeck(playerA_discards, 16, 16, 8, false)
-        asset1 = setupDrawDeck(playerA_assets, 8, 14, 30, false)
+        asset1 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
 
     elseif gpPlayer == 2
         setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
@@ -3151,7 +3196,7 @@ function replayHistory(index)
     setupDrawDeck(playerC_discards, 3, 2, 8, false)
     setupDrawDeck(playerD_discards, 3, 16, 8, false)
 
-    setupDrawDeck(playerA_assets, 8, 14, 30, false)
+    setupDrawDeck(playerA_assets, 9, 13, 30, false)
     setupDrawDeck(playerB_assets, 16, 7, 4, false)
     setupDrawDeck(playerC_assets, 8, 4, 30, false)
     setupDrawDeck(playerD_assets, 4, 7, 4, false)
@@ -3196,8 +3241,8 @@ function on_key_down(g)
     playerD_discards
 
 
-        if g.keyboard.RETURN
-            println("Return")
+        if g.keyboard.TAB
+            println("TAB")
         elseif g.keyboard.SPACE
             println("SPACE")
         elseif g.keyboard.T
@@ -3258,7 +3303,7 @@ function on_key_down(g)
         println(ts_s(c))
 
     elseif tusacState == tsGameLoop
-        if g.keyboard.RETURN
+        if g.keyboard.TAB
             SNAPSHOT() #taking last SNAPSHOT 
             HistCnt = length(HISTORY)
             tusacState = tsHistory
