@@ -2503,16 +2503,23 @@ function gsStateMachine(gameActions)
             gameDeck = TuSacCards.ordered_deck()
             if noGUI() == false
                 deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
-                if (GENERIC == 0)
-                    global handPic = Actor("hand.jpeg")
-                elseif GENERIC ==1
-                    global handPic = Actor("hand2.png")
-                elseif GENERIC ==2
-                    global handPic = Actor("hand3.png")
-                else
+                if (GENERIC == 1)
                     global handPic = Actor("hand4.png")
+                    global winnerPic = Actor("winner2.png")
+
+                elseif GENERIC == 2
+                    global handPic = Actor("hand3.png")
+                    global winnerPic = Actor("winner2.png")
+
+                elseif GENERIC ==3
+                    global handPic = Actor("hand2.png")
+                    global winnerPic = Actor("winner2.png")
+
+                else
+                    global handPic = Actor("hand.jpeg")
+                    global winnerPic = Actor("winner.png")
+
                 end
-                global winnerPic = Actor("winner.png")
                 global errorPic = Actor("error.png")
                 updateHandPic(1)
                 updateWinnerPic(0)
