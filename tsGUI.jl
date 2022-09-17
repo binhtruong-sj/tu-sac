@@ -1626,34 +1626,45 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
             l = 1
         end
        
+        thand = deepcopy(all_hands[n])
+        moreTrash = false
+        ops,oss,ocs,om1s,omts,ombs =  scanCards(thand, true)
+        TrashCnt = length(ocs)
 
         win = false
         if l > 0 || is_T(card)# only check winner that has matched cards
-            thand = deepcopy(all_hands[n])
+           
 
             for e in r
                 filter!(x -> x != e, thand)
             end
             ps, ss, cs, m1s, mts, mbs = scanCards(thand, false)
-
             if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
-                for p in ps[1]
-                    if card_equal(p[1],missPiece(r[1],r[2]))
-                        println("match ",ts_s(p)," is SAKI, not accepted")
+                for m in mbs
+                    if card_equal(m,r[1])
+                        println("match ",ts_s(r)," is SAKI, not accepted")
                         l = 0
                     end
                 end
             end
+          
             ll = length(union(ss, cs, m1s, mts, mbs)) 
+            lc = length(cs)
+            if false && TrashCnt < lc  # need more work
+                println("Illegal match -- creating more trash ",(TrashCnt,lc))
+                ts_s(ocs)
+                ts_s(oc)
+                l = 0
+            end
             if ll == 0
                 println("WINWINWINWINWINWINWINWINWINWIWN")
                 l = 4
                 win = true
-            end
-            
+            end 
         end
         return l, win
     end
+
     l1, w1 = getl(card, n1, r1)
     l2, w2 = getl(card, n2, r2)
     l3, w3 = getl(card, n3, r3)
@@ -3332,9 +3343,6 @@ function badPlay(cards,hand,action,matchC)
     elseif length(cards) == 0
         return false
     else
-        if length(cards) == 0 # nothing to check
-            return false
-        end
         all_in_pairs = true
         all_in_suit = true
         pcard = matchC[1]
@@ -3347,7 +3355,18 @@ function badPlay(cards,hand,action,matchC)
             end
             if !all_in_pairs
                 println(cards," not pairs")
+                return true
             end
+            if (length(cards) == 2) # check for SAKI
+                ps, ss, cs, m1s, mts, mbs = scanCards(hand, true)
+                for m in mbs
+                    if card_equal(m,cards[1])
+                        println("match ",ts_s(cards)," is SAKI, not accepted")
+                        return true
+                    end
+                end
+            end
+            
         else 
             if length(cards) > 1
                 if !is_c(pcard)
@@ -3363,20 +3382,26 @@ function badPlay(cards,hand,action,matchC)
                 return true
             end
         end
-        moreTrash = false
-        ops,oss,ocs,om1s,omts,ombs =  scanCards(hand, true)
-        TrashCnt = length(union(oss,ocs,om1s,omts))
-        thand = deepcopy(hand)
 
-        for e in cards
-            filter!(x -> x != e, thand)
+        moreTrash = false
+        if is_c(pcard)
+            ops,oss,ocs,om1s,omts,ombs,ocp,ocspec =  scanCards(hand, true)
+            TrashCnt = length(ocs)
+            thand = deepcopy(hand)
+
+            for e in cards
+                filter!(x -> x != e, thand)
+            end
+            ps, ss, cs, m1s, mts, mbs,cp,cspec = scanCards(thand, true)
+            l = length(cs)
+            if TrashCnt < l
+                println("Illegal match -- creating more trash ",(TrashCnt,l))
+                ts_s(ocs)
+                ts_s(cs)
+                moreTrash = true
+            end
         end
-        ps, ss, cs, m1s, mts, mbs = scanCards(thand, true)
-        l = length(union(ss, cs, m1s, mts))
-        if TrashCnt < l
-            println("Illegal match -- creating more trash ",(TrashCnt,l))
-            moreTrash = true
-        end
+      
         return !( all_in_pairs && all_in_suit) || moreTrash
     end
 end
