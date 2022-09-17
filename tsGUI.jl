@@ -2494,8 +2494,12 @@ function gsStateMachine(gameActions)
                 deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
                 if (GENERIC == 0)
                     global handPic = Actor("hand.jpeg")
+                elseif GENERIC ==1
+                    global handPic = Actor("hand2.png")
+                elseif GENERIC ==2
+                    global handPic = Actor("hand3.png")
                 else
-                    global handPic = Actor("hand2.jpeg")
+                    global handPic = Actor("hand4.png")
                 end
                 global winnerPic = Actor("winner.png")
                 global errorPic = Actor("error.png")
