@@ -1644,7 +1644,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
             ps, ss, cs, m1s, mts, mbs = scanCards(thand, false)
             if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
                 for m in mbs
-                    if card_equal(m,r[1])
+                    if card_equal(m,r[1]) && !is_t(m) && !is_s(m)
                         println("match ",ts_s(r)," is SAKI, not accepted")
                         l = 0
                     end
@@ -3363,7 +3363,7 @@ function badPlay(cards,hand,action,matchC)
             if (length(cards) == 2) # check for SAKI
                 ps, ss, cs, m1s, mts, mbs = scanCards(hand, true)
                 for m in mbs
-                    if card_equal(m,cards[1])
+                    if card_equal(m,cards[1]) && !is_t(m) && !is_s(m)
                         println("match ",ts_s(cards)," is SAKI, not accepted")
                         return true
                     end
