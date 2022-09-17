@@ -843,12 +843,15 @@ function setupActorgameDeck()
     for s in ['w', 'y', 'r', 'g']
         for r = 1:7
             for d = 0:3
-                mapr = r < 4 ? r : (r == 4 ? 7 : r - 1)
                 if macOS
+                    mapr = r < 4 ? r : (r == 4 ? 7 : r - 1)
+
                     st = string(s, mapr, ".png")
                     big_st = string(s, "-", mapr, ".png")
                     afc = Actor("fc.png")
                 else
+                    local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
+                    mapr = m == 5 ? 6 : m == 6 ? 5 : m
                     st = string(s, mapr, "xs.png")
                     big_st = string(s, mapr, "s.png")
                     afc = Actor("fcxs.png")
