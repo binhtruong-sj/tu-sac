@@ -49,7 +49,9 @@ function config(fn)
     else
         cfg_str = readlines(fn)
         for line in cfg_str
-            global PlayerList,noGUI_list, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer
+            global PlayerList,noGUI_list, mode,
+            mode_human,serverURL,serverIP,serverPort, 
+            GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
             rl = split(line,' ')
             println((rl))
             if rl[1] == "name"
@@ -66,6 +68,8 @@ function config(fn)
                 println(serverIP)
             elseif rl[1] == "GAMEW"
                 GAMEW = parse(Int,rl[2])
+            elseif rl[1] == "GENERIC"
+                GENERIC = parse(Int,rl[2])
             elseif rl[1] == "numberOfSocketPlayer"
                 numberOfSocketPlayer = parse(Int,rl[2])
             elseif rl[1] == "myPlayer"
@@ -871,24 +875,31 @@ function setupActorgameDeck()
                     afc = Actor("fc.png")
                 else
                     if GENERIC == 1
+                        println("G",1)
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, mapr, "xs.png")
                         big_st = string(s, mapr, "s.png")
                         afc = Actor("fcxs.png")
                     elseif GENERIC == 2
+                        println("G",2)
+
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, mapr, "s.png")
                         big_st = string(s, m, ".png")
                         afc = Actor("fcs.png")
                     elseif GENERIC == 3
+                        println("G",3)
+
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, m, ".png")
                         big_st = string(s, "-m", m, ".png")
                         afc = Actor("fc.png")
                     else
+                        println("G",4)
+
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, "-m", m, ".png")
