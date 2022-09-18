@@ -145,7 +145,7 @@ else
     realWIDTH = div(WIDTH, 1)
     
 end
-
+boDoi = 0
 zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
 
 const tableXgrid = 20
@@ -2577,7 +2577,8 @@ function gsStateMachine(gameActions)
                     global winnerPic = Actor("winner2.png")
 
                 end
-                global errorPic = Actor("error.png")
+                global errorPic = TextActor("?!?","asapvar",font_size=400,color=[0,0,0,0])
+
                 updateHandPic(1)
                 updateWinnerPic(0)
                 updateErrorPic(0)
@@ -3212,6 +3213,7 @@ function hgamePlay(
     if gpAction == gpPlay1card
         @assert length(union(singles, chot1s, miss1s, missTs)) > 0
         print("play: ")
+        global boDoi = 0
         cards = gpHandlePlay1Card()
      
     println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
@@ -3480,13 +3482,12 @@ function badPlay(cards,hand,action,matchC)
  
     if action == gpPlay1card
         return (length(cards) != 1) || is_T(cards[1])
-    elseif length(cards) == 0
-        return false
     else
         all_in_pairs = true
         all_in_suit = true
         pcard = matchC[1]
-        if card_equal(pcard,cards[1])
+        if length(cards) > 0 
+            if card_equal(pcard,cards[1])
             if length(cards) == 1
                 return false
             end
@@ -3505,8 +3506,7 @@ function badPlay(cards,hand,action,matchC)
                         return true
                     end
                 end
-            end
-            
+            end 
         else 
             if length(cards) > 1
                 if !is_c(pcard)
@@ -3522,10 +3522,27 @@ function badPlay(cards,hand,action,matchC)
                 return true
             end
         end
-
+    end
         moreTrash = false
-        if is_c(pcard)
+        if is_c(pcard) || length(cards) == 0
             ops,oss,ocs,om1s,omts,ombs,ocp,ocspec =  scanCards(hand, true)
+            if length(cards) == 0
+                for ps in ops
+                    for p in ps
+                        if card_equal(p[1],pcard)
+                            global boDoi += 1
+                            if boDoi > 2
+                                println("BO DOI")
+                                boDoi = 0
+                                return false
+                            else
+                                return true
+                            end
+                        end
+                    end
+                end
+                return false
+            end
             TrashCnt = length(ocs)
             thand = deepcopy(hand)
 
