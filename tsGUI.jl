@@ -3496,43 +3496,50 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         pcard = matchC[1]
         if length(cards) > 0 
             if card_equal(pcard,cards[1])
-            if length(cards) == 1
-                return false
-            end
-            for c in cards
-                all_in_pairs = all_in_pairs && card_equal(pcard,c)
-            end
-            if !all_in_pairs
-                println(cards," not pairs")
-                return true
-            end
-            if (length(cards) == 2) # check for SAKI
-                ps, ss, cs, m1s, mts, mbs = scanCards(hand, true)
-                for m in mbs
-                    if card_equal(m,cards[1]) && !is_t(m) && !is_s(m)
-                        println("match ",ts_s(cards)," is SAKI, not accepted")
-                        return true
+                if length(cards) == 1
+                    return false
+                end
+                for c in cards
+                    all_in_pairs = all_in_pairs && card_equal(pcard,c)
+                end
+                if !all_in_pairs
+                    println(cards," not pairs")
+                    return true
+                end
+                if (length(cards) == 2) # check for SAKI
+                    ps, ss, cs, m1s, mts, mbs = scanCards(hand, true)
+                    for m in mbs
+                        if card_equal(m,cards[1]) && !is_t(m) && !is_s(m)
+                            println("match ",ts_s(cards)," is SAKI, not accepted")
+                            return true
+                        end
                     end
-                end
-            end 
-            if length(cards) > 1
-                if !is_c(pcard)
-                    all_in_suit= card_equal(pcard, missPiece(cards[1],cards[2]))
+                end 
+                if length(cards) > 1
+                    if !is_c(pcard)
+                        all_in_suit= card_equal(pcard, missPiece(cards[1],cards[2]))
+                    else
+                        all_in_suit = all_chots(cards,pcard)
+                    end
+                    if !all_in_suit
+                        println(cards," is not in suit")
+                    end
                 else
-                    all_in_suit = all_chots(cards,pcard)
+                    println(cards, " not pairs or in-suit")
+                    return true
                 end
-                if !all_in_suit
-                    println(cards," is not in suit")
-                end
-            else
-                println(cards, " not pairs or in-suit")
-                return true
             end
         end
-    end
         moreTrash = false
         ts_s(hand)
-
+function foundSaki(card,miss1sbar)
+    for m in miss1sbar
+        if card_equal(card,m)
+            return true
+        end
+    end
+    return false
+end
         if is_c(pcard) || length(cards) == 0
             allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
             scanCards(hand, false)
@@ -3540,10 +3547,10 @@ function badPlay(cards,player, hand,action,botCards,matchC)
             if length(cards) == 0
                 for ps in allPairs
                     for p in ps
-                        if card_equal(p[1],pcard) 
+                        if card_equal(p[1],pcard) && foundSaki(pcard,miss1sbar)
+                            println("BO DOI")
                             global boDoi += 1
                             if boDoi > 2
-                                println("BO DOI")
                                 if !is_c(pcard)
                                     for ap in p
                                         removeCards!(all_hands,player,ap)
@@ -3575,9 +3582,9 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                     end
                 end
             else
+                println("trashCnt")
                 TrashCnt = length(chot1s)
                 thand = deepcopy(hand)
-
                 for e in cards
                     filter!(x -> x != e, thand)
                 end
@@ -3590,9 +3597,9 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                     moreTrash = true
                 end
             end
-        end
-      
-        return !( all_in_pairs && all_in_suit) || moreTrash
+        end  
+        println("p,s,t",(all_in_pairs ,all_in_suit,moreTrash))
+        return !( all_in_pairs || all_in_suit) || moreTrash
     end
 end
 
