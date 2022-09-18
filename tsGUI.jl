@@ -2631,9 +2631,9 @@ global GUI_ready = false
         asset4 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
 
         global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
-        setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-        setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
-        setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
+        d_hand =setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+        c_hand =setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
+        b_hand = setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
         deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
         push!(
             boxes,
@@ -2644,7 +2644,7 @@ global GUI_ready = false
             asset1,
             asset2,
             asset3,
-            asset4,
+            asset4
         )
         println("Starting game")
         tusacState = tsGameLoop
@@ -2773,7 +2773,9 @@ function on_mouse_move(g, pos)
             mouseDirOnBox(x, y, deckState)
         end
     elseif tusacState > tsSstartGame
+        
         boxId, cardIndx = withinBoxes(x, y, boxes)
+        #println((boxId,cardIndx))
         if boxId == 0
             v = 0
         elseif boxId == 1
@@ -2792,8 +2794,16 @@ function on_mouse_move(g, pos)
             v = TuSacCards.getCards(playerB_assets, cardIndx)
         elseif boxId == 8
             v = TuSacCards.getCards(playerC_assets, cardIndx)
-        else
+        elseif boxId == 9
             v = TuSacCards.getCards(playerD_assets, cardIndx)
+        elseif boxId == 10
+            v = TuSacCards.getCards(playerB_hand, cardIndx)
+        elseif boxId == 11
+            v = TuSacCards.getCards(playerC_hand, cardIndx)
+        elseif boxId == 12
+            v = TuSacCards.getCards(playerD_hand, cardIndx)
+        else
+            v = TuSacCards.getCards(gameDeck, cardIndx)
         end
         if v != 0
             m = mapToActors[v]
@@ -3248,7 +3258,7 @@ function replayHistory(index)
     global playerB_hand, playerB_discards, playerB_assets
     global playerC_hand, playerC_discards, playerC_assets
     global playerD_hand, playerD_discards, playerD_assets
-    global gameDeck
+    global gameDeck,boxes
     if index != 0
         a = HISTORY[index]
         playerA_hand = deepcopy(a[1])
@@ -3271,21 +3281,23 @@ function replayHistory(index)
         global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
         updateHandPic(glPrevPlayer)
     end
-    setupDrawDeck(playerA_discards, 16, 15, 8, false)
-    setupDrawDeck(playerB_discards, 16, 2, 8, false)
-    setupDrawDeck(playerC_discards, 3, 2, 8, false)
-    setupDrawDeck(playerD_discards, 3, 16, 8, false)
+    d1 = setupDrawDeck(playerA_discards, 16, 15, 8, false)
+    d2 = setupDrawDeck(playerB_discards, 16, 2, 8, false)
+    d3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
+    d4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
 
-    setupDrawDeck(playerA_assets, 9, 13, 30, false)
-    setupDrawDeck(playerB_assets, 16, 7, 4, false)
-    setupDrawDeck(playerC_assets, 8, 4, 30, false)
-    setupDrawDeck(playerD_assets, 4, 7, 4, false)
+    d5 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
+    d6 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
+    d7 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
+    d8 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
 
-    setupDrawDeck(playerA_hand, 7, 18, 100, false)
-    setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-    setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
-    setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
-    setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+    a1 = setupDrawDeck(playerA_hand, 7, 18, 100, false)
+    a4 = setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+    a3 = setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
+    a2 = setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
+    a5 = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+    boxes =[]
+    push!(boxes,a1,d1,d2,d3,d4, d5,d6,d7,d8, a2,a3,a4,a5)
 end
 
 function adjustCnt(cnt,max,dir)
