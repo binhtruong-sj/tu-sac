@@ -37,6 +37,7 @@ serverPort = 11029
 serverIP = ip"192.168.0.35"
 GAMEW =900
 GENERIC = 3
+hints = 0
 NAME= "PLayer?"
 println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
 function config(fn)
@@ -54,7 +55,7 @@ function config(fn)
         cfg_str = readlines(fn)
         for line in cfg_str
             global PlayerList,noGUI_list, mode,NAME,playerName,
-            mode_human,serverURL,serverIP,serverPort, 
+            mode_human,serverURL,serverIP,serverPort, hints,
             GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
             rl = split(line,' ')
             println((rl))
@@ -75,6 +76,9 @@ function config(fn)
                 GAMEW = parse(Int,rl[2])
             elseif rl[1] == "GENERIC"
                 GENERIC = parse(Int,rl[2])
+            elseif rl[1] == "hints"
+                hints = parse(Int,rl[2])
+                println("hints = ",hints)
             elseif rl[1] == "numberOfSocketPlayer"
                 numberOfSocketPlayer = parse(Int,rl[2])
             elseif rl[1] == "myPlayer"
@@ -2976,6 +2980,180 @@ function failCheckPoint(dArray,all_hands,all_assets,all_discards)
 end
 
 """
+chk1(playCard)
+"""
+function chk1(playCard)
+    if is_c(playCard)
+             r  = c_match(chotPs,chot1Specials,playCard)
+             ts_s(r)
+      if length(r) > 0
+        return r
+      end
+    end
+    for s in singles
+        print(" s",(ts(s)))
+        @assert !is_c(s)
+        if card_equal(s, playCard)
+            print("@")
+            return s
+        end
+    end
+
+    for mt in missTs
+        m = missPiece(mt[1], mt[2])
+        print(" mT=", ts(m))
+        if card_equal(m, playCard)
+            print("@")
+            return mt
+        elseif card_equal(mt[1], playCard) && !is_T(playCard)
+            print("@")
+            return mt[1]
+        elseif card_equal(mt[2], playCard) && !is_T(playCard)
+            print("@")
+            return mt[2]
+        end
+    end
+
+    for m1 in miss1s
+        m = missPiece(m1[1], m1[2])
+        print(" m1=", (length(miss1s),ts(playCard),ts(m)))
+        if card_equal(m, playCard)
+            print("@")
+            return m1
+        elseif card_equal(m1[1], playCard) && !is_T(playCard)
+            print("@")
+            return m1[1]
+        elseif card_equal(m1[2], playCard) && !is_T(playCard)
+            print("@")
+            return m1[2]
+        end
+    end
+    return []
+end
+
+"""
+chk2(playCard) check for pairs -- also check for P XX ? M
+
+"""
+function chk2(playCard)
+    inSuitArr = []
+    found = false
+    for m1 in miss1s # CAAE XX PM ? X
+        if card_equal(playCard, missPiece(m1[1], m1[2])) &&
+           !is_T(m1[1]) &&
+           !is_T(m1[2])
+            found = true
+            break
+        end
+    end
+    for p = 1:3
+        print("   pair-",p," -- ")
+
+        for ap in allPairs[p]
+            print(" ",ts(ap[1]))
+            if is_T(playCard)
+                if p == 3 && card_equal(ap[1], playCard)
+                    print("@")
+                    return ap # TTTT
+                end
+            elseif card_equal(ap[1], playCard)
+                if (p == 1) && found
+                    print(" SAKI ")
+                    print("@")
+
+                    return []  # SAKI -- return nothing
+                else
+                    print("@")
+
+                    return ap
+                end
+            elseif inSuit(ap[1], playCard)  # CASE X PP ? M
+                push!(inSuitArr, ap[1]) # put in array to check
+                print("  inSuitArr =", inSuitArr)
+            end
+        end
+    end
+    if length(inSuitArr) > 0
+        for s in singles
+            if inSuit(s, playCard)
+                push!(inSuitArr, s)
+                print("  inSuitArr =", inSuitArr)
+                print("@")
+
+                return inSuitArr
+            end
+        end
+    end
+    println()
+    return []
+end
+
+function gpHandlePlay1Card()
+    println()
+    println("Chot,",(chotPs,chot1s,chot1Specials))
+    trsh1 = c_scan(chotPs, chot1Specials)
+    ts_s(trsh1)
+    if length(trsh1) == 1
+        push!(singles, trsh1)
+    else
+        if length(singles) == 0
+            if length(missTs) > 0
+                mt = missTs[1]
+                for m in mt
+                    # cheesy way to get dut-dau-tuong to play first
+                    push!(singles, m)
+                end
+            end
+            if length(miss1s) > 0
+                for m1 in miss1s
+                    for m in m1
+                        if !is_T(m)
+                            push!(singles,m)
+                            if inTSuit(m)
+                                push!(singles,m)
+                            end
+                        end
+                    end
+                end
+            end
+            if length(chot1s) > 0
+                for m in chot1s
+                    push!(singles,m)
+                end
+            end
+        end
+    end
+    if length(singles) > 0
+        println("final singles=")
+        println(singles)
+        card = singles[rand(1:length(singles))]
+    else
+        card = []
+    end
+    return card
+end 
+function gpHandleMatch2Card(pcard)
+    card1 = chk1(pcard)
+    card2 = chk2(pcard)
+    println("chk1-",(card1)," chk2-",(card2))
+    if length(card1) == 0
+        return card2
+    elseif length(card2) == 0 || !card_equal(card2[1],card2[2])
+            return card1
+    else
+        return card2
+    end
+end
+
+function gpHandleMatch1or2Card(pcard)
+    cards = chk1(pcard)
+    if length(cards) == 0
+        cards = chk2(pcard)
+    end
+    return cards
+end
+
+"""
 hgamePlay:
     actions: 0 - inital cards dealt - before any play
              1 - play a single card, player choise
@@ -2998,7 +3176,9 @@ function hgamePlay(
     rReady
 )
     global rQ, rReady
-    global currentAction = gpAction
+    if(gpPlayer==myPlayer)
+        global currentAction = gpAction
+    end
     global currentPlayCard = pcard
     if gpPlayer == 1 
         global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
@@ -3033,182 +3213,8 @@ function hgamePlay(
             ts(pcard))
         end
         println()
-    allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
+   global allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
         scanCards(all_hands[gpPlayer])
-
-    """
-    chk1(playCard)
-    """
-    function chk1(playCard)
-        if is_c(playCard)
-                 r  = c_match(chotPs,chot1Specials,playCard)
-                 ts_s(r)
-          if length(r) > 0
-            return r
-          end
-        end
-        for s in singles
-            print(" s",(ts(s)))
-            @assert !is_c(s)
-            if card_equal(s, playCard)
-                print("@")
-                return s
-            end
-        end
-
-        for mt in missTs
-            m = missPiece(mt[1], mt[2])
-            print(" mT=", ts(m))
-            if card_equal(m, playCard)
-                print("@")
-                return mt
-            elseif card_equal(mt[1], playCard) && !is_T(playCard)
-                print("@")
-                return mt[1]
-            elseif card_equal(mt[2], playCard) && !is_T(playCard)
-                print("@")
-                return mt[2]
-            end
-        end
-
-        for m1 in miss1s
-            m = missPiece(m1[1], m1[2])
-            print(" m1=", ts(m))
-            if card_equal(m, playCard)
-                print("@")
-                return m1
-            elseif card_equal(m1[1], playCard) && !is_T(playCard)
-                print("@")
-                return m1[1]
-            elseif card_equal(m1[2], playCard) && !is_T(playCard)
-                print("@")
-                return m1[2]
-            end
-        end
-        return []
-    end
-
-    """
-    chk2(playCard) check for pairs -- also check for P XX ? M
-
-"""
-    function chk2(playCard)
-        inSuitArr = []
-        found = false
-        for m1 in miss1s # CAAE XX PM ? X
-            if card_equal(playCard, missPiece(m1[1], m1[2])) &&
-               !is_T(m1[1]) &&
-               !is_T(m1[2])
-                found = true
-                break
-            end
-        end
-        for p = 1:3
-            print("   pair-",p," -- ")
-
-            for ap in allPairs[p]
-                print(" ",ts(ap[1]))
-                if is_T(playCard)
-                    if p == 3 && card_equal(ap[1], playCard)
-                        print("@")
-                        return ap # TTTT
-                    end
-                elseif card_equal(ap[1], playCard)
-                    if (p == 1) && found
-                        print(" SAKI ")
-                        print("@")
-
-                        return []  # SAKI -- return nothing
-                    else
-                        print("@")
-
-                        return ap
-                    end
-                elseif inSuit(ap[1], playCard)  # CASE X PP ? M
-                    push!(inSuitArr, ap[1]) # put in array to check
-                    print("  inSuitArr =", inSuitArr)
-                end
-            end
-        end
-        if length(inSuitArr) > 0
-            for s in singles
-                if inSuit(s, playCard)
-                    push!(inSuitArr, s)
-                    print("  inSuitArr =", inSuitArr)
-                    print("@")
-
-                    return inSuitArr
-                end
-            end
-        end
-        println()
-        return []
-    end
-
-    function gpHandlePlay1Card()
-        println()
-        println("Chot,",(chotPs,chot1s,chot1Specials))
-        trsh1 = c_scan(chotPs, chot1Specials)
-        ts_s(trsh1)
-        if length(trsh1) == 1
-            push!(singles, trsh1)
-        else
-            if length(singles) == 0
-                if length(missTs) > 0
-                    mt = missTs[1]
-                    for m in mt
-                        # cheesy way to get dut-dau-tuong to play first
-                        push!(singles, m)
-                    end
-                end
-                if length(miss1s) > 0
-                    for m1 in miss1s
-                        for m in m1
-                            if !is_T(m)
-                                push!(singles,m)
-                                if inTSuit(m)
-                                    push!(singles,m)
-                                end
-                            end
-                        end
-                    end
-                end
-                if length(chot1s) > 0
-                    for m in chot1s
-                        push!(singles,m)
-                    end
-                end
-            end
-        end
-        if length(singles) > 0
-            println("final singles=")
-            println(singles)
-            card = singles[rand(1:length(singles))]
-        else
-            card = []
-        end
-        return card
-    end 
-    function gpHandleMatch2Card(pcard)
-        card1 = chk1(pcard)
-        card2 = chk2(pcard)
-        println("chk1-",(card1)," chk2-",(card2))
-        if length(card1) == 0
-            return card2
-        elseif length(card2) == 0 || !card_equal(card2[1],card2[2])
-                return card1
-        else
-            return card2
-        end
-    end
-
-    function gpHandleMatch1or2Card(pcard)
-        cards = chk1(pcard)
-        if length(cards) == 0
-            cards = chk2(pcard)
-        end
-        return cards
-    end
 
     if gpAction == gpPlay1card
         @assert length(union(singles, chot1s, miss1s, missTs)) > 0
@@ -3234,6 +3240,8 @@ function hgamePlay(
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
         rReady[gpPlayer] = true
+    else
+        global currentCards = cards
     end
     return 
 
@@ -3457,8 +3465,8 @@ function click_card(cardIndx, yPortion, hand)
     global prevYportion = yPortion
 end
 
-function badPlay(cards,hand,action,matchC)
-    print("Chk GUI ,matchcard ",ts(matchC)," -- ", cards, " == ")
+function badPlay(cards,player, hand,action,botCards,matchC)
+    print("Chk GUI ,matchcard ",(ts(matchC)," -- ", cards, " == ", "action=",action))
     ts_s(hand)
     ts_s(cards)
     
@@ -3507,7 +3515,6 @@ function badPlay(cards,hand,action,matchC)
                     end
                 end
             end 
-        else 
             if length(cards) > 1
                 if !is_c(pcard)
                     all_in_suit= card_equal(pcard, missPiece(cards[1],cards[2]))
@@ -3524,15 +3531,27 @@ function badPlay(cards,hand,action,matchC)
         end
     end
         moreTrash = false
+        ts_s(hand)
+
         if is_c(pcard) || length(cards) == 0
-            ops,oss,ocs,om1s,omts,ombs,ocp,ocspec =  scanCards(hand, true)
+            allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
+            scanCards(hand, false)
+            # check for bo doi
             if length(cards) == 0
-                for ps in ops
+                for ps in allPairs
                     for p in ps
-                        if card_equal(p[1],pcard)
+                        if card_equal(p[1],pcard) 
                             global boDoi += 1
                             if boDoi > 2
                                 println("BO DOI")
+                                if !is_c(pcard)
+                                    for ap in p
+                                        removeCards!(all_hands,player,ap)
+                                        addCards!(all_assets,0,player,ap)
+                                        mmm = mapToActors[ap]
+                                        global mask[mmm] = mask[mmm] & 0xFE
+                                    end
+                                end
                                 boDoi = 0
                                 return false
                             else
@@ -3541,21 +3560,35 @@ function badPlay(cards,hand,action,matchC)
                         end
                     end
                 end
-                return false
-            end
-            TrashCnt = length(ocs)
-            thand = deepcopy(hand)
+                println("bot-cards=",botCards)
 
-            for e in cards
-                filter!(x -> x != e, thand)
-            end
-            ps, ss, cs, m1s, mts, mbs,cp,cspec = scanCards(thand, true)
-            l = length(cs)
-            if TrashCnt < l
-                println("Illegal match -- creating more trash ",(TrashCnt,l))
-                ts_s(ocs)
-                ts_s(cs)
-                moreTrash = true
+                if hints > 0 && length(botCards) > 0
+                    if (action == gpCheckMatch2 && length(botCards) > 1 && card_equal(botCards[1],botCards[2]))||
+                       (action == gpCheckMatch1or2)
+                        global boDoi += 1
+                        if boDoi > 1
+                            boDoi = 0
+                            return false
+                        else
+                            return true
+                        end
+                    end
+                end
+            else
+                TrashCnt = length(chot1s)
+                thand = deepcopy(hand)
+
+                for e in cards
+                    filter!(x -> x != e, thand)
+                end
+                ps, ss, cs, m1s, mts, mbs,cp,cspec = scanCards(thand, true)
+                l = length(cs)
+                if TrashCnt < l
+                    println("Illegal match -- creating more trash ",(TrashCnt,l))
+                    ts_s(chot1s)
+                    ts_s(cs)
+                    moreTrash = true
+                end
             end
         end
       
@@ -3610,7 +3643,8 @@ function on_mouse_down(g, pos)
             println("\nDanh Bai XONG ROI")
             setupDrawDeck(playerA_hand, 7, 18, 100, false)
               
-            if badPlay(GUI_array,all_hands[myPlayer],currentAction,currentPlayCard)
+            if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
+                currentAction,currentCards,currentPlayCard)
                 updateErrorPic(1)
                 cardsIndxArr = []
                 GUI_ready = false
