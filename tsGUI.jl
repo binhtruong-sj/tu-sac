@@ -1,3 +1,4 @@
+using GameZero
 using Sockets
 macOS = false
 myPlayer = 1
@@ -13,7 +14,9 @@ const m_standalone = 2
 
 noGUI_list = [true,true,true,true]
 PlayerList =[plBot1,plBot1,plBot1,plBot1]
+GUIname = Vector{Any}(undef,4)
 numberOfSocketPlayer = 0
+playerName = ["Binh-bot","Binh-bot","Binh-bot","Binh-bot"]
 
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
@@ -34,6 +37,7 @@ serverPort = 11029
 serverIP = ip"192.168.0.35"
 GAMEW =900
 GENERIC = 3
+NAME= "PLayer?"
 println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
 function config(fn)
     if !isfile(fn)
@@ -49,13 +53,14 @@ function config(fn)
     else
         cfg_str = readlines(fn)
         for line in cfg_str
-            global PlayerList,noGUI_list, mode,
+            global PlayerList,noGUI_list, mode,NAME,playerName,
             mode_human,serverURL,serverIP,serverPort, 
             GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
             rl = split(line,' ')
             println((rl))
             if rl[1] == "name"
-                playerName = rl[2]
+                NAME = rl[2]
+                playerName[myPlayer] =NAME
             elseif rl[1] == "mode"
                 mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
             elseif rl[1] == "human"
@@ -145,13 +150,16 @@ zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
 
 const tableXgrid = 20
 const tableYgrid = 20
-const FaceDown = false
+FaceDown = true
 const cardGrid = 4
 const gameDeckMinimum = 9
+
 function gameOver(gameE) 
     if gameE
         global gameEnd = true
     end
+    global FaceDown = false
+    replayHistory(0)
    if noGUI()
     exit()
    end
@@ -207,7 +215,7 @@ div(y, div(realHEIGHT, tableYgrid)) + 1
 
 module nwAPI
 using Sockets
-export nw_sendToMaster,nw_receiveFromMaster,nw_receiveFromPlayer, nw_sentToPlayer, nw_getR, serverSetup, clientSetup
+export nw_sendToMaster,nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer, nw_sentToPlayer, nw_getR, serverSetup, clientSetup
 
 function serverSetup(serverIP,port)
    # return(listen(ip"192.168.0.53",11029))
@@ -225,9 +233,6 @@ function nw_sendToMaster(id,connection,arr)
     
    l = length(arr)
     println(id,"  NNNNSend to Master DATA=",(arr,l))
-    for (i,a) in enumerate(arr)
-        println((i,a))
-    end
     
     if l != 112
         s_arr = Vector{UInt8}(undef,8)
@@ -246,6 +251,16 @@ function nw_sendToMaster(id,connection,arr)
     end
     write(connection,s_arr)
 end
+
+function nw_sendTextToMaster(id,connection,txt)
+    println(connection,txt)
+end
+
+function nw_receiveTextFromMaster(connection)
+    return readline(connection)
+end
+
+
 function nw_receiveFromMaster(connection,bytecnt)
     println(" NNNN receive from Master")
     arr = []
@@ -279,12 +294,18 @@ function nw_receiveFromPlayer(id,connection,bytecnt)
 return(arr)
 end
 
+function nw_receiveTextFromPlayer(id,connection)
+    return readline(connection)  
+end
+
+function nw_sendTextToPlayer(id, connection, txt)
+    println(connection,txt)
+end
+
 function nw_sendToPlayer(id, connection, arr)
     l = length(arr)
     println("NNNNSend to Player ",id,"  DATA=",(arr,l))
-    for (i,a) in enumerate(arr)
-        println((i,a))
-    end
+   
      
     if l != 112
         s_arr = Vector{UInt8}(undef,8)
@@ -294,6 +315,7 @@ function nw_sendToPlayer(id, connection, arr)
         end
         println("Data = ",s_arr)        
     else
+       
         s_arr = Vector{UInt8}(undef,l)
         for (i,a) in enumerate(arr)
             s_arr[i] = a
@@ -875,31 +897,24 @@ function setupActorgameDeck()
                     afc = Actor("fc.png")
                 else
                     if GENERIC == 1
-                        println("G",1)
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, mapr, "xs.png")
                         big_st = string(s, mapr, "s.png")
                         afc = Actor("fcxs.png")
                     elseif GENERIC == 2
-                        println("G",2)
-
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, mapr, "s.png")
                         big_st = string(s, m, ".png")
                         afc = Actor("fcs.png")
                     elseif GENERIC == 3
-                        println("G",3)
-
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, m, ".png")
                         big_st = string(s, "-m", m, ".png")
                         afc = Actor("fc.png")
                     else
-                        println("G",4)
-
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, "-m", m, ".png")
@@ -1094,7 +1109,7 @@ function tusacDeal()
     setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
 
     setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-    setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+    setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
 
     global pBseat = setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
     global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
@@ -1618,7 +1633,7 @@ function removeCards!(array, n, cards)
         elseif m == 3
             pop!(playerC_hand,ts(c))
             println((m,playerC_hand))
-            setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+            setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
 
         elseif m == 4
             pop!(playerD_hand,ts(c))
@@ -1654,7 +1669,7 @@ function addCards!(array,arrNo, n, cards)
         else
             if m== 1
                 push!(playerA_discards,ts(c))
-                setupDrawDeck(playerA_discards, 16, 16, 8, false)
+                setupDrawDeck(playerA_discards, 16, 15, 8, false)
             elseif m == 2
                 push!(playerB_discards,ts(c))
                 setupDrawDeck(playerB_discards, 16, 2, 8, false)
@@ -2455,7 +2470,7 @@ The goal is to have one code to handle all mode/variation of plays:
 function gsStateMachine(gameActions)
     global tusacState
     global gameDeck, ad, deckState
-    global nwPlayer,nwMaster
+    global nwPlayer,nwMaster,playerName
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets
@@ -2480,15 +2495,37 @@ function gsStateMachine(gameActions)
                 while signedOnPlayer < numberOfSocketPlayer 
                     global p = nwAPI.acceptClient(myS)
                     for i in 2:4
+                        global playerName
+
                         if PlayerList[i] != plSocket
                             PlayerList[i] = plSocket
                             nwPlayer[i] = p
                             nwAPI.nw_sendToPlayer(i,p,i)
-                            println("Accepting Player ",i)
+                            msg = nwAPI.nw_receiveTextFromPlayer(i,nwPlayer[i])
+                            print("Accepting Player ",i, " Name=",msg)
+                            playerName[i] = msg
                             break
                         end
                     end
                     signedOnPlayer += 1
+                end
+                for s in 2:signedOnPlayer+1
+                    for i in 1:4
+                        nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
+                    end
+                    nwAPI.nw_sendToPlayer(s,nwPlayer[s],numberOfSocketPlayer)
+                end
+                println("Player List:",playerName)
+                global GUIname = Vector{Any}(undef,4)
+                if !noGUI()
+                    GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[1].pos = tableGridXY(10,20)
+                    GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[2].pos = tableGridXY(18,1)
+                    GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[3].pos = tableGridXY(10,1)
+                    GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[4].pos = tableGridXY(1,1)
                 end
             elseif mode == m_client
                 println("CLIENT")
@@ -2498,6 +2535,26 @@ function gsStateMachine(gameActions)
                 global myPlayer = msg[2]
                 PlayerList[myPlayer] = plSocket
                 println("Accepted as Player number ",myPlayer)
+                nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,NAME)
+                for i in 1:4
+                    global playerName
+                    name = nwAPI.nw_receiveTextFromMaster(nwMaster)
+                    playerName[i] = name
+                end
+                if !noGUI()
+                    GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[1].pos = tableGridXY(10,20)
+                    GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[2].pos = tableGridXY(18,1)
+                    GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[3].pos = tableGridXY(10,1)
+                    GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[4].pos = tableGridXY(1,1)
+                end
+                println("Player List:",playerName)
+                println("numberOfSocketPlayer", numberOfSocketPlayer)
+                msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+                global numberOfSocketPlayer = msg[2]
             end
         
             gameDeck = TuSacCards.ordered_deck()
@@ -2517,7 +2574,7 @@ function gsStateMachine(gameActions)
 
                 else
                     global handPic = Actor("hand.jpeg")
-                    global winnerPic = Actor("winner.png")
+                    global winnerPic = Actor("winner2.png")
 
                 end
                 global errorPic = Actor("error.png")
@@ -2563,7 +2620,7 @@ global GUI_ready = false
 
         global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
 
-        discard1 = setupDrawDeck(playerA_discards, 16, 16, 8, false)
+        discard1 = setupDrawDeck(playerA_discards, 16, 15, 8, false)
         discard2 = setupDrawDeck(playerB_discards, 16, 2, 8, false)
         discard3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
         discard4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
@@ -2575,7 +2632,7 @@ global GUI_ready = false
 
         global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
         setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-        setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+        setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
         setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
         deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
         push!(
@@ -2934,7 +2991,7 @@ function hgamePlay(
     global currentPlayCard = pcard
     if gpPlayer == 1 
         global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
-        discard1 = setupDrawDeck(playerA_discards, 16, 16, 8, false)
+        discard1 = setupDrawDeck(playerA_discards, 16, 15, 8, false)
         asset1 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
 
     elseif gpPlayer == 2
@@ -2943,7 +3000,7 @@ function hgamePlay(
         asset2 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
 
     elseif gpPlayer == 3
-        setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+        setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
         discard3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
         asset3 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
     else
@@ -3191,29 +3248,30 @@ function replayHistory(index)
     global playerB_hand, playerB_discards, playerB_assets
     global playerC_hand, playerC_discards, playerC_assets
     global playerD_hand, playerD_discards, playerD_assets
-    global gameDeckArray
-    a = HISTORY[index]
-    playerA_hand = deepcopy(a[1])
-    playerB_hand = deepcopy(a[2])
-    playerC_hand = deepcopy(a[3])
-    playerD_hand = deepcopy(a[4])
+    global gameDeck
+    if index != 0
+        a = HISTORY[index]
+        playerA_hand = deepcopy(a[1])
+        playerB_hand = deepcopy(a[2])
+        playerC_hand = deepcopy(a[3])
+        playerD_hand = deepcopy(a[4])
 
-    playerA_assets = deepcopy(a[5])
-    playerB_assets = deepcopy(a[6])
-    playerC_assets = deepcopy(a[7])
-    playerD_assets = deepcopy(a[8])
+        playerA_assets = deepcopy(a[5])
+        playerB_assets = deepcopy(a[6])
+        playerC_assets = deepcopy(a[7])
+        playerD_assets = deepcopy(a[8])
 
-    playerA_discards = deepcopy(a[9])
-    playerB_discards = deepcopy(a[10])
-    playerC_discards = deepcopy(a[11])
-    playerD_discards = deepcopy(a[12])
+        playerA_discards = deepcopy(a[9])
+        playerB_discards = deepcopy(a[10])
+        playerC_discards = deepcopy(a[11])
+        playerD_discards = deepcopy(a[12])
 
-    gameDeck = deepcopy(a[13])
+        gameDeck = deepcopy(a[13])
 
-    global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
-    updateHandPic(glPrevPlayer)
-
-    setupDrawDeck(playerA_discards, 16, 16, 8, false)
+        global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
+        updateHandPic(glPrevPlayer)
+    end
+    setupDrawDeck(playerA_discards, 16, 15, 8, false)
     setupDrawDeck(playerB_discards, 16, 2, 8, false)
     setupDrawDeck(playerC_discards, 3, 2, 8, false)
     setupDrawDeck(playerD_discards, 3, 16, 8, false)
@@ -3225,7 +3283,7 @@ function replayHistory(index)
 
     setupDrawDeck(playerA_hand, 7, 18, 100, false)
     setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-    setupDrawDeck(playerC_hand, 7, 1, 100, FaceDown)
+    setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
     setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
     setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
 end
@@ -3586,7 +3644,7 @@ function draw(g)
     if noGUI()
         return
     end
-   # fill(colorant"ivory4")
+   fill(colorant"ivory4")
 
     saveI = 0
     drawCnt += 1
@@ -3623,6 +3681,10 @@ function draw(g)
     draw(handPic)
     draw(winnerPic)
     draw(errorPic)
+    for i in 1:4
+        draw(GUIname[i])
+    end
+    
 end
 
 
