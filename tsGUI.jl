@@ -108,6 +108,7 @@ function config(fn)
 end
 prevWinner = 1
 
+
 (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
@@ -187,7 +188,11 @@ humanIsGUI() = mode_human & !noGUI()
 
 function RESET1()
         
-    global currentPlayer = 1
+    if coldStart
+        global currentPlayer = 1
+    else
+        global currentPlayer = gameEnd
+    end
     global gotClick = false
     global GUI_array=[]
     global GUI_ready=false
@@ -2754,17 +2759,18 @@ global GUI_ready = false
 
     #    end
 
-        println("\nDealing is completed")
+        println("\nDealing is completed,prevWinner=",prevWinner)
         getData_all_discard_assets()
 
         global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
         replayHistory(0)
+        updateHandPic(prevWinner)
         global gameEnd = 0
         println("Starting game, e-",gameEnd)
         tusacState = tsGameLoop
         global glNeedaPlayCard = true
         if coldStart
-        global glPrevPlayer = 1
+            global glPrevPlayer = 1
         else
             global glPrevPlayer = prevWinner
         end
@@ -2801,7 +2807,7 @@ global GUI_ready = false
             else
                 openAllCard = true
                 println("Bai thui!")
-                gameOver(5)
+                gameOver(prevWinner)
                 
             end
         end
@@ -2898,6 +2904,7 @@ function on_mouse_move(g, pos)
         end
     end
     function withinBoxes(x, y, boxes)
+      #  println("m,x=",(modified_cardXdim,cardXdim))
         for (i, b) in enumerate(boxes)
             if b[1] < x < b[3] && b[2] < y < b[4]
                 rx = div((x - b[1]), modified_cardXdim) + 1
@@ -2969,11 +2976,11 @@ function mouseDownOnBox(x, y, boxState)
     loc = 0
     up = 0
     if (boxState[1] < x < boxState[3]) && ((boxState[2] < y < boxState[4]))
-        dx = div((x - boxState[1]), cardXdim)
+        dx = div((x - boxState[1]), modified_cardXdim)
         dy = div((y - boxState[2]), cardYdim)
         up = rem((y - boxState[2]), cardYdim)
         up = div(up, div(cardYdim, 2))
-        loc = div((boxState[3] - boxState[1]), cardXdim) * dy + dx + 1
+        loc = div((boxState[3] - boxState[1]), modified_cardXdim) * dy + dx + 1
     end
     println("l,r",(loc,up))
     return loc, up
@@ -3426,10 +3433,11 @@ function adjustCnt(cnt,max,dir)
 end
 
 function restartGame()
-    global gameDeck,prevWinner
+    global gameDeck,prevWinner,currentPlayer
     println("Reset Game, merge all-hands")
     global FaceDown = false
     global coldStart = false
+    currentPlayer = prevWinner  
         newDeck = (union(
             playerA_hand,
             playerB_hand,
@@ -3513,37 +3521,7 @@ function on_key_down(g)
                 printHistory(l)
                 tusacState = tsGameLoop
             end
-    elseif tusacState == tsTest
-        if g.keyboard.T
-            println("Exiting Test mode")
-            tusacState = tsGameLoop
-        end
-      
-        p = [[],[],[]]
-        s = []
-        n = []
-        while true
-            global FaceDown, coldStart
-            println("enter string of cards, last 1 is the match one")
-            c = humanInput()
-            l = length(c)
-            if l == 1
-                if length(s) > 0
-                    push!(n,c)
-                    break
-                else
-                    push!(s,c)
-                end
-            elseif card_equal(c[1],c[1])
-                push!(p[l],c)
-            else
-                push!(s,c)
-            end
-            println(c)
-        end
-        println((p,s,n))
-        c = c_match(p,s,n)
-        println(ts_s(c))
+   
     elseif tusacState == tsGameLoop
         if g.keyboard.R 
             checkForRestart()
@@ -3552,9 +3530,10 @@ function on_key_down(g)
             HistCnt = length(HISTORY)
             tusacState = tsHistory
             println("Entering History mode, size=",HistCnt)
-        elseif g.keyboard.T
-            println("Entering Test mode")
-            tusacState = tsTest
+        elseif g.keyboard.H
+            print("switching human mode ",mode_human, "-->")
+            mode_human = !mode_human
+            println(mode_human)
         end
     end
 end
