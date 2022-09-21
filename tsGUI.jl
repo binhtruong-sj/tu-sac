@@ -2540,13 +2540,13 @@ elseif mode == m_client
         playerName[i] = name
     end
     if !noGUI()
-        GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[1].pos = tableGridXY(10,20)
-        GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[2].pos = tableGridXY(18,1)
-        GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[3].pos = tableGridXY(10,1)
-        GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[4].pos = tableGridXY(1,1)
     end
     println("Player List:",playerName)
