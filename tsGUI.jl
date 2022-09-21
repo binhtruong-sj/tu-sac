@@ -40,6 +40,7 @@ GENERIC = 3
 hints = 0
 GUI = true
 NAME= "PLayer?"
+fontSize = 50
 println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
 function config(fn)
     if !isfile(fn)
@@ -55,7 +56,7 @@ function config(fn)
     else
         cfg_str = readlines(fn)
         for line in cfg_str
-            global PlayerList,noGUI_list, mode,NAME,playerName,GUI,
+            global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,
             mode_human,serverURL,serverIP,serverPort, hints,
             GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
             rl = split(line,' ')
@@ -80,6 +81,8 @@ function config(fn)
             elseif rl[1] == "hints"
                 hints = parse(Int,rl[2])
                 println("hints = ",hints)
+            elseif rl[1] == "fontSize"
+                fontSize = parse(Int,rl[2])
             elseif rl[1] == "numberOfSocketPlayer"
                 numberOfSocketPlayer = parse(Int,rl[2])
             elseif rl[1] == "myPlayer"
@@ -2513,13 +2516,13 @@ if mode == m_server
     println("Player List:",playerName)
     global GUIname = Vector{Any}(undef,4)
     if !noGUI()
-        GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[1].pos = tableGridXY(10,20)
-        GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontsize,color=[0,0,0,0])
         GUIname[2].pos = tableGridXY(18,1)
-        GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[3].pos = tableGridXY(10,1)
-        GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=100,color=[0,0,0,0])
+        GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[4].pos = tableGridXY(1,1)
     end
 elseif mode == m_client
@@ -2670,13 +2673,13 @@ function gsStateMachine(gameActions)
             global mode
             if coldStart
                 if !noGUI()
-                    GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
                     GUIname[1].pos = tableGridXY(10,20)
-                    GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
                     GUIname[2].pos = tableGridXY(18,1)
-                    GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
                     GUIname[3].pos = tableGridXY(10,1)
-                    GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=100,color=[0,0,0,0])
+                    GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
                     GUIname[4].pos = tableGridXY(1,1)
                 end
                 networkInit()
@@ -2700,7 +2703,7 @@ function gsStateMachine(gameActions)
                         global handPic = Actor("hand.jpeg")
                         global winnerPic = Actor("winner2.png")
                     end
-                    global errorPic = TextActor("?!?","asapvar",font_size=400,color=[0,0,0,0])
+                    global errorPic = TextActor("?!?","asapvar",font_size=fontSize*4,color=[0,0,0,0])
                 end
                 updateHandPic(prevWinner)
                 updateWinnerPic(0)
