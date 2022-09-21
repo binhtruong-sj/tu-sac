@@ -24,6 +24,7 @@ GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
 
 coldStart = true
+shufflePlayer = 2
 isServer() = mode == m_server
 println(PROGRAM_FILE)
 n = PROGRAM_FILE
@@ -106,6 +107,7 @@ function config(fn)
     return (PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer)
 end
 prevWinner = 1
+
 
 (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, GAMEW,macOS,
@@ -3804,11 +3806,10 @@ if noGUI()
     end
 end
 function update(g)
-    global waitForHuman, shufflePlayer
+    global waitForHuman
     global ad, deckState, gameDeck, tusacState
     global tusacState
     FaceDown = !isGameOver()
-    shufflePlayer = prevWinner > 3 ? 1 : prevWinner +1
 
     if tusacState == tsSdealCards
         if (deckState[5] > 10)
@@ -3825,7 +3826,6 @@ function update(g)
     elseif tusacState == tsGameLoop
         updateHandPic(currentPlayer)
         gsStateMachine(gsGameLoop)
-      
     elseif tusacState == tsRestart
 
     end
