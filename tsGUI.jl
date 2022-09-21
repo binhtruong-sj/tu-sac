@@ -984,6 +984,7 @@ dims: 0: Vertical
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
 """
 function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui = true)
+    global modified_cardXdim, modified_cardYdim
     if noGUI()
         return
     end
@@ -2896,8 +2897,8 @@ function on_mouse_move(g, pos)
     function withinBoxes(x, y, boxes)
         for (i, b) in enumerate(boxes)
             if b[1] < x < b[3] && b[2] < y < b[4]
-                rx = div((x - b[1]), cardXdim) + 1
-                ry = div((y - b[2]), cardYdim)
+                rx = div((x - b[1]), modified_cardXdim) + 1
+                ry = div((y - b[2]), modified_cardYdim)
                 cardId = ry * b[10] + rx
                 return i, cardId
             end
