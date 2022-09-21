@@ -2807,7 +2807,7 @@ global GUI_ready = false
             else
                 openAllCard = true
                 println("Bai thui!")
-                gameOver(prevWinner)
+                gameOver(5)
                 
             end
         end
@@ -3466,7 +3466,8 @@ function restartGame()
             pop!(playerD_discards,length(playerD_discards))
 
 
-        prevWinner = gameEnd
+        prevWinner = gameEnd > 4 ? prevWinner : gameEnd
+        currentPlayer = prevWinner
         tusacState = tsSinitial
         gsStateMachine(gsSetupGame)
 end
