@@ -2539,14 +2539,15 @@ elseif mode == m_client
         name = nwAPI.nw_receiveTextFromMaster(nwMaster)
         playerName[i] = name
     end
+     nameRound(n)  = n > 4 ? n - 4 : n
     if !noGUI()
-        GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
+        GUIname[1]  = TextActor(playerName[nameRound(myPlayer-1+1)],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[1].pos = tableGridXY(10,20)
-        GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
+        GUIname[2]  = TextActor(playerName[nameRound(myPlayer-1+2)],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[2].pos = tableGridXY(18,1)
-        GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
+        GUIname[3]  = TextActor(playerName[nameRound(myPlayer-1+3)],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[3].pos = tableGridXY(10,1)
-        GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
+        GUIname[4]  = TextActor(playerName[nameRound(myPlayer-1+4)],"asapvar",font_size=fontSize,color=[0,0,0,0])
         GUIname[4].pos = tableGridXY(1,1)
     end
     println("Player List:",playerName)
