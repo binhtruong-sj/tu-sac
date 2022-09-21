@@ -11,6 +11,7 @@ const plSocket = 5
 const m_client = 0
 const m_server = 1
 const m_standalone = 2
+cardScale = 90
 
 noGUI_list = [true,true,true,true]
 PlayerList =[plBot1,plBot1,plBot1,plBot1]
@@ -85,6 +86,8 @@ function config(fn)
                 fontSize = parse(Int,rl[2])
             elseif rl[1] == "numberOfSocketPlayer"
                 numberOfSocketPlayer = parse(Int,rl[2])
+            elseif rl[1] == "cardScale"
+                cardScale = parse(Int,rl[2])
             elseif rl[1] == "myPlayer"
                 myPlayer = parse(Int,rl[2])
                 println(rl[2]," = ",myPlayer)
@@ -990,9 +993,9 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
     end
     i = 0
     x, y = tableGridXY(gx, gy)
-   
+
     if length(deck) == 0
-        l = 1
+        l = 20
         if xDim > 20
             xDim = l
             modified_cardYdim = cardYdim
@@ -1004,11 +1007,11 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
         if (xDim * yDim ) < l
             yDim += 1
         end
-        x1 = x + cardXdim * xDim
+        modified_cardXdim = div(cardXdim * cardScale,100)
+        x1 = x + modified_cardXdim * xDim
         y1 = y + modified_cardYdim * yDim
     else
         l = length(deck)
-        cardScale = 90
         if xDim > 20
             xDim = l
             modified_cardXdim = div(cardXdim * cardScale,100)
@@ -1044,7 +1047,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
         if xDim * yDim < l
             yDim += 1
         end
-        x1 = x + cardXdim * xDim
+        x1 = x + modified_cardXdim * xDim
         y1 = y + modified_cardYdim * yDim
     end
     ra_state = []
