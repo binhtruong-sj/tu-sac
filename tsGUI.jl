@@ -24,7 +24,6 @@ GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
 
 coldStart = true
-shufflePlayer = 2
 isServer() = mode == m_server
 println(PROGRAM_FILE)
 n = PROGRAM_FILE
@@ -108,7 +107,6 @@ function config(fn)
 end
 prevWinner = 1
 
-
 (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
@@ -174,6 +172,9 @@ function gameOver(n)
     global eRrestart
     global gameEnd = n
     global FaceDown = false
+    if 0 < n < 5
+        updateWinnerPic(n)
+    end
     replayHistory(0)
    
         println()
@@ -2142,7 +2143,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
                 push!(r,rmsg[i+4])
             end
             println("received =" , (nPlayer, winner, l, r))
-            if winner&0xFF == 0xFF
+            if winner&0xFF == 0xFE
                 println("Game Over, player ", nPlayer, " win")
                 gameOver(nPlayer)
             end
@@ -2546,6 +2547,11 @@ elseif mode == m_client
     println(msg)
     global myPlayer = msg[2]
     PlayerList[myPlayer] = plSocket
+    if GUI 
+        noGUI_list[myPlayer] = false
+    end
+        
+
     println("Accepted as Player number ",myPlayer)
     nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,NAME)
     for i in 1:4
@@ -3798,10 +3804,11 @@ if noGUI()
     end
 end
 function update(g)
-    global waitForHuman
+    global waitForHuman, shufflePlayer
     global ad, deckState, gameDeck, tusacState
     global tusacState
     FaceDown = !isGameOver()
+    shufflePlayer = prevWinner > 3 ? 1 : prevWinner +1
 
     if tusacState == tsSdealCards
         if (deckState[5] > 10)
@@ -3818,9 +3825,7 @@ function update(g)
     elseif tusacState == tsGameLoop
         updateHandPic(currentPlayer)
         gsStateMachine(gsGameLoop)
-        if mode == m_client
-            checkForRestart()
-        end
+      
     elseif tusacState == tsRestart
 
     end
