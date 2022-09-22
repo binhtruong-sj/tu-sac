@@ -3210,7 +3210,7 @@ function chk2(playCard)
             break
         end
     end
-    for p = 1:3
+    for p = 1:2
         print("   pair-",p," -- ")
 
         for ap in allPairs[p]
@@ -3698,7 +3698,7 @@ end
                         end
                     end
                 end
-            else
+            elseif length(cards) < 3
                 println("trashCnt")
                 TrashCnt = length(chot1s)
                 thand = deepcopy(hand)
