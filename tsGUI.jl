@@ -1125,9 +1125,9 @@ function tusacDeal(winner)
         push!(P2_hand, pop!(gameDeck, 5))
         push!(P3_hand, pop!(gameDeck, 5))
     end
-    rPlayer = 5 + myPlayer - winner 
+    rPlayer = 5 + myPlayer - winner
     playerSel = rPlayer > 4 ? rPlayer - 4 : rPlayer
-    println("prev-winner,nex", (winner,playerSel,rPlayer,myPlayer))
+    println("prev-winner,sel", (winner,playerSel,myPlayer,rPlayer))
     if playerSel == 1
         playerA_hand = P0_hand
         playerB_hand = P1_hand
@@ -2467,11 +2467,16 @@ function playersSyncDeck!(deck::TuSacCards.Deck)
     if mode == m_server
             println("MASTER",(PlayerList,myPlayer,shufflePlayer))
 
-           if shufflePlayer != myPlayer  && PlayerList[shufflePlayer] == plSocket
+           if shufflePlayer != myPlayer && PlayerList[shufflePlayer] == plSocket
                 dArray = nwAPI.nw_receiveFromPlayer(shufflePlayer, nwPlayer[shufflePlayer],112)
                 println("\nold Deck",deck)
                 deck = []
                 deck = TuSacCards.newDeckUsingArray(dArray)
+           else
+                dArray = TuSacCards.getDeckArray(deck)
+                deck = []
+                deck = TuSacCards.newDeckUsingArray(dArray)
+
            end
             println("\nNew Deck=",deck)
             for i in 1:4
@@ -2732,7 +2737,7 @@ function gsStateMachine(gameActions)
                 updateWinnerPic(0)
                 updateErrorPic(0)
             else
-                autoHumanShuffle(rand(8:15))
+                autoHumanShuffle(rand(10:60))
             end
             if mode != m_standalone && noGUI()
                 println("noGUI sync")
@@ -2780,7 +2785,7 @@ global GUI_ready = false
             global glPrevPlayer = 1
         else
             global glPrevPlayer = prevWinner
-            global shufflePlayer = prevWinner == 4 ? 1 : prevWinner + 1 
+            global shufflePlayer = prevWinner ==  4  ? 1 : prevWinner + 1
         end
         global glIterationCnt = 0
     elseif tusacState == tsGameLoop
