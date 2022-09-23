@@ -2514,26 +2514,34 @@ if mode == m_server
     signedOnPlayer = 0
     while signedOnPlayer < numberOfSocketPlayer 
         global p = nwAPI.acceptClient(myS)
-        for i in 2:4
-            global playerName
-
+        while true
+            global i = rand(2:4)
             if PlayerList[i] != plSocket
-                PlayerList[i] = plSocket
-                nwPlayer[i] = p
-                nwAPI.nw_sendToPlayer(i,p,i)
-                msg = nwAPI.nw_receiveTextFromPlayer(i,nwPlayer[i])
-                print("Accepting Player ",i, " Name=",msg)
-                playerName[i] = msg
                 break
             end
         end
+        PlayerList[i] = plSocket
+        nwPlayer[i] = p
+        nwAPI.nw_sendToPlayer(i,p,i)
+        msg = nwAPI.nw_receiveTextFromPlayer(i,nwPlayer[i])
+        print("Accepting Player ",i, " Name=",msg)
+        playerName[i] = msg
+        
         signedOnPlayer += 1
     end
-    for s in 2:signedOnPlayer+1
-        for i in 1:4
-            nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
+    so = signedOnPlayer
+    for s in 1:4 
+        if PlayerList[s] == plSocket
+            for i in 1:4
+                nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
+            end
+            nwAPI.nw_sendToPlayer(s,nwPlayer[s],numberOfSocketPlayer)
+            if so == 1
+                break
+            else
+                so -= 1
+            end
         end
-        nwAPI.nw_sendToPlayer(s,nwPlayer[s],numberOfSocketPlayer)
     end
     println("Player List:",playerName)
     global GUIname = Vector{Any}(undef,4)
@@ -2682,7 +2690,7 @@ The goal is to have one code to handle all mode/variation of plays:
 """
 function gsStateMachine(gameActions)
     global tusacState, all_discards, all_assets,prevWinner
-    global gameDeck, ad, deckState,gameEnd,HISTORY
+    global gameDeck, ad, deckState,gameEnd,HISTORY,currentAction
     global nwPlayer,nwMaster,playerName,coldStart, FaceDown
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
@@ -2780,12 +2788,13 @@ global GUI_ready = false
         global gameEnd = 0
         println("Starting game, e-",gameEnd)
         tusacState = tsGameLoop
+        global currentAction = gpPlay1card
         global glNeedaPlayCard = true
         if coldStart
             global glPrevPlayer = 1
         else
             global glPrevPlayer = prevWinner
-            global shufflePlayer = prevWinner ==  4  ? 1 : prevWinner + 1
+            global shufflePlayer = prevWinner ==  1  ? 4 : prevWinner - 1
         end
         global glIterationCnt = 0
     elseif tusacState == tsGameLoop
@@ -3210,7 +3219,7 @@ function chk2(playCard)
             break
         end
     end
-    for p = 1:3
+    for p = 1:2
         print("   pair-",p," -- ")
 
         for ap in allPairs[p]
@@ -3512,11 +3521,8 @@ function on_key_down(g)
                 autoHumanShuffle(10)
                 setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
             elseif g.keyboard.H
-                println("Human mode")
-                mode_human = true
-            elseif g.keyboard.R
-                println("Robot mode")
-                mode_human = false
+                mode_human = !mode_human
+                println("Human mode to ")
             end
         elseif tusacState == tsHistory
             dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
@@ -3545,9 +3551,8 @@ function on_key_down(g)
             tusacState = tsHistory
             println("Entering History mode, size=",HistCnt)
         elseif g.keyboard.H
-            print("switching human mode ",mode_human, "-->")
             mode_human = !mode_human
-            println(mode_human)
+            print("switching human mode to ",mode_human)
         end
     end
 end
@@ -3698,7 +3703,7 @@ end
                         end
                     end
                 end
-            else
+            elseif length(cards) < 3
                 println("trashCnt")
                 TrashCnt = length(chot1s)
                 thand = deepcopy(hand)
@@ -3723,8 +3728,16 @@ function checkForRestart()
     if isGameOver() 
         if numberOfSocketPlayer > 0
             if isServer() 
-                for p in 2:numberOfSocketPlayer+1
-                    nwAPI.nw_sendTextToPlayer(p,nwPlayer[p],"restart")
+                so = numberOfSocketPlayer
+                for p in 2:4
+                    if PlayerList[p] == plSocket
+                        nwAPI.nw_sendTextToPlayer(p,nwPlayer[p],"restart")
+                        if so == 1
+                            break
+                        else
+                            so -= 1
+                        end
+                    end
                 end
                 gsStateMachine(gsRestart)
             else
@@ -3755,7 +3768,7 @@ function on_mouse_down(g, pos)
         if mode != m_standalone && !noGUI()
             println("GUI SYNC")
             anewDeck = deepcopy(playersSyncDeck!(gameDeck))
-            pop!(gameDeck,112)
+            pop!(gameDeck,length(gameDeck))
             push!(gameDeck,anewDeck)
         end
         println("ORGANIZE")
