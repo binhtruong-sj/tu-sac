@@ -252,7 +252,7 @@ end
 function nw_sendToMaster(id,connection,arr)
     
    l = length(arr)
-    println(id,"  NNNNSend to Master DATA=",(arr,l))
+    println(id,"  nwAPI Send to Master DATA=",(arr,l))
     
     if l != 112
         s_arr = Vector{UInt8}(undef,8)
@@ -283,35 +283,47 @@ end
 
 
 function nw_receiveFromMaster(connection,bytecnt)
-    println(" NNNN receive from Master")
+    println(" nwAPI receive from Master")
     arr = []
+    errCnt = 0
    while true
+    global errCnt
         arr = read(connection,bytecnt)
         if length(arr) != bytecnt
-            println(length(arr),"!=",bytecnt)
-
+            println(length(arr),"!=",bytecnt, " ", errCnt)
+             errCnt +=1
+            if errCnt > 10
+                exit()
+            end
             sleep(1)
         else
             break
         end
     end
-    println("NNNNreceived ",arr," from master ")
+    println("nwAPI received ",arr," from master ")
     return(arr)
 end
 
 function nw_receiveFromPlayer(id,connection,bytecnt)
     arr = []
-    println(" NNNN received from Player ", id )
+    println(" nwAPI received from Player ", id )
+    errCnt = 0
+
     while true
+        global errCnt
         arr = read(connection,bytecnt)
         if length(arr) != bytecnt
-            println(length(arr),"!=",bytecnt)
+            println(length(arr),"!=",bytecnt, " ", errCnt)
+            errCnt +=1
+            if errCnt > 10
+                exit()
+            end
             sleep(1)
         else
             break
         end
     end
-    println("NNNNmaster received ",arr)
+    println("nwAPImaster received ",arr)
 return(arr)
 end
 
@@ -326,7 +338,7 @@ end
 
 function nw_sendToPlayer(id, connection, arr)
     l = length(arr)
-    println("NNNNSend to Player ",id,"  DATA=",(arr,l))
+    println("nwAPISend to Player ",id,"  DATA=",(arr,l))
    
      
     if l != 112
@@ -2787,7 +2799,6 @@ global GUI_ready = false
         replayHistory(0)
         global gameEnd = 0
         println("Starting game, e-",gameEnd)
-        tusacState = tsGameLoop
         global currentAction = gpPlay1card
         global glNeedaPlayCard = true
         if coldStart
@@ -2797,8 +2808,11 @@ global GUI_ready = false
             global shufflePlayer = prevWinner ==  1  ? 4 : prevWinner - 1
         end
         global glIterationCnt = 0
+        tusacState = tsGameLoop
     elseif tusacState == tsGameLoop
         if gameActions == gsRestart
+            tusacState = tsSinitial
+
             println("RESTART")
             RESET1()
             RESET2()
@@ -2812,7 +2826,6 @@ global GUI_ready = false
             all_assets = []
             all_discards = []
             HISTORY = []
-            tusacState = tsSinitial
             println("Restarting Game")
             if noGUI()
                 gsStateMachine(gsOrganize)
