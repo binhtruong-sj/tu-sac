@@ -1223,7 +1223,9 @@ function ts(a)
     if length(a) == 1
         TuSacCards.Card(a)
     else
-        ts_s(a)
+        for ap in a
+            ts(ap)
+        end 
     end
 end
 
@@ -1598,7 +1600,11 @@ function scanCards(inHand, silence = false)
             print(ts(c), " ")
         end
         print("\nallPairs=    ")
-      
+        for ps in allPairs
+            for p in ps
+                print((length(p),ts(p[1])))
+            end
+        end
         print("\nsingle=       ")
         for c in single
             print(" ", ts(c))
@@ -2405,6 +2411,13 @@ function gamePlay1Iteration()
         FaceDown = !isGameOver()
 
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
+        if coDoi > 0 && !(length(r) == 2 && card_equal(r[1],r[2]))
+            println("Player", coDoi, " bo doi ", ts(coDoiCards[1]))
+            removeCards!(all_hands,coDoi,coDoiCards[1])
+            removeCards!(all_hands,coDoi,coDoiCards[2])
+            addCards!(all_assets,0,coDoi,coDoiCards[1])
+            addCards!(all_assets,0,coDoi,coDoiCards[2])
+        end
         if glNeedaPlayCard
             removeCards!(all_hands, glPrevPlayer, glNewCard)
             All_hand_updateActor(glNewCard[1],!FaceDown)
@@ -2448,6 +2461,7 @@ function gamePlay1Iteration()
         end
     end
 end
+
 
 global openAllCard = false
 function SNAPSHOT()
@@ -2794,6 +2808,26 @@ global GUI_ready = false
 
         println("\nDealing is completed,prevWinner=",prevWinner)
         getData_all_discard_assets()
+        for i in 1:4
+            allPairs = []
+            allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
+             scanCards(all_hands[i])
+            for pss in allPairs
+                for ps in pss
+                    if length(ps) == 4
+                        println(ps[1],ps[2],ps[3],ps[4])
+                        removeCards!(all_hands,i,ps[1])
+                        removeCards!(all_hands,i,ps[2])
+                        removeCards!(all_hands,i,ps[3])
+                        removeCards!(all_hands,i,ps[4])
+                        addCards!(all_assets,0,i,ps[1])
+                        addCards!(all_assets,0,i,ps[2])
+                        addCards!(all_assets,0,i,ps[3])
+                        addCards!(all_assets,0,i,ps[4])
+                    end
+                end
+            end
+        end
 
         global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
         replayHistory(0)
@@ -3222,6 +3256,7 @@ chk2(playCard) check for pairs -- also check for P XX ? M
 
 """
 function chk2(playCard)
+    global coDoiCards
     inSuitArr = []
     found = false
     for m1 in miss1s # CAAE XX PM ? X
@@ -3250,8 +3285,13 @@ function chk2(playCard)
                     return []  # SAKI -- return nothing
                 else
                     print("@")
-
-                    return ap
+                    if p == 1
+                        if length(coDoiCards) == 0
+                            push!(coDoiCards,ap[1],ap[2])
+                            println("FOUND CODOI", ( length(coDoiCards), ts(ap) ))
+                        end
+                    end
+                     return ap
                 end
             elseif inSuit(ap[1], playCard)  # CASE X PP ? M
                 push!(inSuitArr, ap[1]) # put in array to check
@@ -3361,7 +3401,7 @@ function hgamePlay(
     rQ,
     rReady
 )
-    global rQ, rReady
+    global rQ, rReady, coDoi, coDoiCards
     if(gpPlayer==myPlayer)
         global currentAction = gpAction
     end
@@ -3402,13 +3442,16 @@ function hgamePlay(
         println()
    global allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
         scanCards(all_hands[gpPlayer])
+     
 
     if gpAction == gpPlay1card
         @assert length(union(singles, chot1s, miss1s, missTs)) > 0
         print("play: ")
         global boDoi = 0
         cards = gpHandlePlay1Card()
-     
+        coDoi = 0
+        coDoiCards = []
+
     println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
     rReady[gpPlayer] = false
 
@@ -3423,7 +3466,10 @@ function hgamePlay(
     end
     print(cards," --  ")
     ts_s(cards)
-    
+    if length(coDoiCards) == 2 && coDoi == 0
+        println("POSS BODOI ", (gpPlayer, coDoiCards))
+        coDoi = gpPlayer
+    end
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
         rReady[gpPlayer] = true
@@ -3617,6 +3663,11 @@ function badPlay(cards,player, hand,action,botCards,matchC)
             println((c)," is not found in Player hand ",hand)
         end
         allfound = allfound && found
+        for t in pairs[2]
+            if card_equal(c,t[1])
+                return true
+            end
+        end
     end
     if !allfound
         return true
@@ -3685,14 +3736,16 @@ end
                         if card_equal(p[1],pcard) && !foundSaki(pcard,miss1sbar)
                             println("BO DOI")
                             global boDoi += 1
-                            if boDoi > 2
+                            if boDoi > 2 && length(p) == 2
                                 if !is_c(pcard)
+                                    #=
                                     for ap in p
                                         removeCards!(all_hands,player,ap)
                                         addCards!(all_assets,0,player,ap)
                                         mmm = mapToActors[ap]
                                         global mask[mmm] = mask[mmm] & 0xFE
                                     end
+                                    =#
                                 end
                                 boDoi = 0
                                 return false
@@ -3811,15 +3864,13 @@ function on_mouse_down(g, pos)
             end
             println("\nDanh Bai XONG ROI")
             setupDrawDeck(playerA_hand, 7, 18, 100, false)
-              
+            cardsIndxArr = []
             if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
                 currentAction,currentCards,currentPlayCard)
                 updateErrorPic(1)
-                cardsIndxArr = []
                 GUI_ready = false
             else 
                 updateErrorPic(0)
-                cardsIndxArr = []
                 GUI_ready = true
             end
         end
