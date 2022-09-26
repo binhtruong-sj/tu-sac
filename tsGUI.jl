@@ -27,11 +27,9 @@ noGUI() = noGUI_list[myPlayer]
 coldStart = true
 shufflePlayer = 1
 isServer() = mode == m_server
-println(PROGRAM_FILE)
 n = PROGRAM_FILE
 n = chop(n,tail=3)
 fn = string(n,".cfg")
-println((fn,isfile(fn)))
 mode_human = false
 mode = m_standalone
 serverURL = "baobinh.tpdlinkdns.com"
@@ -43,8 +41,29 @@ hints = 0
 GUI = true
 NAME= "PLayer?"
 fontSize = 50
+if allowPrint
 println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
+end
+GUILoc = zeros(Int,13,2)
+GUILoc[1,1],GUILoc[1,2] = 7,18
+GUILoc[2,1],GUILoc[2,2] = 20,2
+GUILoc[3,1],GUILoc[3,2] = 7,2
+GUILoc[4,1],GUILoc[4,2] = 1,2
+
+GUILoc[5,1],GUILoc[5,2] = 9,13
+GUILoc[6,1],GUILoc[6,2] = 16,7
+GUILoc[7,1],GUILoc[7,2] = 8,4
+GUILoc[8,1],GUILoc[8,2] = 4,7
+
+GUILoc[9,1],GUILoc[9,2] = 16,15
+GUILoc[10,1],GUILoc[10,2] = 16,2
+GUILoc[11,1],GUILoc[11,2] = 3,2
+GUILoc[12,1],GUILoc[12,2] = 3,16
+
+GUILoc[13,1],GUILoc[13,2] = 8,8
+
 function config(fn)
+    global GUILoc
     if !isfile(fn)
         println(fn," does not exist, please configure one. Similar to this\n
         name Binh
@@ -62,7 +81,6 @@ function config(fn)
             mode_human,serverURL,serverIP,serverPort, hints,
             GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
             rl = split(line,' ')
-            println((rl))
             if rl[1] == "name"
                 NAME = rl[2]
                 playerName[myPlayer] =NAME
@@ -70,19 +88,29 @@ function config(fn)
                 mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
             elseif rl[1] == "human"
                 mode_human = rl[2] == "true"
+            elseif rl[1] == "GUIadjust"
+                arrayIndex = parse(Int,rl[2])
+                x = parse(Int,rl[3])
+                y = parse(Int,rl[4])
+                GUILoc[arrayIndex,1] += x
+                GUILoc[arrayIndex,2] += y
             elseif rl[1] == "server"
                 serverURL = string(rl[2])
                 serverPort = parse(Int,rl[3])
             elseif rl[1] == "myIP"
                 serverIP = getaddrinfo(string(rl[2]))
+                if allowPrint
                 println(serverIP)
+                end
             elseif rl[1] == "GAMEW"
                 GAMEW = parse(Int,rl[2])
             elseif rl[1] == "GENERIC"
                 GENERIC = parse(Int,rl[2])
             elseif rl[1] == "hints"
                 hints = parse(Int,rl[2])
+                if allowPrint
                 println("hints = ",hints)
+                end
             elseif rl[1] == "fontSize"
                 fontSize = parse(Int,rl[2])
             elseif rl[1] == "numberOfSocketPlayer"
@@ -91,7 +119,9 @@ function config(fn)
                 cardScale = parse(Int,rl[2])
             elseif rl[1] == "myPlayer"
                 myPlayer = parse(Int,rl[2])
+                if allowPrint
                 println(rl[2]," = ",myPlayer)
+                end
             elseif rl[1] == "macOS"
                 macOS = rl[2] == "true"
             elseif rl[1] == "GUI"
@@ -113,14 +143,13 @@ prevWinner = 1
 (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
-println((PlayerList, mode,mode_human,serverURL,
-serverIP,serverPort, GAMEW,macOS,
-numberOfSocketPlayer,myPlayer))
 if coldStart
     eRrestart = false
 end
 if macOS
+    if allowPrint
     println("macOS")
+    end
 const macOSconst = 1
     gameW = 900
     HEIGHT = gameW
@@ -153,7 +182,9 @@ else
         cardYdim = 295
         zoomCardYdim = 400
     end
+    if allowPrint
     println("NO macOS")
+    end
     const macOSconst = 0
     HEIGHT = gameW
     WIDTH = div(gameW * 16, 9)
@@ -1176,12 +1207,12 @@ function tusacDeal(winner)
         playerD_hand = P2_hand
     end
     FaceDown = true
-    setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
-    setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-    setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
+    setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
+    setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
+    setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
 
-    global pBseat = setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
-    global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
+    global pBseat = setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
+    global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
 
     global playerA_discards = TuSacCards.Deck(pop!(gameDeck, 1))
     global playerB_discards = TuSacCards.Deck(pop!(gameDeck, 1))
@@ -1705,28 +1736,28 @@ function removeCards!(array, n, cards)
             if allowPrint
             println((m,playerA_hand))
             end
-            global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
+            global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
 
         elseif m == 2
             pop!(playerB_hand,ts(c))
             if allowPrint
             println((m,playerB_hand))
             end
-            setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
+            setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
 
         elseif m == 3
             pop!(playerC_hand,ts(c))
             if allowPrint
             println((m,playerC_hand))
             end
-            setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
+            setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
 
         elseif m == 4
             pop!(playerD_hand,ts(c))
             if allowPrint
             println((m,playerD_hand))
             end
-            setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
+            setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
 
         end
 
@@ -1739,36 +1770,36 @@ function addCards!(array,arrNo, n, cards)
         if arrNo == 0
             if m== 1
                 push!(playerA_assets,ts(c))
-                asset1 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
+                asset1 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], 30, false)
 
             elseif m == 2
                 push!(playerB_assets,ts(c))
-                asset2 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
+                asset2 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2], 4, false)
 
             elseif m == 3
                 push!(playerC_assets,ts(c))
-                asset3 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
+                asset3 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], 30, false)
 
             elseif m == 4
                 push!(playerD_assets,ts(c))
-                asset4 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
+                asset4 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], 4, false)
 
             end
         else
             if m== 1
                 push!(playerA_discards,ts(c))
-                setupDrawDeck(playerA_discards, 16, 15, 8, false)
+                setupDrawDeck(playerA_discards, GUILoc[9,1], GUILoc[9,2], 8, false)
             elseif m == 2
                 push!(playerB_discards,ts(c))
-                setupDrawDeck(playerB_discards, 16, 2, 8, false)
+                setupDrawDeck(playerB_discards, GUILoc[10,1], GUILoc[10,2], 8, false)
 
             elseif m == 3
                 push!(playerC_discards,ts(c))
-                setupDrawDeck(playerC_discards, 3, 2, 8, false)
+                setupDrawDeck(playerC_discards, GUILoc[11,1], GUILoc[11,2], 8, false)
 
             elseif m == 4
                 push!(playerD_discards,ts(c))
-                discard4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
+                discard4 = setupDrawDeck(playerD_discards, GUILoc[12,1], GUILoc[12,2], 8, false)
 
             end
         end
@@ -1804,22 +1835,22 @@ function replayHistory(index)
         global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
         updateHandPic(glPrevPlayer)
     end
-    d1 = setupDrawDeck(playerA_discards, 16, 15, 8, false)
-    d2 = setupDrawDeck(playerB_discards, 16, 2, 8, false)
-    d3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
-    d4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
+    d1 = setupDrawDeck(playerA_discards, GUILoc[9,1], GUILoc[9,2], 8, false)
+    d2 = setupDrawDeck(playerB_discards, GUILoc[10,1], GUILoc[10,2], 8, false)
+    d3 = setupDrawDeck(playerC_discards, GUILoc[11,1], GUILoc[11,2], 8, false)
+    d4 = setupDrawDeck(playerD_discards, GUILoc[12,1], GUILoc[12,2], 8, false)
 
-    d5 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
-    d6 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
-    d7 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
-    d8 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
+    d5 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], 30, false)
+    d6 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2], 4, false)
+    d7 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], 30, false)
+    d8 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], 4, false)
     FaceDown = !isGameOver()
 
-    global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
-    a4 = setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-    a3 = setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
-    a2 = setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
-    a5 = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+    global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
+    a4 = setupDrawDeck(playerD_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
+    a3 = setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
+    a2 = setupDrawDeck(playerB_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
+    a5 = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
     if tusacState < tsGameLoop
         boxes =[]
         push!(boxes,human_state,d1,d2,d3,d4, d5,d6,d7,d8, a2,a3,a4,a5)
@@ -2351,7 +2382,7 @@ function gamePlay1Iteration()
         else
             nc = pop!(gameDeck, 1)
             nca = pop!(gameDeckArray)
-            global gd = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+            global gd = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
             All_hand_updateActor(nc[1].value, !FaceDown)
             glNewCard = nc[1].value
             global currentPlayer = nextPlayer(glPrevPlayer)
@@ -2784,7 +2815,7 @@ function gsStateMachine(gameActions)
             end
             if noGUI() == false
                 FaceDown = true 
-                deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+                deckState = setupDrawDeck(gameDeck,GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
                 if coldStart
                     if (GENERIC == 1)
                         global handPic = Actor("hand4.png")
@@ -2824,7 +2855,7 @@ function gsStateMachine(gameActions)
 global cardsIndxArr = []
 global GUI_ready = false
     #    if gameActions == gsOrganize
-            if true
+            if allowPrint
                 println("Prev Game Winner =", gameEnd)
             end
             prevWinner = gameEnd
@@ -2836,7 +2867,7 @@ global GUI_ready = false
             organizeHand(playerD_hand)
 
             getData_all_hands()
-            setupDrawDeck(playerA_hand, 7, 18, 100, false)
+            setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
            
 
     #    end
@@ -3437,23 +3468,23 @@ function hgamePlay(
     global currentPlayCard = pcard
     FaceDown = !isGameOver()
     if gpPlayer == 1 
-        global human_state = setupDrawDeck(playerA_hand, 7, 18, 100, false)
-        discard1 = setupDrawDeck(playerA_discards, 16, 15, 8, false)
-        asset1 = setupDrawDeck(playerA_assets, 9, 13, 30, false)
+        global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
+        discard1 = setupDrawDeck(playerA_discards,GUILoc[9,1], GUILoc[9,2],  8, false)
+        asset1 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], 30, false)
 
     elseif gpPlayer == 2
-        setupDrawDeck(playerB_hand, 20, 2, 2, FaceDown)
-        discard2 = setupDrawDeck(playerB_discards, 16, 2, 8, false)
-        asset2 = setupDrawDeck(playerB_assets, 16, 7, 4, false)
+        setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
+        discard2 = setupDrawDeck(playerB_discards, GUILoc[10,1], GUILoc[10,2], 8, false)
+        asset2 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2], 4, false)
 
     elseif gpPlayer == 3
-        setupDrawDeck(playerC_hand, 7, 2, 100, FaceDown)
-        discard3 = setupDrawDeck(playerC_discards, 3, 2, 8, false)
-        asset3 = setupDrawDeck(playerC_assets, 8, 4, 30, false)
+        setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
+        discard3 = setupDrawDeck(playerC_discards, GUILoc[11,1], GUILoc[11,2], 8, false)
+        asset3 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], 30, false)
     else
-        setupDrawDeck(playerD_hand, 1, 2, 2, FaceDown)
-        discard4 = setupDrawDeck(playerD_discards, 3, 16, 8, false)
-        asset4 = setupDrawDeck(playerD_assets, 4, 7, 4, false)
+        setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
+        discard4 = setupDrawDeck(playerD_discards, GUILoc[12,1], GUILoc[12,2], 8, false)
+        asset4 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], 4, false)
 
     end
     
@@ -3612,7 +3643,7 @@ function on_key_down(g)
         if tusacState == tsSdealCards
             if g.keyboard.S
                 autoHumanShuffle(10)
-                setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+                setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
             elseif g.keyboard.H
                 mode_human = !mode_human
                 println("Human mode to ")
@@ -3657,14 +3688,14 @@ function click_card(cardIndx, yPortion, hand)
         # moving these cards
         if yPortion != prevYportion
             cardsIndxArr = []
-            setupDrawDeck(hand, 7, 18, 100, false)
+            setupDrawDeck(hand, GUILoc[1,1], GUILoc[1,2],100, false)
             println("RESET")
             cardSelect = false
             return []
         elseif yPortion > 0
             sort!(cardsIndxArr)
             TuSacCards.rearrange(hand, cardsIndxArr, cardIndx)
-            setupDrawDeck(hand, 7, 18, 100, false)
+            setupDrawDeck(hand, GUILoc[1,1], GUILoc[1,2], 100, false)
             cardSelect = false
             cardsIndxArr = []
         end
@@ -3925,7 +3956,7 @@ function on_mouse_down(g, pos)
             if allowPrint
             println("\nDanh Bai XONG ROI")
             end
-            setupDrawDeck(playerA_hand, 7, 18, 100, false)
+            setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],100, false)
             cardsIndxArr = []
             if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
                 currentAction,currentCards,currentPlayCard)
@@ -3956,7 +3987,7 @@ function update(g)
     if tusacState == tsSdealCards
         if (deckState[5] > 10)
             TuSacCards.humanShuffle!(gameDeck, 14, deckState[5])
-            deckState = setupDrawDeck(gameDeck, 8, 8, 14, FaceDown)
+            deckState = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
         end
         if noGUI()
         gsStateMachine(gsOrganize)
