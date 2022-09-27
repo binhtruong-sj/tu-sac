@@ -11,7 +11,7 @@ const plSocket = 5
 const m_client = 0
 const m_server = 1
 const m_standalone = 2
-const allowPrint = false
+ allowPrint = false
 cardScale = 90
 
 noGUI_list = [true,true,true,true]
@@ -24,249 +24,11 @@ playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
 
-coldStart = true
-shufflePlayer = 1
-isServer() = mode == m_server
-n = PROGRAM_FILE
-n = chop(n,tail=3)
-fn = string(n,".cfg")
-mode_human = false
-mode = m_standalone
-serverURL = "baobinh.tpdlinkdns.com"
-serverPort = 11029
-serverIP = ip"192.168.0.35"
-GAMEW =900
-GENERIC = 3
-hints = 0
-GUI = true
-NAME= "PLayer?"
-fontSize = 50
-if allowPrint
-println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
-end
-GUILoc = zeros(Int,13,2)
-GUILoc[1,1],GUILoc[1,2] = 7,18
-GUILoc[2,1],GUILoc[2,2] = 20,2
-GUILoc[3,1],GUILoc[3,2] = 7,2
-GUILoc[4,1],GUILoc[4,2] = 1,2
-
-GUILoc[5,1],GUILoc[5,2] = 9,13
-GUILoc[6,1],GUILoc[6,2] = 16,7
-GUILoc[7,1],GUILoc[7,2] = 8,4
-GUILoc[8,1],GUILoc[8,2] = 4,7
-
-GUILoc[9,1],GUILoc[9,2] = 16,15
-GUILoc[10,1],GUILoc[10,2] = 16,2
-GUILoc[11,1],GUILoc[11,2] = 3,2
-GUILoc[12,1],GUILoc[12,2] = 3,16
-
-GUILoc[13,1],GUILoc[13,2] = 8,8
-
-function config(fn)
-    global GUILoc
-    if !isfile(fn)
-        println(fn," does not exist, please configure one. Similar to this\n
-        name Binh
-        mode standalone
-        GUI true
-        human true
-        server baobinh.tplinkdns.com 11029
-        client 192.168.0.53
-        GAMEW 900
-        macOS true")
-    else
-        cfg_str = readlines(fn)
-        for line in cfg_str
-            global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,
-            mode_human,serverURL,serverIP,serverPort, hints,
-            GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
-            rl = split(line,' ')
-            if rl[1] == "name"
-                NAME = rl[2]
-                playerName[myPlayer] =NAME
-            elseif rl[1] == "mode"
-                mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
-            elseif rl[1] == "human"
-                mode_human = rl[2] == "true"
-            elseif rl[1] == "GUIadjust"
-                arrayIndex = parse(Int,rl[2])
-                x = parse(Int,rl[3])
-                y = parse(Int,rl[4])
-                GUILoc[arrayIndex,1] += x
-                GUILoc[arrayIndex,2] += y
-            elseif rl[1] == "server"
-                serverURL = string(rl[2])
-                serverPort = parse(Int,rl[3])
-            elseif rl[1] == "myIP"
-                serverIP = getaddrinfo(string(rl[2]))
-                if allowPrint
-                println(serverIP)
-                end
-            elseif rl[1] == "GAMEW"
-                GAMEW = parse(Int,rl[2])
-            elseif rl[1] == "GENERIC"
-                GENERIC = parse(Int,rl[2])
-            elseif rl[1] == "hints"
-                hints = parse(Int,rl[2])
-                if allowPrint
-                println("hints = ",hints)
-                end
-            elseif rl[1] == "fontSize"
-                fontSize = parse(Int,rl[2])
-            elseif rl[1] == "numberOfSocketPlayer"
-                numberOfSocketPlayer = parse(Int,rl[2])
-            elseif rl[1] == "cardScale"
-                cardScale = parse(Int,rl[2])
-            elseif rl[1] == "myPlayer"
-                myPlayer = parse(Int,rl[2])
-                if allowPrint
-                println(rl[2]," = ",myPlayer)
-                end
-            elseif rl[1] == "macOS"
-                macOS = rl[2] == "true"
-            elseif rl[1] == "GUI"
-                    global GUI = rl[2] == "true"
-            end
-        end
-    end
-    if GUI
-        noGUI_list[myPlayer] = false
-    end
-    if mode == m_standalone && mode_human
-        PlayerList[myPlayer] = plHuman
-    end
-    return (PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer)
-end
-prevWinner = 1
-
-
-(PlayerList, mode,mode_human,serverURL,serverIP,
-serverPort, GAMEW,macOS,
-numberOfSocketPlayer,myPlayer) = config(fn)
-if coldStart
-    eRrestart = false
-end
-if macOS
-    if allowPrint
-    println("macOS")
-    end
-const macOSconst = 1
-    gameW = 900
-    HEIGHT = gameW
-    WIDTH = div(gameW * 16, 9)
-    realHEIGHT = HEIGHT * 2
-    realWIDTH = WIDTH * 2
-    cardXdim = 64
-    cardYdim = 210
-    zoomCardYdim = 400
-    GENERIC = 0
-else
-    if GENERIC == 1    
-        gameW = 820
-        cardXdim = 24
-        cardYdim = 80
-        zoomCardYdim = 110
-    elseif GENERIC == 2
-        gameW = 820
-        cardXdim = 34
-        cardYdim = 110
-        zoomCardYdim = 210
-    elseif GENERIC == 3
-        gameW = 820
-        cardXdim = 64
-        cardYdim = 210
-        zoomCardYdim = 295
-    else
-        gameW = 820
-        cardXdim = 90
-        cardYdim = 295
-        zoomCardYdim = 400
-    end
-    if allowPrint
-    println("NO macOS")
-    end
-    const macOSconst = 0
-    HEIGHT = gameW
-    WIDTH = div(gameW * 16, 9)
-    realHEIGHT = div(HEIGHT, 1)
-    realWIDTH = div(WIDTH, 1)
-    
-end
-boDoi = 0
-zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
-const tableXgrid = 20
-const tableYgrid = 20
-FaceDown = true
-const cardGrid = 4
-const gameDeckMinimum = 9
-eRrestart = 1
-const eRcheck = 2
-gameEnd = 1
-function gameOver(n) 
-    global eRrestart
-    global gameEnd = n
-    global FaceDown = false
-    if 0 < n < 5
-        updateWinnerPic(n)
-    end
-    replayHistory(0)
-end
-isGameOver() = gameEnd > 0
-
-
-function playerIsHuman(p) 
-    return (p == myPlayer && mode_human)
-end
-humanIsGUI() = mode_human & !noGUI()
-
-function RESET1()
-        
-    if coldStart
-        global currentPlayer = 1
-    else
-        global currentPlayer = gameEnd
-    end
-    global gotClick = false
-    global GUI_array=[]
-    global GUI_ready=false
-    FaceDown = true
-    global HISTORY = []
-    global waitForHuman = false
-    global handPic
-    global pBseat = []
-
-    global drawCnt = 1
-    global gsHcnt = 1
-
-
-global all_hands = []
-global all_discards = []
-global all_assets = []
-global gameDeckArray =[]
-
-end
-const gpPlay1card = 1
-const gpCheckMatch1or2 = 3
-const gpCheckMatch2 = 2
-const gpPopCards = 4
-
-const gsHarrayNamehands = 1
-const gsHarrayNamediscards = 2
-const gsHarrayNameassets = 3
-const gsHarrayNamegameDeck = 4
-
-"""
-table-grid, giving x,y return grid coordinate
-"""
-tableGridXY(gx, gy) = (gx - 1) * div(realWIDTH, tableXgrid),
-(gy - 1) * div(realHEIGHT, tableYgrid)
-reverseTableGridXY(x, y) = div(x, div(realWIDTH, tableXgrid)) + 1,
-div(y, div(realHEIGHT, tableYgrid)) + 1
-
 module nwAPI
 using Sockets
-export nw_sendToMaster, nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer, nw_sentToPlayer, nw_getR, serverSetup, clientSetup
-const allowPrint = false
+export nw_sendToMaster, nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer, 
+nw_sentToPlayer, nw_getR, serverSetup, clientSetup, allwPrint
+ allowPrint = false
 function serverSetup(serverIP,port)
    # return(listen(ip"192.168.0.53",11029))
     return(listen(serverIP,port))
@@ -278,7 +40,9 @@ end
 function clientSetup(serverURL,port)
     return(connect(serverURL,port))
 end
-
+function allwPrint()
+    allowPrint = true
+end
 function nw_sendToMaster(id,connection,arr)
     
    l = length(arr)
@@ -426,7 +190,7 @@ using Random: randperm
 import Random: shuffle!
 
 import Base
-const allowPrint = false
+ allowPrint = false
 # Suits/Colors
 export T, V, D, X # aliases White, Yellow, Red, Green
 
@@ -442,11 +206,13 @@ export ranks, suits, duplicate
 # Deck & deck-related methods
 export Deck, shuffle!, ssort, full_deck, ordered_deck, ordered_deck_chot, humanShuffle!, dealCards, full_deck_chot
 export getCards, rearrange, sort!, rcut, moveCards!
-export test_deck, getDeckArray, newDeckUsingArray
+export test_deck, getDeckArray, newDeckUsingArray,allwPrint
 #####
 ##### Types
 #####
-
+function allwPrint()
+    allowPrint = true
+end
 """
     In TuSac, cards has 4 suit of color: White,Yellow,Red,Green
 
@@ -952,6 +718,252 @@ end
 
 end # module
 ######################################################################
+
+
+coldStart = true
+shufflePlayer = 1
+isServer() = mode == m_server
+n = PROGRAM_FILE
+n = chop(n,tail=3)
+fn = string(n,".cfg")
+mode_human = false
+mode = m_standalone
+serverURL = "baobinh.tpdlinkdns.com"
+serverPort = 11029
+serverIP = ip"192.168.0.35"
+GAMEW =900
+GENERIC = 3
+hints = 0
+GUI = true
+NAME= "PLayer?"
+fontSize = 50
+if allowPrint
+println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
+end
+GUILoc = zeros(Int,13,2)
+GUILoc[1,1],GUILoc[1,2] = 7,18
+GUILoc[2,1],GUILoc[2,2] = 20,2
+GUILoc[3,1],GUILoc[3,2] = 7,2
+GUILoc[4,1],GUILoc[4,2] = 1,2
+
+GUILoc[5,1],GUILoc[5,2] = 9,13
+GUILoc[6,1],GUILoc[6,2] = 16,7
+GUILoc[7,1],GUILoc[7,2] = 8,4
+GUILoc[8,1],GUILoc[8,2] = 4,7
+
+GUILoc[9,1],GUILoc[9,2] = 16,15
+GUILoc[10,1],GUILoc[10,2] = 16,2
+GUILoc[11,1],GUILoc[11,2] = 3,2
+GUILoc[12,1],GUILoc[12,2] = 3,16
+
+GUILoc[13,1],GUILoc[13,2] = 8,8
+
+function config(fn)
+    global GUILoc
+    if !isfile(fn)
+        println(fn," does not exist, please configure one. Similar to this\n
+        name Binh
+        mode standalone
+        GUI true
+        human true
+        server baobinh.tplinkdns.com 11029
+        client 192.168.0.53
+        GAMEW 900
+        macOS true")
+    else
+        cfg_str = readlines(fn)
+        for line in cfg_str
+            global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,
+            mode_human,serverURL,serverIP,serverPort, hints,allowPrint,
+            GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
+            rl = split(line,' ')
+            if rl[1] == "name"
+                NAME = rl[2]
+                playerName[myPlayer] =NAME
+            elseif rl[1] == "mode"
+                mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
+            elseif rl[1] == "human"
+                mode_human = rl[2] == "true"
+            elseif rl[1] == "allowPrint"
+                allowPrint = true
+                nwAPI.allwPrint()
+                TuSacCards.allwPrint()
+            elseif rl[1] == "GUIadjust"
+                arrayIndex = parse(Int,rl[2])
+                x = parse(Int,rl[3])
+                y = parse(Int,rl[4])
+                GUILoc[arrayIndex,1] += x
+                GUILoc[arrayIndex,2] += y
+            elseif rl[1] == "server"
+                serverURL = string(rl[2])
+                serverPort = parse(Int,rl[3])
+            elseif rl[1] == "myIP"
+                serverIP = getaddrinfo(string(rl[2]))
+                if allowPrint
+                println(serverIP)
+                end
+            elseif rl[1] == "GAMEW"
+                GAMEW = parse(Int,rl[2])
+            elseif rl[1] == "GENERIC"
+                GENERIC = parse(Int,rl[2])
+            elseif rl[1] == "hints"
+                hints = parse(Int,rl[2])
+                if allowPrint
+                println("hints = ",hints)
+                end
+            elseif rl[1] == "fontSize"
+                fontSize = parse(Int,rl[2])
+            elseif rl[1] == "numberOfSocketPlayer"
+                numberOfSocketPlayer = parse(Int,rl[2])
+            elseif rl[1] == "cardScale"
+                cardScale = parse(Int,rl[2])
+            elseif rl[1] == "myPlayer"
+                myPlayer = parse(Int,rl[2])
+                if allowPrint
+                println(rl[2]," = ",myPlayer)
+                end
+            elseif rl[1] == "macOS"
+                macOS = rl[2] == "true"
+            elseif rl[1] == "GUI"
+                    global GUI = rl[2] == "true"
+            end
+        end
+    end
+    if GUI
+        noGUI_list[myPlayer] = false
+    end
+    if mode == m_standalone && mode_human
+        PlayerList[myPlayer] = plHuman
+    end
+    return (PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer)
+end
+prevWinner = 1
+
+
+(PlayerList, mode,mode_human,serverURL,serverIP,
+serverPort, GAMEW,macOS,
+numberOfSocketPlayer,myPlayer) = config(fn)
+if coldStart
+    eRrestart = false
+end
+if macOS
+    if allowPrint
+    println("macOS")
+    end
+const macOSconst = 1
+    gameW = 900
+    HEIGHT = gameW
+    WIDTH = div(gameW * 16, 9)
+    realHEIGHT = HEIGHT * 2
+    realWIDTH = WIDTH * 2
+    cardXdim = 64
+    cardYdim = 210
+    zoomCardYdim = 400
+    GENERIC = 0
+else
+    if GENERIC == 1    
+        gameW = 820
+        cardXdim = 24
+        cardYdim = 80
+        zoomCardYdim = 110
+    elseif GENERIC == 2
+        gameW = 820
+        cardXdim = 34
+        cardYdim = 110
+        zoomCardYdim = 210
+    elseif GENERIC == 3
+        gameW = 820
+        cardXdim = 64
+        cardYdim = 210
+        zoomCardYdim = 295
+    else
+        gameW = 820
+        cardXdim = 90
+        cardYdim = 295
+        zoomCardYdim = 400
+    end
+    if allowPrint
+    println("NO macOS")
+    end
+    const macOSconst = 0
+    HEIGHT = gameW
+    WIDTH = div(gameW * 16, 9)
+    realHEIGHT = div(HEIGHT, 1)
+    realWIDTH = div(WIDTH, 1)
+    
+end
+boDoi = 0
+zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
+const tableXgrid = 20
+const tableYgrid = 20
+FaceDown = true
+const cardGrid = 4
+const gameDeckMinimum = 9
+eRrestart = 1
+const eRcheck = 2
+gameEnd = 1
+function gameOver(n) 
+    global eRrestart
+    global gameEnd = n
+    global FaceDown = false
+    if 0 < n < 5
+        updateWinnerPic(n)
+    end
+    replayHistory(0)
+end
+isGameOver() = gameEnd > 0
+
+
+function playerIsHuman(p) 
+    return (p == myPlayer && mode_human)
+end
+humanIsGUI() = mode_human & !noGUI()
+
+function RESET1()
+        
+    if coldStart
+        global currentPlayer = 1
+    else
+        global currentPlayer = gameEnd
+    end
+    global gotClick = false
+    global GUI_array=[]
+    global GUI_ready=false
+    FaceDown = true
+    global HISTORY = []
+    global waitForHuman = false
+    global handPic
+    global pBseat = []
+
+    global drawCnt = 1
+    global gsHcnt = 1
+
+
+global all_hands = []
+global all_discards = []
+global all_assets = []
+global gameDeckArray =[]
+
+end
+const gpPlay1card = 1
+const gpCheckMatch1or2 = 3
+const gpCheckMatch2 = 2
+const gpPopCards = 4
+
+const gsHarrayNamehands = 1
+const gsHarrayNamediscards = 2
+const gsHarrayNameassets = 3
+const gsHarrayNamegameDeck = 4
+
+"""
+table-grid, giving x,y return grid coordinate
+"""
+tableGridXY(gx, gy) = (gx - 1) * div(realWIDTH, tableXgrid),
+(gy - 1) * div(realHEIGHT, tableYgrid)
+reverseTableGridXY(x, y) = div(x, div(realWIDTH, tableXgrid)) + 1,
+div(y, div(realHEIGHT, tableYgrid)) + 1
+
+
 RESET1()
 
 
@@ -2236,7 +2248,7 @@ function gamePlay1Iteration()
     global glPrevPlayer
     global glIterationCnt
     global t1Player,t2Player,t3Player,t4Player
-    global n1c,n2c,n3c,n4c
+    global n1c,n2c,n3c,n4c,coDoi, coDoiCards
 
     function checkHumanResponse(player)
         global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
@@ -2246,7 +2258,8 @@ function gamePlay1Iteration()
                     rReady[player] = true
                     rQ[player]=GUI_array
                     if allowPrint
-                        println("Human-p: ", player," PlayCard = ", ts(rQ[player]))
+                        print("Human-p: ", player," PlayCard = ")
+                         ts_s(rQ[player])
                     end
                     GUI_ready = false
                 else
@@ -2474,6 +2487,8 @@ function gamePlay1Iteration()
             removeCards!(all_hands,coDoi,coDoiCards[2])
             addCards!(all_assets,0,coDoi,coDoiCards[1])
             addCards!(all_assets,0,coDoi,coDoiCards[2])
+            coDoi = 0
+            coDoiCards = []
         end
         if glNeedaPlayCard
             removeCards!(all_hands, glPrevPlayer, glNewCard)
@@ -3716,6 +3731,8 @@ function badPlay(cards,player, hand,action,botCards,matchC)
     ts_s(hand)
     ts_s(cards)
     end
+    allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
+    scanCards(hand, false)
     allfound = true
     for c in cards
         found = false
@@ -3729,7 +3746,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
             println((c)," is not found in Player hand ",hand)
         end
         allfound = allfound && found
-        for t in pairs[2]
+        for t in allPairs[2]
             if card_equal(c,t[1])
                 return true
             end
@@ -3801,8 +3818,7 @@ function foundSaki(card,miss1sbar)
     return false
 end
         if is_c(pcard) || length(cards) == 0
-            allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
-            scanCards(hand, false)
+           
             # check for bo doi
             if length(cards) == 0
                 for ps in allPairs
