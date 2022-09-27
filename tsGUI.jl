@@ -3852,16 +3852,23 @@ end
             if length(cards) == 0
                 for ps in allPairs
                     for p in ps
-                        if card_equal(p[1],pcard) && length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash(cards,hand)
-                            if allowPrint
-                            println("BO DOI")
+                        if card_equal(p[1],pcard) 
+                            if length(p) == 3 
+                                if length(cards) != 3 || !card_equal(cards[1],p[1]) || !card_equal(cards[2],p[1])
+                                    return true
+                                end
                             end
-                            global boDoi += 1
-                            if boDoi > 2 
-                                boDoi = 0
-                                return false
-                            else
-                                return true
+                            if length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash(cards,hand)
+                                if allowPrint
+                                    println("BO DOI")
+                                end
+                                global boDoi += 1
+                                if boDoi > 2 
+                                    boDoi = 0
+                                    return false
+                                else
+                                    return true
+                                end
                             end
                         end
                     end
