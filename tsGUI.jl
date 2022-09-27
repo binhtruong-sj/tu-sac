@@ -3754,8 +3754,9 @@ function click_card(cardIndx, yPortion, hand)
 end
 
 function badPlay(cards,player, hand,action,botCards,matchC)
+    pcard = matchC[1]
     if allowPrint
-    print("Chk GUI ,matchcard ",(ts(matchC)," -- ", cards, " == ", "action=",action))
+    print("Chk GUI ,matchcard ",(ts(pcard)," -- ", cards, " == ", "action=",action))
     ts_s(hand)
     ts_s(cards)
     end
@@ -3776,7 +3777,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         end
         allfound = allfound && found
         for t in allPairs[2]
-            if card_equal(matchC,t[1]) 
+            if card_equal(pcard,t[1]) 
                 if length(cards) != 3 || !card_equal(cards[1],t[1]) || !card_equal(cards[2],t[1]) || !card_equal(cards[3],t[1])
                     return true
                 end
@@ -3792,7 +3793,6 @@ function badPlay(cards,player, hand,action,botCards,matchC)
     else
         all_in_pairs = true
         all_in_suit = true
-        pcard = matchC[1]
         if length(cards) > 0 
             if card_equal(pcard,cards[1])
                 if length(cards) == 1 
