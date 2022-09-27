@@ -3780,10 +3780,12 @@ function badPlay(cards,player, hand,action,botCards,matchC)
             println((c)," is not found in Player hand ",hand)
         end
         allfound = allfound && found
-        for t in allPairs[2]
-            if card_equal(pcard,t[1]) 
-                if length(cards) != 3 || !card_equal(cards[1],t[1]) || !card_equal(cards[2],t[1]) || !card_equal(cards[3],t[1])
-                    return true
+        if action != gpPlay1card
+            for t in allPairs[2]
+                if card_equal(pcard,t[1]) 
+                    if length(cards) != 3 || !card_equal(cards[1],t[1]) || !card_equal(cards[2],t[1]) || !card_equal(cards[3],t[1])
+                        return true
+                    end
                 end
             end
         end
