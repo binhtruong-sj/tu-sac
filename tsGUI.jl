@@ -1427,6 +1427,11 @@ function c_analyzer!(p,s,ci)
     return[],[]
 end
       
+"""
+    c_scan(p,s)
+        scan/c_analyzer all the chots. Return singles.
+TBW
+"""
 function c_scan(p,s)
     if length(s) >0 && allowPrint
          println("c-scan",(p,s))
@@ -1460,6 +1465,12 @@ function c_scan(p,s)
     end
 end
 
+"""
+    c_match(p,s,n)
+        return match for a chot. Taking in account of all chots, not just the
+            singles.
+TBW
+"""
 function c_match(p,s,n)
     if length(union(s,n)) > 1 && allowPrint
          println("c-match ",(p,s,n))
@@ -3641,6 +3652,28 @@ function restartGame()
         tusacState = tsSinitial
         gsStateMachine(gsSetupGame)
 end
+function isMoreTrash(hand)
+    if allowPrint
+    println("trashCnt")
+    end
+    allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
+scanCards(hand, false)
+    TrashCnt = length(chot1s)
+    thand = deepcopy(hand)
+    for e in cards
+        filter!(x -> x != e, thand)
+    end
+    ps, ss, cs, m1s, mts, mbs,cp,cspec = scanCards(thand, true)
+    l = length(cs)
+    if TrashCnt < l
+        if allowPrint
+        println("Illegal match -- creating more trash ",(TrashCnt,l))
+        ts_s(chot1s)
+        ts_s(cs)
+        end
+    end
+    return TrashCnt < l
+end
 function on_key_down(g)
     global tusacState, gameDeck, mode_human,
     playerA_hand,
@@ -3741,26 +3774,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
     end
     allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
     scanCards(hand, false)
-    function isMoreTrash()
-        if allowPrint
-        println("trashCnt")
-        end
-        TrashCnt = length(chot1s)
-        thand = deepcopy(hand)
-        for e in cards
-            filter!(x -> x != e, thand)
-        end
-        ps, ss, cs, m1s, mts, mbs,cp,cspec = scanCards(thand, true)
-        l = length(cs)
-        if TrashCnt < l
-            if allowPrint
-            println("Illegal match -- creating more trash ",(TrashCnt,l))
-            ts_s(chot1s)
-            ts_s(cs)
-            end
-        end
-        return TrashCnt < l
-    end
+    
     allfound = true
     for c in cards
         found = false
@@ -3949,42 +3963,44 @@ function on_mouse_down(g, pos)
         end
        gsStateMachine(gsOrganize)
        
-    elseif tusacState == tsGameLoop    
-        cindx, yPortion = mouseDownOnBox(x, y, human_state)
-        if cindx != 0
-            click_card(cindx, yPortion, playerA_hand)
-        end
-        if currentAction == gpPlay1card 
-            cindx, yPortion = mouseDownOnBox(x, y, pBseat)
-        else
-            bc = ActiveCard 
-            bx,by = big_actors[bc].pos
-            hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
-            cindx, yPortion = mouseDownOnBox(x, y, hotseat)
-        end
-        if cindx != 0
-            global GUI_array, GUI_ready
-            GUI_array = []
-            for ci in cardsIndxArr
-                ac= TuSacCards.getCards(playerA_hand, ci)
-                push!(GUI_array,ac)
-                if allowPrint
-                print("click_card, index,card=",(ci,ac))
-                println(" ",ts(ac))
+    elseif tusacState == tsGameLoop 
+        if !isGameOver()
+            cindx, yPortion = mouseDownOnBox(x, y, human_state)
+            if cindx != 0
+                click_card(cindx, yPortion, playerA_hand)
+            end
+            if currentAction == gpPlay1card 
+                cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+            else
+                bc = ActiveCard 
+                bx,by = big_actors[bc].pos
+                hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
+                cindx, yPortion = mouseDownOnBox(x, y, hotseat)
+            end
+            if cindx != 0
+                global GUI_array, GUI_ready
+                GUI_array = []
+                for ci in cardsIndxArr
+                    ac= TuSacCards.getCards(playerA_hand, ci)
+                    push!(GUI_array,ac)
+                    if allowPrint
+                    print("click_card, index,card=",(ci,ac))
+                    println(" ",ts(ac))
+                    end
                 end
-            end
-            if allowPrint
-            println("\nDanh Bai XONG ROI")
-            end
-            setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],100, false)
-            cardsIndxArr = []
-            if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
-                currentAction,currentCards,currentPlayCard)
-                updateErrorPic(1)
-                GUI_ready = false
-            else 
-                updateErrorPic(0)
-                GUI_ready = true
+                if allowPrint
+                println("\nDanh Bai XONG ROI")
+                end
+                setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],100, false)
+                cardsIndxArr = []
+                if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
+                    currentAction,currentCards,currentPlayCard)
+                    updateErrorPic(1)
+                    GUI_ready = false
+                else 
+                    updateErrorPic(0)
+                    GUI_ready = true
+                end
             end
         end
     elseif tusacState == tsRestart
