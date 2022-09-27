@@ -3754,7 +3754,11 @@ function click_card(cardIndx, yPortion, hand)
 end
 
 function badPlay(cards,player, hand,action,botCards,matchC)
-    pcard = matchC[1]
+    if length(matchC) > 0
+        pcard = matchC[1]
+    else
+        pcard = matchC
+    end
     if allowPrint
     print("Chk GUI ,matchcard ",(ts(pcard)," -- ", cards, " == ", "action=",action))
     ts_s(hand)
