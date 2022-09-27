@@ -3776,8 +3776,10 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         end
         allfound = allfound && found
         for t in allPairs[2]
-            if card_equal(c,t[1]) && length(cards) != 3
-                return true
+            if card_equal(matchC,t[1]) 
+                if length(cards) != 3 || !card_equal(cards[1],t[1]) || !card_equal(cards[2],t[1]) || !card_equal(cards[3],t[1])
+                    return true
+                end
             end
         end
     end
@@ -3854,20 +3856,21 @@ end
                     for p in ps
                         if card_equal(p[1],pcard) 
                             if length(p) == 3 
-                                if length(cards) != 3 || !card_equal(cards[1],p[1]) || !card_equal(cards[2],p[1])
                                     return true
-                                end
+                               # end
                             end
-                            if length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash(cards,hand)
-                                if allowPrint
-                                    println("BO DOI")
-                                end
-                                global boDoi += 1
-                                if boDoi > 2 
-                                    boDoi = 0
-                                    return false
-                                else
-                                    return true
+                            if length(p) == 2 
+                                if !foundSaki(pcard,miss1sbar) && !isMoreTrash(cards,hand)
+                                    if allowPrint
+                                        println("BO DOI")
+                                    end
+                                    global boDoi += 1
+                                    if boDoi > 2 
+                                        boDoi = 0
+                                        return false
+                                    else
+                                        return true
+                                    end
                                 end
                             end
                         end
@@ -3889,8 +3892,6 @@ end
                     end
                 end
             elseif length(cards) < 3
-              
-
                 moreTrash = isMoreTrash(cards,hand)
             end
         end  
