@@ -3639,7 +3639,7 @@ function restartGame()
         tusacState = tsSinitial
         gsStateMachine(gsSetupGame)
 end
-function isMoreTrash(hand)
+function isMoreTrash(cards,hand)
     if allowPrint
     println("trashCnt")
     end
@@ -3852,7 +3852,7 @@ end
             if length(cards) == 0
                 for ps in allPairs
                     for p in ps
-                        if card_equal(p[1],pcard) && length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash(hand)
+                        if card_equal(p[1],pcard) && length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash(cards,hand)
                             if allowPrint
                             println("BO DOI")
                             end
@@ -3884,7 +3884,7 @@ end
             elseif length(cards) < 3
               
 
-                moreTrash = isMoreTrash()
+                moreTrash = isMoreTrash(cards,hand)
             end
         end  
         if allowPrint
