@@ -29,6 +29,7 @@ using Sockets
 export nw_sendToMaster, nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer, 
 nw_sentToPlayer, nw_getR, serverSetup, clientSetup, allwPrint
  allowPrint = false
+
 function serverSetup(serverIP,port)
    # return(listen(ip"192.168.0.53",11029))
     return(listen(serverIP,port))
@@ -106,10 +107,12 @@ function nw_receiveFromMaster(connection,bytecnt)
 end
 
 function nw_receiveFromPlayer(id,connection,bytecnt)
+    global msgPic
     arr = []
     if allowPrint
     println(" nwAPI received from Player ", id )
     end
+  
     errCnt = 0
 
     while true
@@ -1643,13 +1646,13 @@ function scanCards(inHand, silence = false)
         chot1 = chot1Special
     end
     if silence == false && allowPrint
-        print("\nallPairs=    ")
+        print("allPairs= ")
         for ps in allPairs
             for p in ps
                 print((length(p),ts(p[1])))
             end
         end
-        print("\nsingle=       ")
+        print("\nsingle= ")
         for c in single
             print(" ", ts(c))
         end
@@ -1668,7 +1671,7 @@ function scanCards(inHand, silence = false)
             end
             print("|")
         end
-        print("\nmiss1=      ")
+        print("\nmiss1= ")
         for tc in miss1
             for c in tc
                 print(" ", ts(c))
@@ -3305,6 +3308,14 @@ function chk2(playCard)
     global coDoiCards
     function chk2Print()
         found = false
+        for m1 in miss1s # CAAE XX PM ? X
+            if card_equal(playCard, missPiece(m1[1], m1[2])) &&
+               !is_T(m1[1]) &&
+               !is_T(m1[2])
+                found = true
+                break
+            end
+        end
         for p = 1:2
             print("   pair-",p," -- ")
             for ap in allPairs[p]
@@ -3323,7 +3334,6 @@ function chk2(playCard)
                         print("@")
                         if p == 1
                             if length(coDoiCards) == 0
-                                push!(coDoiCards,ap[1],ap[2])
                                 if allowPrint
                                     println("FOUND CODOI", ( length(coDoiCards), ts(ap) ))
                                 end
@@ -3515,7 +3525,6 @@ function hgamePlay(
                 println(" checkCard=",
                 ts(pcard))
             end
-        println()
     end
    global allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
         scanCards(all_hands[gpPlayer])
@@ -3574,7 +3583,6 @@ function printHistory(n)
         for i in 1:length(ar)-1
            println(ar[i])
         end
-    
 end
 
 
@@ -3733,6 +3741,26 @@ function badPlay(cards,player, hand,action,botCards,matchC)
     end
     allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
     scanCards(hand, false)
+    function isMoreTrash()
+        if allowPrint
+        println("trashCnt")
+        end
+        TrashCnt = length(chot1s)
+        thand = deepcopy(hand)
+        for e in cards
+            filter!(x -> x != e, thand)
+        end
+        ps, ss, cs, m1s, mts, mbs,cp,cspec = scanCards(thand, true)
+        l = length(cs)
+        if TrashCnt < l
+            if allowPrint
+            println("Illegal match -- creating more trash ",(TrashCnt,l))
+            ts_s(chot1s)
+            ts_s(cs)
+            end
+        end
+        return TrashCnt < l
+    end
     allfound = true
     for c in cards
         found = false
@@ -3747,7 +3775,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         end
         allfound = allfound && found
         for t in allPairs[2]
-            if card_equal(c,t[1])
+            if card_equal(c,t[1]) && length(cards) != 3
                 return true
             end
         end
@@ -3823,22 +3851,12 @@ end
             if length(cards) == 0
                 for ps in allPairs
                     for p in ps
-                        if card_equal(p[1],pcard) && !foundSaki(pcard,miss1sbar)
+                        if card_equal(p[1],pcard) && length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash()
                             if allowPrint
                             println("BO DOI")
                             end
                             global boDoi += 1
-                            if boDoi > 2 && length(p) == 2
-                                if !is_c(pcard)
-                                    #=
-                                    for ap in p
-                                        removeCards!(all_hands,player,ap)
-                                        addCards!(all_assets,0,player,ap)
-                                        mmm = mapToActors[ap]
-                                        global mask[mmm] = mask[mmm] & 0xFE
-                                    end
-                                    =#
-                                end
+                            if boDoi > 2 
                                 boDoi = 0
                                 return false
                             else
@@ -3863,24 +3881,9 @@ end
                     end
                 end
             elseif length(cards) < 3
-                if allowPrint
-                println("trashCnt")
-                end
-                TrashCnt = length(chot1s)
-                thand = deepcopy(hand)
-                for e in cards
-                    filter!(x -> x != e, thand)
-                end
-                ps, ss, cs, m1s, mts, mbs,cp,cspec = scanCards(thand, true)
-                l = length(cs)
-                if TrashCnt < l
-                    if allowPrint
-                    println("Illegal match -- creating more trash ",(TrashCnt,l))
-                    ts_s(chot1s)
-                    ts_s(cs)
-                    end
-                    moreTrash = true
-                end
+              
+
+                moreTrash = isMoreTrash()
             end
         end  
         if allowPrint
@@ -3889,6 +3892,7 @@ end
         return !( all_in_pairs || all_in_suit) || moreTrash
     end
 end
+
 function checkForRestart()
     if isGameOver() 
         if numberOfSocketPlayer > 0
@@ -4080,7 +4084,6 @@ function draw(g)
         draw(handPic)
         draw(winnerPic)
         draw(errorPic)
-
         for i in 1:4
             draw(GUIname[i])
         end
