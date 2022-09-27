@@ -85,17 +85,11 @@ function nw_receiveFromMaster(connection,bytecnt)
         println(" nwAPI receive from Master")
     end
     arr = []
-    errCnt = 0
    while true
-    global errCnt
         arr = read(connection,bytecnt)
         if length(arr) != bytecnt
-            println(length(arr),"!=",bytecnt, " ", errCnt)
-             errCnt +=1
-            if errCnt > 10
+            println(length(arr),"!=",bytecnt)
                 exit()
-            end
-            sleep(1)
         else
             break
         end
@@ -113,18 +107,11 @@ function nw_receiveFromPlayer(id,connection,bytecnt)
     println(" nwAPI received from Player ", id )
     end
   
-    errCnt = 0
-
     while true
-        global errCnt
         arr = read(connection,bytecnt)
         if length(arr) != bytecnt
-            println(length(arr),"!=",bytecnt, " ", errCnt)
-            errCnt +=1
-            if errCnt > 10
-                exit()
-            end
-            sleep(1)
+            println(length(arr),"!=",bytecnt)
+            exit()
         else
             break
         end
@@ -3865,7 +3852,7 @@ end
             if length(cards) == 0
                 for ps in allPairs
                     for p in ps
-                        if card_equal(p[1],pcard) && length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash()
+                        if card_equal(p[1],pcard) && length(p) == 2 && !foundSaki(pcard,miss1sbar) && !isMoreTrash(hand)
                             if allowPrint
                             println("BO DOI")
                             end
