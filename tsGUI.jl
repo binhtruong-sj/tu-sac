@@ -25,397 +25,420 @@ GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
 
 module nwAPI
-using Sockets
-export nw_sendToMaster, nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer, 
-nw_sentToPlayer, nw_getR, serverSetup, clientSetup, allwPrint
- allowPrint = false
+    using Sockets
+    export nw_sendToMaster, nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer, 
+    nw_sentToPlayer, nw_getR, serverSetup, clientSetup, allwPrint
+    allowPrint = false
 
-function serverSetup(serverIP,port)
-   # return(listen(ip"192.168.0.53",11029))
-    return(listen(serverIP,port))
-end
-
-function acceptClient(s)
-    return(accept(s))
-end
-function clientSetup(serverURL,port)
-    return(connect(serverURL,port))
-end
-function allwPrint()
-    allowPrint = true
-end
-function nw_sendToMaster(id,connection,arr)
-    
-   l = length(arr)
-   if allowPrint
-    println(id,"  nwAPI Send to Master DATA=",(arr,l))
-   end
-    if l != 112
-        s_arr = Vector{UInt8}(undef,8)
-
-        s_arr[1] = l
-        for (i,a) in enumerate(arr)
-            s_arr[i+1] = a
-        end
-        if allowPrint
-        println("Data = ",s_arr)        
-        end
-    else
-        s_arr = Vector{UInt8}(undef,l)
-
-        for (i,a) in enumerate(arr)
-            s_arr[i] = a
-        end
+    function serverSetup(serverIP,port)
+    # return(listen(ip"192.168.0.53",11029))
+        return(listen(serverIP,port))
     end
-    write(connection,s_arr)
-end
 
-function nw_sendTextToMaster(id,connection,txt)
-    println(connection,txt)
-end
-
-function nw_receiveTextFromMaster(connection)
-    println("waiting to receive Text from Master")
-    return readline(connection)
-end
-
-
-function nw_receiveFromMaster(connection,bytecnt)
-    if allowPrint
-        println(" nwAPI receive from Master")
+    function acceptClient(s)
+        return(accept(s))
     end
-    arr = []
-   while true
-        arr = read(connection,bytecnt)
-        if length(arr) != bytecnt
-            println(length(arr),"!=",bytecnt)
-                exit()
-        else
-            break
-        end
+    function clientSetup(serverURL,port)
+        return(connect(serverURL,port))
     end
-    if allowPrint
-    println("nwAPI received ",arr," from master ")
+    function allwPrint()
+        allowPrint = true
     end
-    return(arr)
-end
-
-function nw_receiveFromPlayer(id,connection,bytecnt)
-    global msgPic
-    arr = []
-    if allowPrint
-    println(" nwAPI received from Player ", id )
-    end
-  
-    while true
-        arr = read(connection,bytecnt)
-        if length(arr) != bytecnt
-            println(length(arr),"!=",bytecnt)
-            exit()
-        else
-            break
-        end
-    end
-    if allowPrint
-    println("nwAPImaster received ",arr)
-    end
-return(arr)
-end
-
-function nw_receiveTextFromPlayer(id,connection)
-    return readline(connection)  
-end
-
-function nw_sendTextToPlayer(id, connection, txt)
-    if allowPrint
-    println("Sendint text=",txt," to ",id)
-    end
-    println(connection,txt)
-end
-
-function nw_sendToPlayer(id, connection, arr)
+    function nw_sendToMaster(id,connection,arr)
+        
     l = length(arr)
     if allowPrint
-    println("nwAPISend to Player ",id,"  DATA=",(arr,l))
+        println(id,"  nwAPI Send to Master DATA=",(arr,l))
     end
-     
-    if l != 112
-        s_arr = Vector{UInt8}(undef,8)
-        s_arr[1] = l
-        for (i,a) in enumerate(arr)
-            s_arr[i+1] = a
+        if l != 112
+            s_arr = Vector{UInt8}(undef,8)
+
+            s_arr[1] = l
+            for (i,a) in enumerate(arr)
+                s_arr[i+1] = a
+            end
+            if allowPrint
+            println("Data = ",s_arr)        
+            end
+        else
+            s_arr = Vector{UInt8}(undef,l)
+
+            for (i,a) in enumerate(arr)
+                s_arr[i] = a
+            end
+        end
+        write(connection,s_arr)
+    end
+
+    function nw_sendTextToMaster(id,connection,txt)
+        println(connection,txt)
+    end
+
+    function nw_receiveTextFromMaster(connection)
+        println("waiting to receive Text from Master")
+        return readline(connection)
+    end
+
+
+    function nw_receiveFromMaster(connection,bytecnt)
+        if allowPrint
+            println(" nwAPI receive from Master")
+        end
+        arr = []
+    while true
+            arr = read(connection,bytecnt)
+            if length(arr) != bytecnt
+                println(length(arr),"!=",bytecnt)
+                    exit()
+            else
+                break
+            end
         end
         if allowPrint
-        println("Data = ",s_arr)   
-        end     
-    else
-       
-        s_arr = Vector{UInt8}(undef,l)
-        for (i,a) in enumerate(arr)
-            s_arr[i] = a
+        println("nwAPI received ",arr," from master ")
         end
+        return(arr)
     end
+
+    function nw_receiveFromPlayer(id,connection,bytecnt)
+        global msgPic
+        arr = []
+        if allowPrint
+        println(" nwAPI received from Player ", id )
+        end
     
-    write(connection,s_arr)
-end
-function nw_getR(nw)
-    n = []
-     for i in 1:nw[1]
-        push!(n,nw[i+1])
-     end
-     return n
+        while true
+            arr = read(connection,bytecnt)
+            if length(arr) != bytecnt
+                println(length(arr),"!=",bytecnt)
+                exit()
+            else
+                break
+            end
+        end
+        if allowPrint
+        println("nwAPImaster received ",arr)
+        end
+    return(arr)
+    end
+
+    function nw_receiveTextFromPlayer(id,connection)
+        return readline(connection)  
+    end
+
+    function nw_sendTextToPlayer(id, connection, txt)
+        if allowPrint
+        println("Sendint text=",txt," to ",id)
+        end
+        println(connection,txt)
+    end
+
+    function nw_sendToPlayer(id, connection, arr)
+        l = length(arr)
+        if allowPrint
+        println("nwAPISend to Player ",id,"  DATA=",(arr,l))
+        end
+        
+        if l != 112
+            s_arr = Vector{UInt8}(undef,8)
+            s_arr[1] = l
+            for (i,a) in enumerate(arr)
+                s_arr[i+1] = a
+            end
+            if allowPrint
+            println("Data = ",s_arr)   
+            end     
+        else
+        
+            s_arr = Vector{UInt8}(undef,l)
+            for (i,a) in enumerate(arr)
+                s_arr[i] = a
+            end
+        end
+        
+        write(connection,s_arr)
+    end
+    function nw_getR(nw)
+        n = []
+        for i in 1:nw[1]
+            push!(n,nw[i+1])
+        end
+        return n
+    end
 end
 
-
-"""
-    nwGamePlayResult(gpPlayer)
-        this would lock-up and wait for result to be ready, return the array
-"""
-function nwGamePlayResult(gpPlayer) end
-
-end
 module TuSacCards
 
-using Random: randperm
-import Random: shuffle!
+    using Random: randperm
+    import Random: shuffle!
 
-import Base
- allowPrint = false
-# Suits/Colors
-export T, V, D, X # aliases White, Yellow, Red, Green
+    import Base
+    allowPrint = false
+    # Suits/Colors
+    export T, V, D, X # aliases White, Yellow, Red, Green
 
-# Card, and Suit
-export Card, Suit
+    # Card, and Suit
+    export Card, Suit
 
-# Card properties
-export suit, rank, high_value, low_value, color
+    # Card properties
+    export suit, rank, high_value, low_value, color
 
-# Lists of all ranks / suits
-export ranks, suits, duplicate
+    # Lists of all ranks / suits
+    export ranks, suits, duplicate
 
-# Deck & deck-related methods
-export Deck, shuffle!, ssort, full_deck, ordered_deck, ordered_deck_chot, humanShuffle!, dealCards, full_deck_chot
-export getCards, rearrange, sort!, rcut, moveCards!
-export test_deck, getDeckArray, newDeckUsingArray,allwPrint
-#####
-##### Types
-#####
-function allwPrint()
-    allowPrint = true
-end
-"""
-    In TuSac, cards has 4 suit of color: White,Yellow,Red,Green
-
-Encode a suit as a 2-bit value (low bits of a `UInt8`):
-- 0 = T rang (White)
-- 1 = X anh (Greed)
-- 2 = V ang (Yellow)
-- 3 = D o (Red)
-
-Suits have global constant bindings: `T`, `V`, `D`, `X`.
-"""
-struct Suit
-    i::UInt8
-    Suit(s::Integer) =
-        0 ≤ s ≤ 3 ? new(s) : throw(ArgumentError("invalid suit number: $s"))
-end
-
-
-"""
-    char
-
-Return the unicode characters:
-"""
-char(s::Suit) = Char("TVDX"[s.i+1])
-Base.string(s::Suit) = string(char(s))
-Base.show(io::IO, s::Suit) = print(io, char(s))
-
-
-"""
-Encode a playing card as a 3 bits number [4:2]
-The next 2 bits bit[6:5] encodes the suit/color. The
-bottom 2 bits bit[1:0] indicates cnt of card of same.
-
------: not used (0x0 value)
-Tuong: 1
-si   : 2
-tuong: 3
-xe   : 5
-phao : 6
-ma   : 7
-chot : 4
-The upper 1 bits bit[2] encode 'groups' as [Tuong-si-tuong],  or
-[xe-phao-ma, chot]
-
-bit[1:0] count the 4 cards for each card
-bit[6:5] encodes the colors
-"""
-
-struct Card
-    value::UInt8
-    function Card(r::Integer, s::Integer)
-        (0 <= r <= 31 && ((r & 0x1c) != 0)) ||
-            throw(ArgumentError("invalid card : $r"))
-        return new(UInt8((s << 5) | r))
+    # Deck & deck-related methods
+    export Deck, shuffle!, ssort, full_deck, ordered_deck, ordered_deck_chot, humanShuffle!, dealCards, full_deck_chot
+    export getCards, rearrange, sort!, rcut, moveCards!
+    export test_deck, getDeckArray, newDeckUsingArray,allwPrint
+    #####
+    ##### Types
+    #####
+    function allwPrint()
+        allowPrint = true
     end
-    function Card(i::Integer)
-        return new(UInt8(i))
+    """
+        In TuSac, cards has 4 suit of color: White,Yellow,Red,Green
+
+    Encode a suit as a 2-bit value (low bits of a `UInt8`):
+    - 0 = T rang (White)
+    - 1 = X anh (Greed)
+    - 2 = V ang (Yellow)
+    - 3 = D o (Red)
+
+    Suits have global constant bindings: `T`, `V`, `D`, `X`.
+    """
+    struct Suit
+        i::UInt8
+        Suit(s::Integer) =
+            0 ≤ s ≤ 3 ? new(s) : throw(ArgumentError("invalid suit number: $s"))
     end
-    #=
-    function Card(v::Vector{Any})
-        Card[Card(e) for e in v]
+
+
+    """
+        char
+
+    Return the unicode characters:
+    """
+    char(s::Suit) = Char("TVDX"[s.i+1])
+    Base.string(s::Suit) = string(char(s))
+    Base.show(io::IO, s::Suit) = print(io, char(s))
+
+
+    """
+    Encode a playing card as a 3 bits number [4:2]
+    The next 2 bits bit[6:5] encodes the suit/color. The
+    bottom 2 bits bit[1:0] indicates cnt of card of same.
+
+    -----: not used (0x0 value)
+    Tuong: 1
+    si   : 2
+    tuong: 3
+    xe   : 5
+    phao : 6
+    ma   : 7
+    chot : 4
+    The upper 1 bits bit[2] encode 'groups' as [Tuong-si-tuong],  or
+    [xe-phao-ma, chot]
+
+    bit[1:0] count the 4 cards for each card
+    bit[6:5] encodes the colors
+    """
+
+    struct Card
+        value::UInt8
+        function Card(r::Integer, s::Integer)
+            (0 <= r <= 31 && ((r & 0x1c) != 0)) ||
+                throw(ArgumentError("invalid card : $r"))
+            return new(UInt8((s << 5) | r))
+        end
+        function Card(i::Integer)
+            return new(UInt8(i))
+        end
+        #=
+        function Card(v::Vector{Any})
+            Card[Card(e) for e in v]
+        end
+        =#
     end
-    =#
-end
 
-Card(r::Integer, s::Suit) = Card(r, s.i)
+    Card(r::Integer, s::Suit) = Card(r, s.i)
 
-"""
-    suit(::Card)
-The suit (color) of a card  bit[6:5]
-"""
-suit(c::Card) = Suit((0x60 & c.value) >>> 5)
+    """
+        suit(::Card)
+    The suit (color) of a card  bit[6:5]
+    """
+    suit(c::Card) = Suit((0x60 & c.value) >>> 5)
 
-"""
-    rank(::Card)
+    """
+        rank(::Card)
 
-The rank of a card
-"""
-rank(c::Card) = UInt8((c.value & 0x1f))
-getvalue(c::Card) = UInt8(c.value)
-const T = Suit(0)
-const V = Suit(1)
-const D = Suit(2)
-const X = Suit(3)
+    The rank of a card
+    """
+    rank(c::Card) = UInt8((c.value & 0x1f))
+    getvalue(c::Card) = UInt8(c.value)
+    const T = Suit(0)
+    const V = Suit(1)
+    const D = Suit(2)
+    const X = Suit(3)
 
-# Allow constructing cards with, e.g., `3♡`
-Base.:*(r::Integer, s::Suit) = Card(r, s)
+    # Allow constructing cards with, e.g., `3♡`
+    Base.:*(r::Integer, s::Suit) = Card(r, s)
 
-function Base.show(io::IO, c::Card)
-    r = rank(c)
-    rd = r >> 2
-    @assert (rd != 0)
-    print(io, "Tstcxpm"[rd])
-    print(io, suit(c))
-end
-
-function rank_string(r::UInt8)
-    rr = r >> 2
-    @assert rr > 0
-
-    return ("Tstcxpm"[rr])
-end
-
-Base.string(card::Card) = rank_string(rank(card)) * string(suit(card))
-
-"""
-    high_value(::Card)
-    high_value(::Rank)
-
-The high rank value. For example:
- - `Rank(1)` -> 14 (use [`low_value`](@ref) for the low Ace value.)
- - `Rank(5)` -> 5
-"""
-high_value(c::Card) = rank(c) # no meaning in Tusax
-
-"""
-    low_value(::Card)
-    low_value(::Rank)
-
-The low rank value. For example:
- - `Rank(1)` -> 1 (use [`high_value`](@ref) for the high Ace value.)
- - `Rank(5)` -> 5
-"""
-low_value(c::Card) = rank(c)
-
-"""
-    color(::Card)
-
-A `Symbol` (`:red`, or `:black`) indicating
-the color of the suit or card.
-"""
-function color(s::Suit)
-    if s == 'D'
-        return :red
-    elseif s == 'T'
-        return :white
-    elseif s == 'V'
-        return :yellow
-    else
-        return :green
+    function Base.show(io::IO, c::Card)
+        r = rank(c)
+        rd = r >> 2
+        @assert (rd != 0)
+        print(io, "Tstcxpm"[rd])
+        print(io, suit(c))
     end
-end
-color(card::Card) = color(suit(card))
 
-#####
-##### Full deck/suit/rank methods
-#####
+    function rank_string(r::UInt8)
+        rr = r >> 2
+        @assert rr > 0
 
-"""
-    ranks
-
-A Tuple of ranks `1:7`.
-"""
-ranks() = 1:7
-
-"""
- For each card, there are duplicate of 4
-"""
-duplicate() = 0:3
-
-"""
-    suits
-
-A Tuple of all suits
-"""
-suits() = (T, V, D, X)
-
-"""
-    full_deck
-
-A vector of a cards
-containing a full deck
-"""
-full_deck() = Card[
-    Card((r << 2 | d), s) for s in suits() for d in duplicate() for r in ranks()
-]
-
-full_deck_chot() =  Card[
-    Card((d|4<<2), s) for s in suits() for d in duplicate()]
-
-function test_deck()
-    boid = []
-    for i = 1:5
-        a = Actor("p1.png")
-        a.pos = (100, 100)
-        push!(boid, a)
+        return ("Tstcxpm"[rr])
     end
-end
 
-#### Deck
+    Base.string(card::Card) = rank_string(rank(card)) * string(suit(card))
 
-"""
-    Deck
+    """
+        high_value(::Card)
+        high_value(::Rank)
 
-Deck of cards (backed by a `Vector{Card}`)
-"""
-struct Deck{C<:Vector}
-    cards::C
-end
+    The high rank value. For example:
+    - `Rank(1)` -> 14 (use [`low_value`](@ref) for the low Ace value.)
+    - `Rank(5)` -> 5
+    """
+    high_value(c::Card) = rank(c) # no meaning in Tusax
 
-Deck(arr) = Card[Card(a) for a in arr ]
+    """
+        low_value(::Card)
+        low_value(::Rank)
 
-newDeckUsingArray(arr) = Card[Card(a) for a in arr ]
+    The low rank value. For example:
+    - `Rank(1)` -> 1 (use [`high_value`](@ref) for the high Ace value.)
+    - `Rank(5)` -> 5
+    """
+    low_value(c::Card) = rank(c)
 
-is_c(v) = ((v & 0x1C) == 0x10)
+    """
+        color(::Card)
 
-function ssort(deck::Deck)
+    A `Symbol` (`:red`, or `:black`) indicating
+    the color of the suit or card.
+    """
+    function color(s::Suit)
+        if s == 'D'
+            return :red
+        elseif s == 'T'
+            return :white
+        elseif s == 'V'
+            return :yellow
+        else
+            return :green
+        end
+    end
+    color(card::Card) = color(suit(card))
+
+    #####
+    ##### Full deck/suit/rank methods
+    #####
+
+    """
+        ranks
+
+    A Tuple of ranks `1:7`.
+    """
+    ranks() = 1:7
+
+    """
+    For each card, there are duplicate of 4
+    """
+    duplicate() = 0:3
+
+    """
+        suits
+
+    A Tuple of all suits
+    """
+    suits() = (T, V, D, X)
+
+    """
+        full_deck
+
+    A vector of a cards
+    containing a full deck
+    """
+    full_deck() = Card[
+        Card((r << 2 | d), s) for s in suits() for d in duplicate() for r in ranks()
+    ]
+
+    full_deck_chot() =  Card[
+        Card((d|4<<2), s) for s in suits() for d in duplicate()]
+
+    function test_deck()
+        boid = []
+        for i = 1:5
+            a = Actor("p1.png")
+            a.pos = (100, 100)
+            push!(boid, a)
+        end
+    end
+
+    #### Deck
+
+    """
+        Deck
+
+    Deck of cards (backed by a `Vector{Card}`)
+    """
+    struct Deck{C<:Vector}
+        cards::C
+    end
+
+    Deck(arr) = Card[Card(a) for a in arr ]
+
+    newDeckUsingArray(arr) = Card[Card(a) for a in arr ]
+
+    is_c(v) = ((v & 0x1C) == 0x10)
+
+    function ssort(deck::Deck)
+        ar = []
+        for c in deck
+            push!(ar, c.value)
+        end
+        sort!(ar)
+        cr = []
+        for (i,a) in enumerate(ar)
+            if is_c(a)
+                push!(cr,a)
+            end
+        end
+        filter!(!is_c,ar)
+        for ce in cr
+            push!(ar,ce)
+        end
+        
+        idx = []
+        for a in ar
+            for (i, card) in enumerate(deck)
+                if a == card.value
+                    push!(idx, i)
+                    break
+                end
+            end
+        end
+        deck.cards .= deck.cards[idx]
+        deck
+    end
+    function ssort(deck::Vector{Card})
     ar = []
     for c in deck
         push!(ar, c.value)
     end
     sort!(ar)
     cr = []
+
     for (i,a) in enumerate(ar)
         if is_c(a)
             push!(cr,a)
@@ -425,7 +448,6 @@ function ssort(deck::Deck)
     for ce in cr
         push!(ar,ce)
     end
-    
     idx = []
     for a in ar
         for (i, card) in enumerate(deck)
@@ -435,276 +457,272 @@ function ssort(deck::Deck)
             end
         end
     end
-    deck.cards .= deck.cards[idx]
+    deck .= deck[idx]
     deck
-end
-function ssort(deck::Vector{Card})
-ar = []
-for c in deck
-    push!(ar, c.value)
-end
-sort!(ar)
-cr = []
-
-for (i,a) in enumerate(ar)
-    if is_c(a)
-        push!(cr,a)
     end
-end
-filter!(!is_c,ar)
-for ce in cr
-    push!(ar,ce)
-end
-idx = []
-for a in ar
-    for (i, card) in enumerate(deck)
-        if a == card.value
-            push!(idx, i)
-            break
-        end
-    end
-end
-deck .= deck[idx]
-deck
-end
-function rcut(deck::Deck)
-    r = rand(30:90)
-    idx = union(collect(r:112), collect(1:r-1))
-    deck.cards .= deck.cards[idx]
-    deck
-end
-
-function rearrange(hand::Deck, arr, dst)
-    a = collect(1:length(hand))
-    c = 0
-    for i in arr
-        if (i != dst)
-            splice!(a, i - c)
-            c += 1
-        end
-    end
-    sort!(arr)
-    for (i, n) in enumerate(a)
-        if n == dst
-            splice!(a, i, arr)
-            break
-        end
+    function rcut(deck::Deck)
+        r = rand(30:90)
+        idx = union(collect(r:112), collect(1:r-1))
+        deck.cards .= deck.cards[idx]
+        deck
     end
 
-    hand.cards .= hand.cards[a]
-    hand
-end
-function getCards(deck::Deck, id)
-    if id > length(deck)
-        return 0
-    end
-    if id == 0
-        ra = []
-        for c in deck
-            push!(ra, c.value)
+    function rearrange(hand::Deck, arr, dst)
+        a = collect(1:length(hand))
+        c = 0
+        for i in arr
+            if (i != dst)
+                splice!(a, i - c)
+                c += 1
+            end
         end
-    else
-        ra = 0
-        for (i, c) in enumerate(deck)
-            if i == id
-                ra = c.value
+        sort!(arr)
+        for (i, n) in enumerate(a)
+            if n == dst
+                splice!(a, i, arr)
                 break
             end
         end
+
+        hand.cards .= hand.cards[a]
+        hand
     end
-    return ra
-end
-
-
-Base.length(deck::Deck) = length(deck.cards)
-Base.iterate(deck::Deck, state = 1) = Base.iterate(deck.cards, state)
-Base.sort!(deck::Deck) = sort!(deck.cards)
-
-function Base.show(io::IO, deck::Deck)
-    for (i, card) in enumerate(deck)
-        Base.show(io, card)
-            print(io, " ")
-    end
-end
-
-"""
-    pop!(deck::Deck, n::Int = 1)
-    pop!(deck::Deck, card::Card)
-Remove `n` cards from the `deck`.
-or
-Remove `card` from the `deck`.
-"""
-Base.pop!(deck::Deck, n::Integer = 1) =
-    collect(ntuple(i -> pop!(deck.cards), n))
-function Base.pop!(deck::Deck, card::Card)
-    L0 = length(deck)
-    filter!(x -> x ≠ card, deck.cards)
-    L0 == length(deck) + 1 || error("Could not pop $(card) from deck.")
-    return card
-end
-
-"""
-push!
-push!(deck::Deck, cards::Vector{Card})
-#add `cards` to Deck
-"""
-function Base.push!(deck::Deck, ncard)
-    push!(deck.cards, ncard)
-end
-function Base.push!(deck::Deck, ncards::Vector{Card})
-    for card in ncards
-        push!(deck.cards, card)
-    end
-end
-
-"""
-    moveCards!(toDeck::Deck, fDeck::Deck, cards::Deck)
-        move cards from fDeck to toDeck
-"""
-function moveCards!(toDeck::Deck, fDeck::Deck, cards::Deck)
-    L0 = length(fDeck)
-    for card in cards
-        filter!(x -> x ≠ card, fDeck.cards)
-        push!(toDeck.cards, card)
-    end
-    L0 == length(deck) + length(cards) ||
-        error("Could not pop $(card) from deck.")
-end
-
-"""
-    ordered_deck
-
-An ordered `Deck` of cards.
-"""
-ordered_deck() = Deck(full_deck())
-ordered_deck_chot() = Deck(full_deck_chot())
-
-"""
-    shuffle!
-
-Shuffle the deck! `shuffle!` uses
-`Random.randperm` to shuffle the deck.
-"""
-function shuffle!(deck::Deck)
-    if allowPrint
-    println("\nSHUFFLE -- random")
-    end
-    deck.cards .= deck.cards[randperm(length(deck.cards))]
-    deck
-end
-
-lowhi(r1, r2) = r1 > r2 ? (r2, r1) : (r1, r2)
-nextWrap(n::Int, d::Int, max::Int) = ((n + d) > max) ? 1 : (n + d)
-
-"""
-"""
-function getDeckArray(deck::Deck)
-    l = length(deck)
-    a = Vector{UInt8}(undef,l)
-    i = 1
-    for card in deck
-        a[i] = card.value
-        i += 1
-    end
-    return a
-end
-"""
-"""
-function getDeckArray(deck::Vector{Card})
-    l = length(deck)
-    a = Vector{UInt8}(undef,l)
-    i = 1
-    for card in deck
-        a[i] = card.value
-        i += 1
-    end
-    return a
-end
-
-#=
-function newDeckUsingArray(arr)
-    newDeck = []
-    for a in arr
-        push!(newDeck,Card(a))
-d    end
-end
-=#
-
-"""
-autoShuffle:
-    gradienDir - (20 or 40) +/- 4
-
-    - is up/left
-    + is down/right
-"""
-function humanShuffle!(deck::Deck, ySize, gradienDir)
-    """
-        deckCut(dir, a)
-        direction: 1,0 ->  hor+right
-                0,1 -> ver+down
-                    30+/- or 40+/-
-    """
-    function deckCut(dir, a)
-        cardGrid = 4
-        r, c = size(a)
-        for dr in dir
-            if dr < 2
-                rangeH = dr == 0 ? r : c
-                rangeL = 1
-                dr = dr + 29
-            else
-                if dr > 30
-                    g = abs(dr - 40)
-                    Grid = div(r, cardGrid)
-                else
-                    g = abs(dr - 20)
-                    Grid = div(c, cardGrid)
-                end
-                rangeL, rangeH = g * Grid + 1, (g + 1) * Grid
+    function getCards(deck::Deck, id)
+        if id > length(deck)
+            return 0
+        end
+        if id == 0
+            ra = []
+            for c in deck
+                push!(ra, c.value)
             end
-            crl, crh = lowhi(rand(rangeL:rangeH), rand(rangeL:rangeH))
-            if dr < 30
-                #Horizontally
-                cl, ch = crl, crh
-                rr = rand(2:r)
-                for col = cl:ch
-                    save = a[:, col]
-                    for n = 1:r
-                        rr = nextWrap(rr, 1, r)
-                        a[n, col] = save[rr]
-                    end
-                    #rr = nextWrap(rr,1,r)
-                end
-            else
-                #rl,rh set the BACKGROUND
-                rl, rh = crl, crh
-                #rc set starting point to rotate
-                rc = rand(2:c)
-                for row = rl:rh
-                    save = a[row, :]
-                    for n = 1:c
-                        rc = nextWrap(rc, 1, c)
-                        a[row, n] = save[rc]
-                    end
-                    #rc = nextWrap(rc,1,c)
+        else
+            ra = 0
+            for (i, c) in enumerate(deck)
+                if i == id
+                    ra = c.value
+                    break
                 end
             end
         end
+        return ra
     end
-    ###-------------------------------------------
 
-    a = collect(1:112)
-    b = reshape(a, ySize, :)
 
-    deckCut(gradienDir, b)
-    a = reshape(b, :, 1)
-    deck.cards .= deck.cards[a]
-    r = rand(1:100)
-    if r < 10
-        deck = rcut(deck)
+
+
+    Base.length(deck::Deck) = length(deck.cards)
+    Base.iterate(deck::Deck, state = 1) = Base.iterate(deck.cards, state)
+    Base.sort!(deck::Deck) = sort!(deck.cards)
+
+    function Base.show(io::IO, deck::Deck)
+        for (i, card) in enumerate(deck)
+            Base.show(io, card)
+                print(io, " ")
+        end
     end
-    deck
-end
+
+    """
+        pop!(deck::Deck, n::Int = 1)
+        pop!(deck::Deck, card::Card)
+    Remove `n` cards from the `deck`.
+    or
+    Remove `card` from the `deck`.
+    """
+    Base.pop!(deck::Deck, n::Integer = 1) =
+        collect(ntuple(i -> pop!(deck.cards), n))
+    function Base.pop!(deck::Deck, card::Card)
+        L0 = length(deck)
+        filter!(x -> x ≠ card, deck.cards)
+        L0 == length(deck) + 1 || error("Could not pop $(card) from deck.")
+        return card
+    end
+
+    """
+    push!
+    push!(deck::Deck, cards::Vector{Card})
+    #add `cards` to Deck
+    """
+    function Base.push!(deck::Deck, ncard)
+        push!(deck.cards, ncard)
+    end
+    function Base.push!(deck::Deck, ncards::Vector{Card})
+        for card in ncards
+            push!(deck.cards, card)
+        end
+    end
+
+    """
+        moveCards!(toDeck::Deck, fDeck::Deck, cards::Deck)
+            move cards from fDeck to toDeck
+    """
+    function moveCards!(toDeck::Deck, fDeck::Deck, cards::Deck)
+        L0 = length(fDeck)
+        for card in cards
+            filter!(x -> x ≠ card, fDeck.cards)
+            push!(toDeck.cards, card)
+        end
+        L0 == length(deck) + length(cards) ||
+            error("Could not pop $(card) from deck.")
+    end
+    card_equal(a, b) = ((a & 0xFC) == (b & 0xFC))
+
+    function removeCards!(hand::Deck, aline::String)
+        grank = "Tstcxpm"
+        gcolor = "TVDX"
+        tohand = []
+        function find1(c, str)
+            for i = 1:length(str)
+                if c == str[i]
+                    return i
+                end
+            end
+            return 0
+        end
+        aStrToVal(s) =
+        (UInt8(find1(s[1], grank)) << 2) | (UInt8(find1(s[2], gcolor) - 1) << 5)
+        str = split(aline, ' ')
+        for s in str
+            if length(s) ==0
+                break
+            end
+            v = aStrToVal(s)
+            for (i,c) in enumerate(hand)
+                if card_equal(c.value, v)
+                    push!(tohand, c)
+                    pop!(hand,c)
+                    break
+                end
+            end
+           
+        end
+        return tohand
+    end
+
+    """
+        ordered_deck
+    An ordered `Deck` of cards.
+    """
+    ordered_deck() = Deck(full_deck())
+    ordered_deck_chot() = Deck(full_deck_chot())
+
+    """
+        shuffle!
+
+    Shuffle the deck! `shuffle!` uses
+    `Random.randperm` to shuffle the deck.
+    """
+    function shuffle!(deck::Deck)
+        if allowPrint
+        println("\nSHUFFLE -- random")
+        end
+        deck.cards .= deck.cards[randperm(length(deck.cards))]
+        deck
+    end
+
+    lowhi(r1, r2) = r1 > r2 ? (r2, r1) : (r1, r2)
+    nextWrap(n::Int, d::Int, max::Int) = ((n + d) > max) ? 1 : (n + d)
+
+    """
+    """
+    function getDeckArray(deck::Deck)
+        l = length(deck)
+        a = Vector{UInt8}(undef,l)
+        i = 1
+        for card in deck
+            a[i] = card.value
+            i += 1
+        end
+        return a
+    end
+    """
+    """
+    function getDeckArray(deck::Vector{Card})
+        l = length(deck)
+        a = Vector{UInt8}(undef,l)
+        i = 1
+        for card in deck
+            a[i] = card.value
+            i += 1
+        end
+        return a
+    end
+
+    """
+    autoShuffle:
+        gradienDir - (20 or 40) +/- 4
+
+        - is up/left
+        + is down/right
+    """
+    function humanShuffle!(deck::Deck, ySize, gradienDir)
+        """
+            deckCut(dir, a)
+            direction: 1,0 ->  hor+right
+                    0,1 -> ver+down
+                        30+/- or 40+/-
+        """
+        function deckCut(dir, a)
+            cardGrid = 4
+            r, c = size(a)
+            for dr in dir
+                if dr < 2
+                    rangeH = dr == 0 ? r : c
+                    rangeL = 1
+                    dr = dr + 29
+                else
+                    if dr > 30
+                        g = abs(dr - 40)
+                        Grid = div(r, cardGrid)
+                    else
+                        g = abs(dr - 20)
+                        Grid = div(c, cardGrid)
+                    end
+                    rangeL, rangeH = g * Grid + 1, (g + 1) * Grid
+                end
+                crl, crh = lowhi(rand(rangeL:rangeH), rand(rangeL:rangeH))
+                if dr < 30
+                    #Horizontally
+                    cl, ch = crl, crh
+                    rr = rand(2:r)
+                    for col = cl:ch
+                        save = a[:, col]
+                        for n = 1:r
+                            rr = nextWrap(rr, 1, r)
+                            a[n, col] = save[rr]
+                        end
+                        #rr = nextWrap(rr,1,r)
+                    end
+                else
+                    #rl,rh set the BACKGROUND
+                    rl, rh = crl, crh
+                    #rc set starting point to rotate
+                    rc = rand(2:c)
+                    for row = rl:rh
+                        save = a[row, :]
+                        for n = 1:c
+                            rc = nextWrap(rc, 1, c)
+                            a[row, n] = save[rc]
+                        end
+                        #rc = nextWrap(rc,1,c)
+                    end
+                end
+            end
+        end
+        ###-------------------------------------------
+
+        a = collect(1:112)
+        b = reshape(a, ySize, :)
+
+        deckCut(gradienDir, b)
+        a = reshape(b, :, 1)
+        deck.cards .= deck.cards[a]
+        r = rand(1:100)
+        if r < 10
+            deck = rcut(deck)
+        end
+        deck
+    end
 
 end # module
 ######################################################################
@@ -723,8 +741,12 @@ serverPort = 11029
 serverIP = ip"192.168.0.35"
 GAMEW =900
 GENERIC = 3
+histFile = false
+reloadFile = false
+RFindex = ""
 hints = 0
 GUI = true
+RF = 0
 NAME= "PLayer?"
 fontSize = 50
 if allowPrint
@@ -765,7 +787,7 @@ function config(fn)
         for line in cfg_str
             global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,
             mode_human,serverURL,serverIP,serverPort, hints,allowPrint,
-            GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC
+            GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,RFindex
             rl = split(line,' ')
             if rl[1] == "name"
                 NAME = rl[2]
@@ -814,6 +836,13 @@ function config(fn)
                 end
             elseif rl[1] == "macOS"
                 macOS = rl[2] == "true"
+            elseif rl[1] == "histFile"
+                histFile = true
+                HF = open(rl[2],"w") 
+            elseif rl[1] == "reloadFile"
+                reloadFile = true
+                RF = open(rl[2],"r") 
+                RFindex = rl[3]
             elseif rl[1] == "GUI"
                     global GUI = rl[2] == "true"
             end
@@ -833,6 +862,7 @@ prevWinner = 1
 (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
+
 if coldStart
     eRrestart = false
 end
@@ -1163,78 +1193,113 @@ array of boxes where cards are stay within
 """
 boxes = []
 
-function tusacDeal(winner)
+function tusacDeal(winner,reloadFile,RF,RFindex)
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
-    global playerA_assets,playerB_assets,playerC_assets,playerD_assets
-    P0_hand = TuSacCards.Deck(pop!(gameDeck, 6))
-    if allowPrint
-        println()
-        println(gameDeck)
-        println(P0_hand)
-    end
-    P1_hand = TuSacCards.Deck(pop!(gameDeck, 5))
-    P2_hand = TuSacCards.Deck(pop!(gameDeck, 5))
-    P3_hand = TuSacCards.Deck(pop!(gameDeck, 5))
-    for i = 2:4
-        push!(P0_hand, pop!(gameDeck, 5))
-        push!(P1_hand, pop!(gameDeck, 5))
-        push!(P2_hand, pop!(gameDeck, 5))
-        push!(P3_hand, pop!(gameDeck, 5))
-    end
-    rPlayer = 5 + myPlayer - winner
-    playerSel = rPlayer > 4 ? rPlayer - 4 : rPlayer
-    if allowPrint
-        println("prev-winner,sel", (winner,playerSel,myPlayer,rPlayer))
-    end
-    if playerSel == 1
-        playerA_hand = P0_hand
-        playerB_hand = P1_hand
-        playerC_hand = P2_hand
-        playerD_hand = P3_hand
-    elseif playerSel == 2
-        playerA_hand = P1_hand
-        playerB_hand = P2_hand
-        playerC_hand = P3_hand
-        playerD_hand = P0_hand
-    elseif playerSel == 3
-        playerA_hand = P2_hand
-        playerB_hand = P3_hand
-        playerC_hand = P0_hand
-        playerD_hand = P1_hand
-    else
-        playerA_hand = P3_hand
-        playerB_hand = P0_hand
-        playerC_hand = P1_hand
-        playerD_hand = P2_hand
-    end
-    FaceDown = true
-    setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
-    setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
-    setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
+    global playerA_assets,playerB_assets,playerC_assets,playerD_assets,gameDeck
+    global RFstates
 
-    global pBseat = setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
-    global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
+    if reloadFile
+        while true
+            readline(RF);readline(RF);readline(RF);readline(RF);
+            readline(RF);readline(RF);readline(RF);readline(RF);
+            readline(RF);readline(RF);readline(RF);readline(RF);
+            readline(RF);
+            RFstates = split(readline(RF),", ")
+            if RFstates[1] == RFindex
+                break
+            end
+        end
+        playerA_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerB_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerC_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerD_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+       
+        playerA_assets = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerB_assets = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerC_assets = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerD_assets = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
 
-    global playerA_discards = TuSacCards.Deck(pop!(gameDeck, 1))
-    global playerB_discards = TuSacCards.Deck(pop!(gameDeck, 1))
-    global playerC_discards = TuSacCards.Deck(pop!(gameDeck, 1))
-    global playerD_discards = TuSacCards.Deck(pop!(gameDeck, 1))
- 
-    global playerA_assets = TuSacCards.Deck(pop!(gameDeck, 1))
-    global playerB_assets = TuSacCards.Deck(pop!(gameDeck, 1))
-    global playerC_assets = TuSacCards.Deck(pop!(gameDeck, 1))
-    global playerD_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+        playerA_discards = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerB_discards = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerC_discards = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        playerD_discards = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        gd = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        gameDeck = deepcopy(gd)
+        RFstates = split(readline(RF),", ")
+        if allowPrint
+            println(RFstates)
+        end
+≈    else
+        P0_hand = TuSacCards.Deck(pop!(gameDeck, 6))
+        if allowPrint
+            println()
+            println(gameDeck)
+            println(P0_hand)
+        end
+        P1_hand = TuSacCards.Deck(pop!(gameDeck, 5))
+        P2_hand = TuSacCards.Deck(pop!(gameDeck, 5))
+        P3_hand = TuSacCards.Deck(pop!(gameDeck, 5))
+        for i = 2:4
+            push!(P0_hand, pop!(gameDeck, 5))
+            push!(P1_hand, pop!(gameDeck, 5))
+            push!(P2_hand, pop!(gameDeck, 5))
+            push!(P3_hand, pop!(gameDeck, 5))
+        end
+        rPlayer = 5 + myPlayer - winner
+        playerSel = rPlayer > 4 ? rPlayer - 4 : rPlayer
+        if allowPrint
+            println("prev-winner,sel", (winner,playerSel,myPlayer,rPlayer))
+        end
+        if playerSel == 1
+            playerA_hand = P0_hand
+            playerB_hand = P1_hand
+            playerC_hand = P2_hand
+            playerD_hand = P3_hand
+        elseif playerSel == 2
+            playerA_hand = P1_hand
+            playerB_hand = P2_hand
+            playerC_hand = P3_hand
+            playerD_hand = P0_hand
+        elseif playerSel == 3
+            playerA_hand = P2_hand
+            playerB_hand = P3_hand
+            playerC_hand = P0_hand
+            playerD_hand = P1_hand
+        else
+            playerA_hand = P3_hand
+            playerB_hand = P0_hand
+            playerC_hand = P1_hand
+            playerD_hand = P2_hand
+        end
+        FaceDown = true
+        setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
+        setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
+        setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
 
-    push!(gameDeck,pop!(playerD_assets,1))
-    push!(gameDeck,pop!(playerC_assets,1))
-    push!(gameDeck,pop!(playerB_assets,1))
-    push!(gameDeck,pop!(playerA_assets,1))
+        global pBseat = setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
+        global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
 
-    push!(gameDeck,pop!(playerD_discards,1))
-    push!(gameDeck,pop!(playerC_discards,1))
-    push!(gameDeck,pop!(playerB_discards,1))
-    push!(gameDeck,pop!(playerA_discards,1))
+        global playerA_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+        global playerB_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+        global playerC_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+        global playerD_discards = TuSacCards.Deck(pop!(gameDeck, 1))
+    
+        global playerA_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+        global playerB_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+        global playerC_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+        global playerD_assets = TuSacCards.Deck(pop!(gameDeck, 1))
+
+        push!(gameDeck,pop!(playerD_assets,1))
+        push!(gameDeck,pop!(playerC_assets,1))
+        push!(gameDeck,pop!(playerB_assets,1))
+        push!(gameDeck,pop!(playerA_assets,1))
+
+        push!(gameDeck,pop!(playerD_discards,1))
+        push!(gameDeck,pop!(playerC_discards,1))
+        push!(gameDeck,pop!(playerB_discards,1))
+        push!(gameDeck,pop!(playerA_discards,1))
+    end
     replayHistory(0)
 
 end
@@ -2542,7 +2607,7 @@ end
 
 global openAllCard = false
 function SNAPSHOT()
-    currentStates =[glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard]
+    currentStates =glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard
     anE= []
     anE = deepcopy(
         [playerA_hand,
@@ -2558,7 +2623,28 @@ function SNAPSHOT()
         playerC_discards,
         playerD_discards,
         gameDeck,currentStates])
-    push!(HISTORY,anE)
+        push!(HISTORY,anE)
+
+        if histFile
+            println(HF,playerA_hand)
+            println(HF,playerB_hand)
+            println(HF,playerC_hand)
+            println(HF,playerD_hand)
+
+            println(HF,playerA_assets)
+            println(HF,playerB_assets)
+            println(HF,playerC_assets)
+            println(HF,playerD_assets)
+
+            println(HF,playerA_discards)
+            println(HF,playerB_discards)
+            println(HF,playerC_discards)
+            println(HF,playerD_discards)
+            println(HF,gameDeck)
+
+            println(HF,currentStates)
+            flush(HF)
+        end
 end
 
 function playersSyncDeck!(deck::TuSacCards.Deck)
@@ -2875,7 +2961,8 @@ global GUI_ready = false
                 println("Prev Game Winner =", gameEnd)
             end
             prevWinner = gameEnd
-            tusacDeal(prevWinner)
+            println(("\nreloadfile",reloadFile))
+            tusacDeal(prevWinner,reloadFile, RF, RFindex)
             gameOver(0)
             organizeHand(playerA_hand)
             organizeHand(playerB_hand)
@@ -2891,30 +2978,30 @@ global GUI_ready = false
                 println("\nDealing is completed,prevWinner=",prevWinner)
             end
             getData_all_discard_assets()
-    
-        for i in 1:4
-            allPairs = []
-            allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
-             scanCards(all_hands[i])
-            for pss in allPairs
-                for ps in pss
-                    if length(ps) == 4
-                        if allowPrint
-                            println(ps[1],ps[2],ps[3],ps[4])
+        if !reloadFile
+            for i in 1:4
+                allPairs = []
+                allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
+                scanCards(all_hands[i])
+                for pss in allPairs
+                    for ps in pss
+                        if length(ps) == 4
+                            if allowPrint
+                                println(ps[1],ps[2],ps[3],ps[4])
+                            end
+                            removeCards!(all_hands,i,ps[1])
+                            removeCards!(all_hands,i,ps[2])
+                            removeCards!(all_hands,i,ps[3])
+                            removeCards!(all_hands,i,ps[4])
+                            addCards!(all_assets,0,i,ps[1])
+                            addCards!(all_assets,0,i,ps[2])
+                            addCards!(all_assets,0,i,ps[3])
+                            addCards!(all_assets,0,i,ps[4])
                         end
-                        removeCards!(all_hands,i,ps[1])
-                        removeCards!(all_hands,i,ps[2])
-                        removeCards!(all_hands,i,ps[3])
-                        removeCards!(all_hands,i,ps[4])
-                        addCards!(all_assets,0,i,ps[1])
-                        addCards!(all_assets,0,i,ps[2])
-                        addCards!(all_assets,0,i,ps[3])
-                        addCards!(all_assets,0,i,ps[4])
                     end
                 end
             end
         end
-
         global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
         replayHistory(0)
         global gameEnd = 0
@@ -2922,12 +3009,19 @@ global GUI_ready = false
         println("Starting game, e-",gameEnd)
         end
         global currentAction = gpPlay1card
-        global glNeedaPlayCard = true
-        if coldStart
-            global glPrevPlayer = 1
+        if reloadFile
+            glNeedaPlayCard = RFstates[2] == "true"
+            glPrevPlayer = parse(Int, RFstates[3])
+            ActiveCard = 0
         else
-            global glPrevPlayer = prevWinner
-            global shufflePlayer = prevWinner ==  1  ? 4 : prevWinner - 1
+            global glNeedaPlayCard = true
+
+            if coldStart
+                global glPrevPlayer = 1
+            else
+                global glPrevPlayer = prevWinner
+                global shufflePlayer = prevWinner ==  1  ? 4 : prevWinner - 1
+            end
         end
         global glIterationCnt = 0
         tusacState = tsGameLoop
@@ -2951,8 +3045,8 @@ global GUI_ready = false
         else
             if length(gameDeckArray) >= gameDeckMinimum
                     if  isGameOver() == false
-                        if(rem(glIterationCnt,4) ==0)
-                        SNAPSHOT()
+                        if rem(glIterationCnt,4) == 0
+                            SNAPSHOT()
                         end
                         gamePlay1Iteration()
                     end
