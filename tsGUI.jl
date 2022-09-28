@@ -863,6 +863,8 @@ prevWinner = 1
 serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
 
+moveArray = zeros(Int,4,3)
+
 if coldStart
     eRrestart = false
 end
@@ -1277,9 +1279,7 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
         setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
         setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
 
-        global pBseat = setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
-        global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
-
+      
         global playerA_discards = TuSacCards.Deck(pop!(gameDeck, 1))
         global playerB_discards = TuSacCards.Deck(pop!(gameDeck, 1))
         global playerC_discards = TuSacCards.Deck(pop!(gameDeck, 1))
@@ -1300,6 +1300,11 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
         push!(gameDeck,pop!(playerB_discards,1))
         push!(gameDeck,pop!(playerA_discards,1))
     end
+    FaceDown = true
+
+    global pBseat = setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
+    global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
+
     replayHistory(0)
 
 end
@@ -1791,11 +1796,32 @@ function updateWinnerPic(np)
 
     winnerPic.pos = tableGridXY(gx, gy)
 end
-
 function removeCards!(array, n, cards)
+    m = playerMaptoGUI(n)
+
     for c in cards
+        if histFile
+            index = 0
+            for i in 1:4
+                if moveArray[i,1] == c
+                    index = i
+                    moveArray[i,2] = m
+                    break
+                end
+            end
+            if index == 0
+                for i in 1:4
+                    if moveArray[i,1] == 0
+                        index = i
+                        break
+                    end
+                end
+                moveArray[index,1] = c
+                moveArray[index,2] = m      
+            end      
+        end         
         if allowPrint
-        println("REMOVE ",ts(c)," from ",n," map-> ",playerMaptoGUI(n))
+            println("REMOVE ",ts(c)," from ",n," map-> ",playerMaptoGUI(n))
         end
         found = false
         for l = 1:length(array[n])
@@ -1806,7 +1832,6 @@ function removeCards!(array, n, cards)
             end
         end
         @assert found
-        m = playerMaptoGUI(n)
         FaceDown = !isGameOver()
 
         if m== 1
@@ -1844,6 +1869,26 @@ end
 function addCards!(array,arrNo, n, cards)
     m  = playerMaptoGUI(n)
     for c in cards
+        if histFile
+            index = 0
+            for i in 1:4
+                if moveArray[i,1] == c
+                    index = i
+                    moveArray[i,3] = (arrNo+1)*4 + m
+                    break
+                end
+            end
+            if index == 0
+                for i in 1:4
+                    if moveArray[i,1] == 0
+                        index = i
+                        break
+                    end
+                end
+                moveArray[index,1] = c
+                moveArray[index,3] = (arrNo+1)*4 + m
+            end
+        end
         push!(array[n], c)
         if arrNo == 0
             if m== 1
@@ -2626,6 +2671,12 @@ function SNAPSHOT()
         push!(HISTORY,anE)
 
         if histFile
+            for i in 1:4
+                if moveArray[i,1] != 0
+                    println(HF,("M",ts(moveArray[i,1]),moveArray[i,2],moveArray[i,3],0))
+                    moveArray[i,1] = 0
+                end
+            end
             println(HF,playerA_hand)
             println(HF,playerB_hand)
             println(HF,playerC_hand)
