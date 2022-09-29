@@ -863,7 +863,7 @@ prevWinner = 1
 serverPort, GAMEW,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
 
-moveArray = zeros(Int,4,3)
+moveArray = zeros(Int,16,3)
 
 if coldStart
     eRrestart = false
@@ -915,6 +915,7 @@ else
     
 end
 boDoi = 0
+bp1BoDoiCnt = 0
 zoomCardXdim = div(zoomCardYdim*cardXdim,cardYdim)
 const tableXgrid = 20
 const tableYgrid = 20
@@ -1196,10 +1197,12 @@ array of boxes where cards are stay within
 boxes = []
 
 function tusacDeal(winner,reloadFile,RF,RFindex)
-    global playerA_hand,playerB_hand,playerC_hand,playerD_hand
+    global playerA_hand,playerB_hand,playerC_hand,playerD_hand,moveArray
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets,gameDeck
     global RFstates
+
+    moveArray = zeros(Int,16,3)
 
     if reloadFile
         while true
@@ -1234,11 +1237,6 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
         end
 ≈    else
         P0_hand = TuSacCards.Deck(pop!(gameDeck, 6))
-        if allowPrint
-            println()
-            println(gameDeck)
-            println(P0_hand)
-        end
         P1_hand = TuSacCards.Deck(pop!(gameDeck, 5))
         P2_hand = TuSacCards.Deck(pop!(gameDeck, 5))
         P3_hand = TuSacCards.Deck(pop!(gameDeck, 5))
@@ -1705,8 +1703,8 @@ function scanCards(inHand, silence = false)
         end
     end
     cTrsh = c_scan(chotP,chot1Special)
-    if allowPrint
-    ts_s(cTrsh)
+    if allowPrint && !silence
+        ts_s(cTrsh)
     end
     if length(cTrsh) == 0
         chot1 = []
@@ -1802,23 +1800,16 @@ function removeCards!(array, n, cards)
     for c in cards
         if histFile
             index = 0
-            for i in 1:4
+            for i in 1:16
                 if moveArray[i,1] == c
-                    index = i
                     moveArray[i,2] = m
+                    break
+                elseif moveArray[i,1] == 0
+                    moveArray[i,1] = c
+                    moveArray[i,2] = m      
                     break
                 end
             end
-            if index == 0
-                for i in 1:4
-                    if moveArray[i,1] == 0
-                        index = i
-                        break
-                    end
-                end
-                moveArray[index,1] = c
-                moveArray[index,2] = m      
-            end      
         end         
         if allowPrint
             println("REMOVE ",ts(c)," from ",n," map-> ",playerMaptoGUI(n))
@@ -1834,7 +1825,7 @@ function removeCards!(array, n, cards)
         @assert found
         FaceDown = !isGameOver()
 
-        if m== 1
+        if m == 1
             pop!(playerA_hand,ts(c))
             if allowPrint
             println((m,playerA_hand))
@@ -1858,7 +1849,7 @@ function removeCards!(array, n, cards)
         elseif m == 4
             pop!(playerD_hand,ts(c))
             if allowPrint
-            println((m,playerD_hand))
+            println((m,":",playerD_hand))
             end
             setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
 
@@ -1870,23 +1861,15 @@ function addCards!(array,arrNo, n, cards)
     m  = playerMaptoGUI(n)
     for c in cards
         if histFile
-            index = 0
-            for i in 1:4
+            for i in 1:16
                 if moveArray[i,1] == c
-                    index = i
+                    moveArray[i,3] = (arrNo+1)*4 + m
+                    break
+                elseif moveArray[i,1] == 0
+                    moveArray[i,1] = c
                     moveArray[i,3] = (arrNo+1)*4 + m
                     break
                 end
-            end
-            if index == 0
-                for i in 1:4
-                    if moveArray[i,1] == 0
-                        index = i
-                        break
-                    end
-                end
-                moveArray[index,1] = c
-                moveArray[index,3] = (arrNo+1)*4 + m
             end
         end
         push!(array[n], c)
@@ -2671,10 +2654,12 @@ function SNAPSHOT()
         push!(HISTORY,anE)
 
         if histFile
-            for i in 1:4
+            for i in 1:16
                 if moveArray[i,1] != 0
                     println(HF,("M",ts(moveArray[i,1]),moveArray[i,2],moveArray[i,3],0))
                     moveArray[i,1] = 0
+                else
+                    break
                 end
             end
             println(HF,playerA_hand)
@@ -3019,11 +3004,8 @@ global GUI_ready = false
             organizeHand(playerB_hand)
             organizeHand(playerC_hand)
             organizeHand(playerD_hand)
-
             getData_all_hands()
             setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
-           
-
     #    end
             if allowPrint
                 println("\nDealing is completed,prevWinner=",prevWinner)
@@ -3031,15 +3013,15 @@ global GUI_ready = false
             getData_all_discard_assets()
         if !reloadFile
             for i in 1:4
-                allPairs = []
                 allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
-                scanCards(all_hands[i])
+                scanCards(all_hands[i],false)
                 for pss in allPairs
                     for ps in pss
+                        if allowPrint
+                            println("checking for Khui")
+                            println(ps,length(ps))
+                        end
                         if length(ps) == 4
-                            if allowPrint
-                                println(ps[1],ps[2],ps[3],ps[4])
-                            end
                             removeCards!(all_hands,i,ps[1])
                             removeCards!(all_hands,i,ps[2])
                             removeCards!(all_hands,i,ps[3])
@@ -3053,6 +3035,7 @@ global GUI_ready = false
                 end
             end
         end
+        println("HERE")
         global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
         replayHistory(0)
         global gameEnd = 0
@@ -3677,6 +3660,7 @@ function hgamePlay(
         @assert length(union(singles, chot1s, miss1s, missTs)) > 0
     
         global boDoi = 0
+        global bp1BoDoiCnt = 0
         cards = gpHandlePlay1Card()
         coDoi = 0
         coDoiCards = []
@@ -3898,7 +3882,58 @@ function click_card(cardIndx, yPortion, hand)
     global prevYportion = yPortion
 end
 
+function badPlay1(cards,player, hand,action,botCards,matchC)
+    global bp1BoDoiCnt
+    allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
+    scanCards(hand, true)
+    if action == gpPlay1card
+        for ps in allPairs[2]
+            if card_equal(ps[1],cards[1])
+                return true
+            end
+      
+        return (length(cards) != 1) || is_T(cards[1])
+        end
+    end
+    if length(cards) == 0 
+        for ps in allPairs[1]
+            if card_equal(ps[1],matchC[1])
+                bp1BoDoiCnt += 1
+                if bp1BoDoiCnt > 2
+                    return false
+                else
+                    return true
+                end
+            end
+        end
+        for ps in allPairs[2]
+            if card_equal(ps[1],matchC[1])
+               return true
+            end
+        end
+    else
+        newHand = cat(matchC,cards;dims=1)
+        println("COMB",newHand)
+        aps, ss, cs, m1s, mTs, m1sb,cPs,c1Specials = scanCards(newHand, true)
+        if (length(ss)+length(cs)+length(m1s)+length(mTs)) > 0
+            println("LOUSY PLAY")
+            return true
+        end
+        newHand = deepcopy(hand)
+        for e in cards
+            filter!(x -> x != e, newHand)
+        end
+        aps, ss, cs, m1s, mTs, m1sb,cPs,c1Specials = scanCards(newHand, true)
+        return (length(ss)+length(cs)+length(m1s)+length(mTs))> 
+                (length(singles)+length(chot1s)+length(miss1s)+length(missTs))
+    end
+    return false
+end
 function badPlay(cards,player, hand,action,botCards,matchC)
+    if badPlay1(cards,player, hand,action,botCards,matchC)
+        println("BADPLAY1 reject")
+        return true
+    end
     if length(matchC) > 0
         pcard = matchC[1]
     else
