@@ -2044,6 +2044,9 @@ function replayHistory(index)
     a3 = setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
     a2 = setupDrawDeck(playerB_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
     a5 = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
+    getData_all_hands()
+    getData_all_discard_assets()
+
     if tusacState < tsGameLoop
         boxes =[]
         push!(boxes,human_state,d1,d2,d3,d4, d5,d6,d7,d8, a2,a3,a4,a5)
