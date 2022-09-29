@@ -3891,9 +3891,9 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
             if card_equal(ps[1],cards[1])
                 return true
             end
-      
-        return (length(cards) != 1) || is_T(cards[1])
+            return (length(cards) != 1) || is_T(cards[1])
         end
+        return false
     end
     if length(cards) == 0 
         for ps in allPairs[1]
