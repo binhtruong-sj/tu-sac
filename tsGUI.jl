@@ -1999,7 +1999,8 @@ function addCards!(array,arrNo, n, cards)
 end
 
 function replayHistory(index)
-    global HISTORY,all_hands,all_assets,all_discards,gameDeckArray, glIterationCnt,glNeedaPlayCard,glPrevPlayer
+    global HISTORY,all_hands,all_assets,all_discards,gameDeckArray,
+     glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard
     global playerA_hand, playerA_discards, playerA_assets
     global playerB_hand, playerB_discards, playerB_assets
     global playerC_hand, playerC_discards, playerC_assets
@@ -2071,7 +2072,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
             for e in r
                 filter!(x -> x != e, thand)
             end
-            ps, ss, cs, m1s, mts, mbs = scanCards(thand, false)
+            ps, ss, cs, m1s, mts, mbs = scanCards(thand, true)
             if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
                 for m in mbs
                     if card_equal(m,r[1]) && !is_t(m) && !is_s(m)
@@ -2108,6 +2109,12 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     l2, w2 = getl(card, n2, r2)
     l3, w3 = getl(card, n3, r3)
     l4, w4 = getl(card, n4, r4)
+    if is_T(card) 
+        l2 = l2 != 4 ? 0 : 4
+        l3 = l3 != 4 ? 0 : 4
+        l4 = l4 != 4 ? 0 : 4
+    end
+
     if !play4 && (l2 == 1)
             l2 = 0
     end
@@ -3911,14 +3918,15 @@ function on_key_down(g)
                 println("Human mode to ")
             end
         elseif tusacState == tsHistory
-            dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
-            global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
-            println(HistCnt)
-            replayHistory(HistCnt)
-            printHistory(HistCnt)
+           
+
             if g.keyboard.b
-                println("Exiting History mode")
-                resize(HISTORY,HistCnt)
+                println("Exiting History mode @",HistCnt)
+                resize!(HISTORY,HistCnt)
+                l = length(HISTORY)
+                println("History:",l)
+                replayHistory(l)
+                printAllInfo()
                 tusacState = tsGameLoop
             elseif g.keyboard.SPACE
                 println("Exiting History mode")
@@ -3926,6 +3934,12 @@ function on_key_down(g)
                 replayHistory(l)
                 printHistory(l)
                 tusacState = tsGameLoop
+            else
+                dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
+                global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
+                replayHistory(HistCnt)
+                printHistory(HistCnt)
+                println(HistCnt)
             end
    
     elseif tusacState == tsGameLoop
@@ -4014,7 +4028,7 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
                     if length(cards) == 3 && 
                         card_equal(cards[2],cards[3]) && 
                         card_equal(cards[2],cards[1])
-                        return false
+                       # return false
                     else
                         return true
                     end
