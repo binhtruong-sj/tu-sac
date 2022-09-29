@@ -3574,7 +3574,7 @@ function chk2(playCard)
     for p = 1:2
         for ap in allPairs[p]
             if is_T(playCard)
-                if p == 3 && card_equal(ap[1], playCard)
+                if p == 2 && card_equal(ap[1], playCard)
                     return ap # TTTT
                 end
             elseif card_equal(ap[1], playCard)
@@ -3669,11 +3669,15 @@ function gpHandleMatch2Card(pcard)
 end
 
 function gpHandleMatch1or2Card(pcard)
-    cards = chk1(pcard)
-    if length(cards) == 0
-        cards = chk2(pcard)
+    card1 = chk1(pcard)
+    card2 = chk2(pcard)
+    if length(card2) == 3
+        return card2
+    elseif length(card1) >0
+        return card1
+    else
+        return card2
     end
-    return cards
 end
 
 """
