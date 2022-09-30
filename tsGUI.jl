@@ -19,7 +19,8 @@ PlayerList =[plBot1,plBot1,plBot1,plBot1]
 GUIname = Vector{Any}(undef,4)
 numberOfSocketPlayer = 0
 playerName = ["Binh-bot1","Binh-bot2","Binh-bot3","Binh-bot4"]
-
+coDoi = 0
+coDoiCards = []
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
@@ -2075,7 +2076,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
             for e in r
                 filter!(x -> x != e, thand)
             end
-            ps, ss, cs, m1s, mts, mbs = scanCards(thand, true)
+            ps, ss, cs, m1s, mts, mbs = scanCards(thand, false)
             if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
                 for m in mbs
                     if card_equal(m,r[1]) && !is_t(m) && !is_s(m)
@@ -3764,11 +3765,11 @@ function hgamePlay(
    global allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
         scanCards(all_hands[gpPlayer])
      
-        coDoi = 0
-        coDoiCards = []
+        
     if gpAction == gpPlay1card
         @assert length(union(singles, chot1s, miss1s, missTs)) > 0
-    
+        coDoi = 0
+        coDoiCards = []
         global boDoi = 0
         global bp1BoDoiCnt = 0
         cards = gpHandlePlay1Card()
