@@ -3177,6 +3177,15 @@ global GUI_ready = false
                     if  isGameOver() == false
                         if rem(glIterationCnt,4) == 0
                             SNAPSHOT()
+                            if (PlayerList[myPlayer] != plSocket) && isServer()
+                                for p in 1:4
+                                    if PlayerList[p] == plSocket
+                                        msg = nwAPI.nw_receiveFromPlayer(p, nwPlayer[p], 8)
+                                    end
+                                end
+                            elseif PlayerList[myPlayer] == plSocket
+                                nwAPI.nw_sendToMaster(myPlayer, nwMaster,0)
+                            end
                         end
                         gamePlay1Iteration()
                     end
