@@ -3204,7 +3204,7 @@ global GUI_ready = false
                     println("Bai thui!")
                 end
                 gameOver(5)
-                
+                glIterationCnt += 50
             end
         end
     elseif tusacState == tsRestart
@@ -3855,18 +3855,19 @@ function restartGame()
     currentPlayer = prevWinner  
         newDeck = (union(
             playerA_hand,
-            playerB_hand,
-            playerC_hand,
-            playerD_hand,
-
             playerA_assets,
-            playerB_assets,
-            playerC_assets,
-            playerD_assets,
-
             playerA_discards,
+
+            playerB_hand,
+            playerB_assets,
             playerB_discards,
+
+            playerC_hand,
+            playerC_assets,
             playerC_discards,
+
+            playerD_hand,
+            playerD_assets,
             playerD_discards,
             gameDeck))
             gameDeck =TuSacCards.Deck(newDeck)
