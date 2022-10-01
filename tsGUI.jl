@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.50"
+version = "0.51"
 macOS = false
 myPlayer = 1
 
@@ -2676,7 +2676,7 @@ function gamePlay1Iteration()
         FaceDown = !isGameOver()
 
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
-        if coDoi > 0 && !(length(r) == 2 && card_equal(r[1],r[2]))
+        if coDoi > 0 && length(r) == 0
             if allowPrint
                 println("Player", coDoi, " bo doi ", ts(coDoiCards[1]))
             end
