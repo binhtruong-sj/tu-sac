@@ -2061,7 +2061,6 @@ function replayHistory(index)
     end
 end
 
-
 nextPlayer(p) = p == 4 ? 1 : p + 1
 
 function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
@@ -2886,7 +2885,7 @@ function networkInit()
                     close(rf)
                     println(" ... done")
                 elseif pversion > version
-                    wf = open("tsGUI2.jl","w")
+                    wf = open("tsGUI.jl","w")
                     print("Receiving updates from Player ",playerName[s])
                     while true
                         aline = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
@@ -2958,7 +2957,7 @@ function networkInit()
         println("Server has version ",sversion)
         if sversion > version
             print("Receiving updates from Server ... ")
-            wf = open("tsGUI2.jl","w")
+            wf = open("tsGUI.jl","w")
             while true
                 aline = nwAPI.nw_receiveTextFromMaster(nwMaster)
                 if aline == "#=Binh-end=#"
