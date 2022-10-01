@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "2.0"
+version = "0.50"
 macOS = false
 myPlayer = 1
 
