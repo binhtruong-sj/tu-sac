@@ -1619,47 +1619,55 @@ function c_match(p,s,n)
     if length(union(s,n)) > 1 && allowPrint
          println("c-match ",(p,s,n))
     end
+
     if length(s) > 1
+        rt = []
         for es in s
             if card_equal(es,n)
-                if length(s) == 3
-                    return []
-                else
-                    return [es]
+                if length(s) < 3
+                    rt = [es]
                 end
             end
         end
-        return s
     elseif length(s)==1
         if card_equal(s[1],n)
-            return s
+            rt = s
         else
         # now we have 2 uniq chots
             if length(p[2])>0 # at least 1 3-pair
-                    return [p[2][1][1],s[1]] # use 1 of the 3-pair
+                rt =  [p[2][1][1],s[1]] # use 1 of the 3-pair
             else
                 if length(p[1])>1 # at least 2 2-pair and 1-single
-                    return [p[1][1][1],p[1][2][1]]
+                    if !(card_equal(n,p[1][1][1]) ||
+                        card_equal(n,p[1][2][1]) )
+                        rt =  [p[1][1][1],p[1][2][1]]
+                    else
+                        rt = []
+                    end                        
                 elseif length(p[1])==1 && !card_equal(n,p[1][1][1])
-                    return [p[1][1][1],s[1]]
+                    rt =  [p[1][1][1],s[1]]
                 else 
-                    return []
+                    rt =  []
                 end
             end
         end
     else 
         if length(p[2])>1  #not sure about this
-            return [p[2][1][1],p[2][2][1]]
+            rt = [p[2][1][1],p[2][2][1]]
         elseif length(p[2])==1
-            return []
+            rt =  []
         else
             if length(p[1]) > 2
-                return [p[1][1][1],p[1][2][1],p[1][3][1]]
+                rt =  [p[1][1][1],p[1][2][1],p[1][3][1]]
             else
-                return []
+                rt =  []
             end
         end
     end
+    if allowPrint
+        println("c-match-result = ", rt); ts_s(rt)
+    end
+    return rt
 end
       
 """
@@ -2041,10 +2049,10 @@ function replayHistory(index)
     FaceDown = !isGameOver()
 
     global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
-    a4 = setupDrawDeck(playerD_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
-    a3 = setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
-    a2 = setupDrawDeck(playerB_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
-    a5 = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
+                    a2 = setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], 2, FaceDown)
+                    a3 = setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], 100, FaceDown)
+                    a4 = setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], 2, FaceDown)
+                    a5 = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
     getData_all_hands()
     getData_all_discard_assets()
 
