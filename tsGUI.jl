@@ -1,5 +1,6 @@
 using GameZero
 using Sockets
+version = "2.0"
 macOS = false
 myPlayer = 1
 
@@ -76,7 +77,6 @@ module nwAPI
     end
 
     function nw_receiveTextFromMaster(connection)
-        println("waiting to receive Text from Master")
         return readline(connection)
     end
 
@@ -419,7 +419,6 @@ module TuSacCards
         for ce in cr
             push!(ar,ce)
         end
-        
         idx = []
         for a in ar
             for (i, card) in enumerate(deck)
@@ -2842,89 +2841,147 @@ end
 global nwPlayer = Vector{Any}(undef,4)
 
 function networkInit()
-global GUIname
-if mode == m_server
-    println("SERVER")
-    global myS = nwAPI.serverSetup(serverIP,serverPort)
-    signedOnPlayer = 0
-    while signedOnPlayer < numberOfSocketPlayer 
-        global p = nwAPI.acceptClient(myS)
-        while true
-            global i = rand(2:4)
-            if PlayerList[i] != plSocket
-                break
+    global GUIname
+    if mode == m_server
+        println("SERVER, expecting ", numberOfSocketPlayer, " players.")
+        global myS = nwAPI.serverSetup(serverIP,serverPort)
+        signedOnPlayer = 0
+        while signedOnPlayer < numberOfSocketPlayer 
+            global p = nwAPI.acceptClient(myS)
+            while true
+                global i = rand(2:4)
+                if PlayerList[i] != plSocket
+                    break
+                end
+            end
+            PlayerList[i] = plSocket
+            nwPlayer[i] = p
+            nwAPI.nw_sendToPlayer(i,p,i)
+            msg = nwAPI.nw_receiveTextFromPlayer(i,nwPlayer[i])
+            print("Accepting Player ",i, " Name=",msg)
+            playerName[i] = msg
+            
+            signedOnPlayer += 1
+        end
+        so = signedOnPlayer
+        updated = false
+        for s in 1:4 
+            if PlayerList[s] == plSocket
+                for i in 1:4
+                    nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
+                end
+                nwAPI.nw_sendToPlayer(s,nwPlayer[s],numberOfSocketPlayer)
+                nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],version)
+                pversion = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
+                println("Player ",playerName[s]," has version ",pversion)
+                if version > pversion
+                    print("Sending updates to Player ", playerName[s])
+                    updated = true
+                    rf = open("tsGUI.jl","r")
+                    while !eof(rf)
+                        aline = readline(rf)
+                        nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],aline)
+                    end
+                    nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],"#=Binh-end=#")
+                    close(rf)
+                    println(" ... done")
+                elseif pversion > version
+                    wf = open("tsGUI2.jl","w")
+                    print("Receiving updates from Player ",playerName[s])
+                    while true
+                        aline = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
+                        if aline == "#=Binh-end=#"
+                            break
+                        end
+                        println(wf,aline)
+                    end
+                    close(wf)
+                    println(" ... done")
+                    exit()
+                end
+                if so == 1
+                    break
+                else
+                    so -= 1
+                end
             end
         end
-        PlayerList[i] = plSocket
-        nwPlayer[i] = p
-        nwAPI.nw_sendToPlayer(i,p,i)
-        msg = nwAPI.nw_receiveTextFromPlayer(i,nwPlayer[i])
-        print("Accepting Player ",i, " Name=",msg)
-        playerName[i] = msg
-        
-        signedOnPlayer += 1
-    end
-    so = signedOnPlayer
-    for s in 1:4 
-        if PlayerList[s] == plSocket
-            for i in 1:4
-                nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
+        if updated
+            exit()
+        end
+        println("Player List:",playerName)
+        global GUIname = Vector{Any}(undef,4)
+        if !noGUI()
+            GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[1].pos = tableGridXY(10,20)
+            GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[2].pos = tableGridXY(18,1)
+            GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[3].pos = tableGridXY(10,1)
+            GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[4].pos = tableGridXY(1,1)
+        end
+    elseif mode == m_client
+        println("CLIENT")
+        global nwMaster = nwAPI.clientSetup(serverURL,serverPort)
+        msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+        println(msg)
+        global myPlayer = msg[2]
+        PlayerList[myPlayer] = plSocket
+        if GUI 
+            noGUI_list[myPlayer] = false
+        end
+        println("Accepted as Player number ",myPlayer)
+        nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,NAME)
+        for i in 1:4
+            global playerName
+            name = nwAPI.nw_receiveTextFromMaster(nwMaster)
+            playerName[i] = name
+        end
+        nameRound(n)  = n > 4 ? n - 4 : n
+        if !noGUI()
+            GUIname[1]  = TextActor(playerName[nameRound(myPlayer-1+1)],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[1].pos = tableGridXY(10,20)
+            GUIname[2]  = TextActor(playerName[nameRound(myPlayer-1+2)],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[2].pos = tableGridXY(18,1)
+            GUIname[3]  = TextActor(playerName[nameRound(myPlayer-1+3)],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[3].pos = tableGridXY(10,1)
+            GUIname[4]  = TextActor(playerName[nameRound(myPlayer-1+4)],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[4].pos = tableGridXY(1,1)
+        end
+        println("Player List:",playerName)
+        msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+        global numberOfSocketPlayer = msg[2]
+        println("numberOfSocketPlayer", numberOfSocketPlayer)
+        sversion = nwAPI.nw_receiveTextFromMaster(nwMaster)
+        nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,version)
+        println("Server has version ",sversion)
+        if sversion > version
+            print("Receiving updates from Server ... ")
+            wf = open("tsGUI2.jl","w")
+            while true
+                aline = nwAPI.nw_receiveTextFromMaster(nwMaster)
+                if aline == "#=Binh-end=#"
+                    break
+                end
+                println(wf,aline)
             end
-            nwAPI.nw_sendToPlayer(s,nwPlayer[s],numberOfSocketPlayer)
-            if so == 1
-                break
-            else
-                so -= 1
+            close(wf)
+            println(" done")
+            exit()
+        elseif sversion < version
+            print("Sending updates to Server ")
+            rf = open("tsGUI.jl","r")
+            while !eof(rf)
+                aline = readline(rf)
+                nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,aline)
             end
+            nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,"#=Binh-end=#")
+            close(rf)
+            println(" ... done")
+            exit()
         end
     end
-    println("Player List:",playerName)
-    global GUIname = Vector{Any}(undef,4)
-    if !noGUI()
-        GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[1].pos = tableGridXY(10,20)
-        GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[2].pos = tableGridXY(18,1)
-        GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[3].pos = tableGridXY(10,1)
-        GUIname[4]  = TextActor(playerName[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[4].pos = tableGridXY(1,1)
-    end
-elseif mode == m_client
-    println("CLIENT")
-    global nwMaster = nwAPI.clientSetup(serverURL,serverPort)
-    msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
-    println(msg)
-    global myPlayer = msg[2]
-    PlayerList[myPlayer] = plSocket
-    if GUI 
-        noGUI_list[myPlayer] = false
-    end
-        
-
-    println("Accepted as Player number ",myPlayer)
-    nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,NAME)
-    for i in 1:4
-        global playerName
-        name = nwAPI.nw_receiveTextFromMaster(nwMaster)
-        playerName[i] = name
-    end
-     nameRound(n)  = n > 4 ? n - 4 : n
-    if !noGUI()
-        GUIname[1]  = TextActor(playerName[nameRound(myPlayer-1+1)],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[1].pos = tableGridXY(10,20)
-        GUIname[2]  = TextActor(playerName[nameRound(myPlayer-1+2)],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[2].pos = tableGridXY(18,1)
-        GUIname[3]  = TextActor(playerName[nameRound(myPlayer-1+3)],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[3].pos = tableGridXY(10,1)
-        GUIname[4]  = TextActor(playerName[nameRound(myPlayer-1+4)],"asapvar",font_size=fontSize,color=[0,0,0,0])
-        GUIname[4].pos = tableGridXY(1,1)
-    end
-    println("Player List:",playerName)
-    println("numberOfSocketPlayer", numberOfSocketPlayer)
-    msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
-    global numberOfSocketPlayer = msg[2]
-end
 end
 """
 gsStateMachine(gameActions)
@@ -3211,7 +3268,9 @@ global GUI_ready = false
      
     end
 end
-
+function randomShuffle()
+    TuSacCards.shuffle!(gameDeck)
+end
 #=
 game start here
 =#
@@ -3923,8 +3982,8 @@ function on_key_down(g)
     playerB_discards,
     playerC_discards,
     playerD_discards
-        if g.keyboard.TAB
-            println("TAB")
+        if g.keyboard.X
+            println("Xet bai")
         elseif g.keyboard.SPACE
             println("SPACE")
         elseif g.keyboard.T
@@ -3938,11 +3997,14 @@ function on_key_down(g)
             elseif g.keyboard.H
                 mode_human = !mode_human
                 println("Human mode to ")
+            elseif g.keyboard.B
+                println("Bai no tung!, (random shuffle) ")
+                randomShuffle()
+                setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
+
             end
         elseif tusacState == tsHistory
-           
-
-            if g.keyboard.b
+            if g.keyboard.enter
                 println("Exiting History mode @",HistCnt)
                 resize!(HISTORY,HistCnt)
                 l = length(HISTORY)
@@ -3967,11 +4029,11 @@ function on_key_down(g)
     elseif tusacState == tsGameLoop
         if g.keyboard.R 
             checkForRestart()
-        elseif g.keyboard.TAB
+        elseif g.keyboard.X
             SNAPSHOT() #taking last SNAPSHOT 
             HistCnt = length(HISTORY)
             tusacState = tsHistory
-            println("Entering History mode, size=",HistCnt)
+            println("Xet bai, coi lai bai,  History mode, size=",HistCnt)
         elseif g.keyboard.H
             mode_human = !mode_human
             println("switching human mode to ",mode_human)
@@ -4429,6 +4491,4 @@ function draw(g)
             draw(GUIname[i])
         end
     end
-    
 end
-
