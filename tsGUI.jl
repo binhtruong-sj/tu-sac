@@ -4003,7 +4003,7 @@ function on_key_down(g)
 
             end
         elseif tusacState == tsHistory
-            if g.keyboard.enter
+            if g.keyboard.return
                 println("Exiting History mode @",HistCnt)
                 resize!(HISTORY,HistCnt)
                 l = length(HISTORY)
