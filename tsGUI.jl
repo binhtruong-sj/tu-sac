@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.51"
+version = "0.52"
 macOS = false
 myPlayer = 1
 
@@ -4350,7 +4350,7 @@ function on_mouse_down(g, pos)
        gsStateMachine(gsOrganize)
        
     elseif tusacState == tsGameLoop 
-        if !isGameOver()
+        if !isGameOver() && playerIsHuman(myPlayer)
             cindx, yPortion = mouseDownOnBox(x, y, human_state)
             if cindx != 0
                 click_card(cindx, yPortion, playerA_hand)
