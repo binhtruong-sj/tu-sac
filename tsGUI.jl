@@ -3788,11 +3788,11 @@ function hgamePlay(
     rQ,
     rReady
 )
-    global rQ, rReady, coDoi, coDoiCards
+    global rQ, rReady, coDoi, coDoiCards,currentCards,currentAction, currentPlayCard
     if(gpPlayer==myPlayer)
-        global currentAction = gpAction
+        currentAction = gpAction
     end
-    global currentPlayCard = pcard
+    currentPlayCard = pcard
     FaceDown = !isGameOver() && wantFaceDown
     if gpPlayer == 1 
         global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], 100, false)
@@ -3867,9 +3867,9 @@ end
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
         rReady[gpPlayer] = true
-    else
-        global currentCards = cards
     end
+    currentCards = cards
+
     return 
 
 end
