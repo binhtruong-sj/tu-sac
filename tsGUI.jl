@@ -1046,7 +1046,7 @@ function setupActorgameDeck()
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, mapr, "s1.png")
                         big_st = string(s, m, ".png")
-                        afc = Actor("fcs.png")
+                        afc = Actor("fcs1.png")
                     elseif GENERIC == 4
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
@@ -3150,7 +3150,10 @@ function gsStateMachine(gameActions)
                     elseif GENERIC == 2
                         global handPic = Actor("hand3.png")
                         global winnerPic = Actor("winner2.png")
-                    elseif GENERIC ==3
+                    elseif GENERIC == 3
+                        global handPic = Actor("hand31.png")
+                        global winnerPic = Actor("winner21.png")
+                    elseif GENERIC == 4
                         global handPic = Actor("hand2.png")
                         global winnerPic = Actor("winner2.png")
                     else
