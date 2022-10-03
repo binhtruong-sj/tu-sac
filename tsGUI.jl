@@ -1,9 +1,9 @@
 using GameZero
 using Sockets
-version = "0.52"
+version = "0.54"
 macOS = false
 myPlayer = 1
-
+haBai = false
 const plHuman = 0
 const plBot1 = 1
 const plBot2 = 2
@@ -22,6 +22,7 @@ numberOfSocketPlayer = 0
 playerName = ["Binh-bot1","Binh-bot2","Binh-bot3","Binh-bot4"]
 coDoi = 0
 coDoiCards = []
+gameCmd = '.'
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
@@ -785,7 +786,7 @@ function config(fn)
     else
         cfg_str = readlines(fn)
         for line in cfg_str
-            global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,
+            global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,
             mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,
             GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,RFindex
             rl = split(line,' ')
@@ -840,7 +841,8 @@ function config(fn)
                 macOS = rl[2] == "true"
             elseif rl[1] == "histFile"
                 histFile = true
-                HF = open(rl[2],"w") 
+                histFILENAME = rl[2]
+                HF = open(histFILENAME,"w") 
             elseif rl[1] == "reloadFile"
                 reloadFile = true
                 RF = open(rl[2],"r") 
@@ -3080,7 +3082,7 @@ The goal is to have one code to handle all mode/variation of plays:
 
 """
 function gsStateMachine(gameActions)
-    global tusacState, all_discards, all_assets,prevWinner
+    global tusacState, all_discards, all_assets,prevWinner,haBai
     global gameDeck, ad, deckState,gameEnd,HISTORY,currentAction
     global nwPlayer,nwMaster,playerName,coldStart, FaceDown
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
@@ -3098,6 +3100,7 @@ function gsStateMachine(gameActions)
         if gameActions == gsSetupGame
             global numberOfSocketPlayer
             global mode
+            haBai = false
             if coldStart
                 if !noGUI()
                     GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -3196,7 +3199,6 @@ global GUI_ready = false
                 end
             end
         end
-        println("HERE")
         global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
         replayHistory(0)
         global gameEnd = 0
@@ -3242,14 +3244,45 @@ global GUI_ready = false
                     if  isGameOver() == false
                         if rem(glIterationCnt,4) == 0
                             SNAPSHOT()
-                            if (PlayerList[myPlayer] != plSocket) && isServer()
-                                for p in 1:4
-                                    if PlayerList[p] == plSocket
-                                        msg = nwAPI.nw_receiveFromPlayer(p, nwPlayer[p], 8)
+                            if numberOfSocketPlayer == 0 && haBai
+                                gameOver(prevWinner)
+                            else
+                                if (PlayerList[myPlayer] != plSocket) && isServer()
+                                    msg = Vector{String}(undef,4)
+                                    for p in 1:4
+                                        if PlayerList[p] == plSocket
+                                            msg[p] = nwAPI.nw_receiveTextFromPlayer(p, nwPlayer[p])
+                                        end
                                     end
+                                    gmsg =""
+                                    for p in 1:4
+                                        if PlayerList[p] == plSocket
+                                            if msg[p] !=" "
+                                                gmsg = msg[p]
+                                            end
+                                        end
+                                    end
+                                    println(gmsg)
+                                    smsg = haBai ? 'H' : gmsg
+                                    for p in 1:4
+                                        if PlayerList[p] == plSocket
+                                            println("Sending ", smsg)
+                                            nwAPI.nw_sendTextToPlayer(p, nwPlayer[p],smsg)
+                                        end
+                                    end
+                                    if smsg == "H"
+                                        gameOver(prevWinner)
+                                    end
+                                elseif PlayerList[myPlayer] == plSocket
+                                    smsg = haBai ? "H" : "."
+                                    nwAPI.nw_sendTextToMaster(myPlayer, nwMaster,smsg)
+                                    myMsg = nwAPI.nw_receiveTextFromMaster(nwMaster)
+                                    println("receiving ",myMsg)
+                                    if myMsg == "H"
+                                        gameOver(prevWinner)
+                                    end
+                                    println(myMsg)
                                 end
-                            elseif PlayerList[myPlayer] == plSocket
-                                nwAPI.nw_sendToMaster(myPlayer, nwMaster,0)
                             end
                         end
                         gamePlay1Iteration()
@@ -3375,6 +3408,7 @@ function on_mouse_move(g, pos)
         x = pos[1] << macOSconst
         y = pos[2] << macOSconst
    if tusacState == tsSdealCards
+    
         if myPlayer == shufflePlayer
             mouseDirOnBox(x, y, deckState)
         end
@@ -3828,8 +3862,8 @@ function hgamePlay(
                 ts(pcard))
             end
     end
-   global allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
-        scanCards(all_hands[gpPlayer])
+   global allPairs, singles, chot1s, miss1s, missTs, 
+   miss1sbar,chotPs,chot1Specials = scanCards(all_hands[gpPlayer])
      
         
     if gpAction == gpPlay1card
@@ -3910,6 +3944,10 @@ function restartGame()
     global gameDeck,prevWinner,currentPlayer
     global FaceDown = false
     global coldStart = false
+    if histFile
+        close(HF)
+        open(histFILENAME,"w")
+    end
     currentPlayer = prevWinner  
         newDeck = (union(
             playerA_hand,
@@ -3968,7 +4006,7 @@ scanCards(hand, false)
     return TrashCnt < l
 end
 function on_key_down(g)
-    global tusacState, gameDeck, mode_human,
+    global tusacState, gameDeck, mode_human,msgActor,haBai,
     playerA_hand,
     playerB_hand,
     playerC_hand,
@@ -3988,8 +4026,12 @@ function on_key_down(g)
         elseif g.keyboard.T
             println("key-T")
         end
-
-        if tusacState == tsSdealCards
+        if tusacState < tsSdealCards
+            msgActor = TextActor("S B","asapvar",font_size=fontSize,color=[0,0,0,0])
+            msgActor.pos = tableGridXY(1,20)
+        elseif tusacState == tsSdealCards
+            msgActor = TextActor("X  H","asapvar",font_size=fontSize,color=[0,0,0,0])
+            msgActor.pos = tableGridXY(1,20)
             if g.keyboard.S
                 autoHumanShuffle(10)
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
@@ -4000,10 +4042,9 @@ function on_key_down(g)
                 println("Bai no tung!, (random shuffle) ")
                 randomShuffle()
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
-
             end
         elseif tusacState == tsHistory
-            if g.keyboard.return
+            if g.keyboard.return || g.keyboard.M
                 println("Exiting History mode @",HistCnt)
                 resize!(HISTORY,HistCnt)
                 l = length(HISTORY)
@@ -4011,7 +4052,7 @@ function on_key_down(g)
                 replayHistory(l)
                 printAllInfo()
                 tusacState = tsGameLoop
-            elseif g.keyboard.SPACE
+            elseif g.keyboard.SPACE || g.keyboard.X
                 println("Exiting History mode")
                 l = length(HISTORY)
                 replayHistory(l)
@@ -4024,16 +4065,22 @@ function on_key_down(g)
                 printHistory(HistCnt)
                 println(HistCnt)
             end
-   
     elseif tusacState == tsGameLoop
+        msgActor = TextActor("X  H","asapvar",font_size=fontSize,color=[0,0,0,0])
+            msgActor.pos = tableGridXY(1,20)
         if g.keyboard.R 
             checkForRestart()
         elseif g.keyboard.X
+            msgActor = TextActor("arrow keys, Xong(spacebar),M","asapvar",font_size=fontSize,color=[0,0,0,0])
+            msgActor.pos = tableGridXY(1,20)
             SNAPSHOT() #taking last SNAPSHOT 
             HistCnt = length(HISTORY)
             tusacState = tsHistory
             println("Xet bai, coi lai bai,  History mode, size=",HistCnt)
         elseif g.keyboard.H
+            println("Ha Bai!!!")
+            haBai = true
+        elseif g.keyboard.A
             mode_human = !mode_human
             println("switching human mode to ",mode_human)
         end
@@ -4042,7 +4089,6 @@ end
 
 function click_card(cardIndx, yPortion, hand)
     global prevYportion, cardsIndxArr
-    println("yP=", yPortion)
     if cardIndx in cardsIndxArr
         # moving these cards
         if yPortion != prevYportion
@@ -4119,7 +4165,6 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
            end
         end
         newHand = cat(matchC,cards;dims=1)
-        println("COMB",newHand)
         aps, ss, cs, m1s, mTs, m1sb,cPs,c1Specials = scanCards(newHand, true)
         if (length(ss)+length(cs)+length(m1s)+length(mTs)) > 0
             println("LOUSY PLAY")
@@ -4137,7 +4182,6 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
 end
 function badPlay(cards,player, hand,action,botCards,matchC)
     if badPlay1(cards,player, hand,action,botCards,matchC)
-        println("BADPLAY1 reject")
         return true
     end
     if length(matchC) > 0
@@ -4327,7 +4371,7 @@ end
 """
 function on_mouse_down(g, pos)
     global cardsIndxArr
-    global cardSelect
+    global cardSelect,msgActor
     global playCard = []
     global tusacState
     x = pos[1] << macOSconst
@@ -4347,10 +4391,12 @@ function on_mouse_down(g, pos)
         if allowPrint
         println("ORGANIZE")
         end
+        msgActor = TextActor("X  H","asapvar",font_size=fontSize,color=[0,0,0,0])
+        msgActor.pos = tableGridXY(1,20)
        gsStateMachine(gsOrganize)
        
     elseif tusacState == tsGameLoop 
-        if !isGameOver() && playerIsHuman(myPlayer)
+        if !isGameOver() && playerIsHuman(myPlayer) 
             cindx, yPortion = mouseDownOnBox(x, y, human_state)
             if cindx != 0
                 click_card(cindx, yPortion, playerA_hand)
@@ -4401,13 +4447,15 @@ if noGUI()
     end
 end
 function update(g)
-    global waitForHuman
+    global waitForHuman, msgActor
     global ad, deckState, gameDeck, tusacState
     global tusacState
     FaceDown = !isGameOver()
 
     if tusacState == tsSdealCards
+      
         if (deckState[5] > 10)
+           
             TuSacCards.humanShuffle!(gameDeck, 14, deckState[5])
             deckState = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
         end
@@ -4419,6 +4467,7 @@ function update(g)
     elseif (tusacState == tsSdealCards)
     
     elseif tusacState == tsGameLoop
+      
         updateHandPic(currentPlayer)
         gsStateMachine(gsGameLoop)
     elseif tusacState == tsRestart
@@ -4486,6 +4535,7 @@ function draw(g)
         draw(handPic)
         draw(winnerPic)
         draw(errorPic)
+        draw(msgActor)
         for i in 1:4
             draw(GUIname[i])
         end
