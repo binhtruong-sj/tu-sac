@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.570"
+version = "0.574"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -773,6 +773,10 @@ GUILoc[12,1],GUILoc[12,2] = 3,16
 GUILoc[13,1],GUILoc[13,2] = 8,8
 
 function config(fn)
+    global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,
+    mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,
+    GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,RFindex
+
     global GUILoc
     if !isfile(fn)
         println(fn," does not exist, please configure one. Similar to this\n
@@ -787,10 +791,7 @@ function config(fn)
     else
         cfg_str = readlines(fn)
         for line in cfg_str
-            global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,
-            mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,
-            GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,RFindex
-            rl = split(line,' ')
+                    rl = split(line,' ')
             if rl[1] == "name"
                 NAME = rl[2]
                 playerName[myPlayer] =NAME
@@ -852,6 +853,9 @@ function config(fn)
                     global GUI = rl[2] == "true"
             end
         end
+    end
+    if fontSize == 50 && !macOS
+        fontSize = 24
     end
     if GUI
         noGUI_list[myPlayer] = false
@@ -1894,7 +1898,11 @@ function updateWinnerPic(np)
     winnerPic.pos = tableGridXY(gx, gy)
 end
 function removeCards!(array, n, cards)
+    if haBai
+        return
+    end
     m = playerMaptoGUI(n)
+    
     for c in cards
         if histFile
             index = 0
@@ -1956,6 +1964,9 @@ function removeCards!(array, n, cards)
     end
 end
 function addCards!(array,arrNo, n, cards)
+    if haBai
+        return
+    end
     m  = playerMaptoGUI(n)
     for c in cards
         if histFile
