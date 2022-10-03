@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.54"
+version = "0.570"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -3251,46 +3251,8 @@ global GUI_ready = false
                     if  isGameOver() == false
                         if rem(glIterationCnt,4) == 0
                             SNAPSHOT()
-                            if numberOfSocketPlayer == 0 && haBai
-                                gameOver(prevWinner)
-                            else
-                                if (PlayerList[myPlayer] != plSocket) && isServer()
-                                    msg = Vector{String}(undef,4)
-                                    for p in 1:4
-                                        if PlayerList[p] == plSocket
-                                            msg[p] = nwAPI.nw_receiveTextFromPlayer(p, nwPlayer[p])
-                                        end
-                                    end
-                                    gmsg =""
-                                    for p in 1:4
-                                        if PlayerList[p] == plSocket
-                                            if msg[p] !=" "
-                                                gmsg = msg[p]
-                                            end
-                                        end
-                                    end
-                                    println(gmsg)
-                                    smsg = haBai ? 'H' : gmsg
-                                    for p in 1:4
-                                        if PlayerList[p] == plSocket
-                                            println("Sending ", smsg)
-                                            nwAPI.nw_sendTextToPlayer(p, nwPlayer[p],smsg)
-                                        end
-                                    end
-                                    if smsg == "H"
-                                        gameOver(prevWinner)
-                                    end
-                                elseif PlayerList[myPlayer] == plSocket
-                                    smsg = haBai ? "H" : "."
-                                    nwAPI.nw_sendTextToMaster(myPlayer, nwMaster,smsg)
-                                    myMsg = nwAPI.nw_receiveTextFromMaster(nwMaster)
-                                    println("receiving ",myMsg)
-                                    if myMsg == "H"
-                                        gameOver(prevWinner)
-                                    end
-                                    println(myMsg)
-                                end
-                            end
+                       
+                            socketSYNC()
                         end
                         gamePlay1Iteration()
                     end
@@ -3305,6 +3267,54 @@ global GUI_ready = false
         end
     elseif tusacState == tsRestart
      
+    end
+end
+"""
+    socketSYNC()
+        sync point for all socket players, ... global command can be
+            inserted here. 
+TBW
+"""
+function socketSYNC()
+    if numberOfSocketPlayer == 0 && haBai
+        gameOver(prevWinner)
+    else
+        if (PlayerList[myPlayer] != plSocket) && isServer()
+            msg = Vector{String}(undef,4)
+            for p in 1:4
+                if PlayerList[p] == plSocket
+                    msg[p] = nwAPI.nw_receiveTextFromPlayer(p, nwPlayer[p])
+                end
+            end
+            gmsg =""
+            for p in 1:4
+                if PlayerList[p] == plSocket
+                    if msg[p] !=" "
+                        gmsg = msg[p]
+                    end
+                end
+            end
+            println(gmsg)
+            smsg = haBai ? "H" : gmsg
+            for p in 1:4
+                if PlayerList[p] == plSocket
+                    println("Sending ", smsg)
+                    nwAPI.nw_sendTextToPlayer(p, nwPlayer[p],smsg)
+                end
+            end
+            if smsg == "H"
+                gameOver(prevWinner)
+            end
+        elseif PlayerList[myPlayer] == plSocket
+            smsg = haBai ? "H" : "."
+            nwAPI.nw_sendTextToMaster(myPlayer, nwMaster,smsg)
+            myMsg = nwAPI.nw_receiveTextFromMaster(nwMaster)
+            println("receiving ",myMsg)
+            if myMsg == "H"
+                gameOver(prevWinner)
+            end
+            println(myMsg)
+        end
     end
 end
 function randomShuffle()
@@ -4406,41 +4416,46 @@ function on_mouse_down(g, pos)
        
     elseif tusacState == tsGameLoop 
         if !isGameOver() && playerIsHuman(myPlayer) 
-            cindx, yPortion = mouseDownOnBox(x, y, human_state)
-            if cindx != 0
-                click_card(cindx, yPortion, playerA_hand)
-            end
-            if currentAction == gpPlay1card 
-                cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+            if haBai 
+                GUI_ready = true
+                GUI_array = currentCards
             else
-                bc = ActiveCard 
-                bx,by = big_actors[bc].pos
-                hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
-                cindx, yPortion = mouseDownOnBox(x, y, hotseat)
-            end
-            if cindx != 0
-                global GUI_array, GUI_ready
-                GUI_array = []
-                for ci in cardsIndxArr
-                    ac= TuSacCards.getCards(playerA_hand, ci)
-                    push!(GUI_array,ac)
-                    if allowPrint
-                    print("click_card, index,card=",(ci,ac))
-                    println(" ",ts(ac))
+                cindx, yPortion = mouseDownOnBox(x, y, human_state)
+                if cindx != 0
+                    click_card(cindx, yPortion, playerA_hand)
+                end
+                if currentAction == gpPlay1card 
+                    cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+                else
+                    bc = ActiveCard 
+                    bx,by = big_actors[bc].pos
+                    hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
+                    cindx, yPortion = mouseDownOnBox(x, y, hotseat)
+                end
+                if cindx != 0
+                    global GUI_array, GUI_ready
+                    GUI_array = []
+                    for ci in cardsIndxArr
+                        ac= TuSacCards.getCards(playerA_hand, ci)
+                        push!(GUI_array,ac)
+                        if allowPrint
+                        print("click_card, index,card=",(ci,ac))
+                        println(" ",ts(ac))
+                        end
                     end
-                end
-                if allowPrint
-                println("\nDanh Bai XONG ROI")
-                end
-                setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],100, false)
-                cardsIndxArr = []
-                if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
-                    currentAction,currentCards,currentPlayCard)
-                    updateErrorPic(1)
-                    GUI_ready = false
-                else 
-                    updateErrorPic(0)
-                    GUI_ready = true
+                    if allowPrint
+                    println("\nDanh Bai XONG ROI")
+                    end
+                    setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],100, false)
+                    cardsIndxArr = []
+                    if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
+                        currentAction,currentCards,currentPlayCard)
+                        updateErrorPic(1)
+                        GUI_ready = false
+                    else 
+                        updateErrorPic(0)
+                        GUI_ready = true
+                    end
                 end
             end
         end
