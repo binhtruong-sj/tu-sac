@@ -904,6 +904,11 @@ else
         zoomCardYdim = 210
     elseif GENERIC == 3
         gameW = 820
+        cardXdim = 47
+        cardYdim = 150
+        zoomCardYdim = 210
+    elseif GENERIC == 4
+        gameW = 820
         cardXdim = 64
         cardYdim = 210
         zoomCardYdim = 295
@@ -1037,6 +1042,12 @@ function setupActorgameDeck()
                         big_st = string(s, m, ".png")
                         afc = Actor("fcs.png")
                     elseif GENERIC == 3
+                        local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
+                        mapr = m == 5 ? 6 : m == 6 ? 5 : m
+                        st = string(s, mapr, "s1.png")
+                        big_st = string(s, m, ".png")
+                        afc = Actor("fcs.png")
+                    elseif GENERIC == 4
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
                         mapr = m == 5 ? 6 : m == 6 ? 5 : m
                         st = string(s, m, ".png")
