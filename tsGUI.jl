@@ -20,6 +20,7 @@ PlayerList =[plBot1,plBot1,plBot1,plBot1]
 GUIname = Vector{Any}(undef,4)
 numberOfSocketPlayer = 0
 playerName = ["Binh-bot1","Binh-bot2","Binh-bot3","Binh-bot4"]
+shuffled = false
 coDoi = 0
 coDoiCards = []
 gameCmd = '.'
@@ -1206,6 +1207,9 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets,gameDeck
     global RFstates
 
+    if shuffled == false
+        randomShuffle()
+    end
     moveArray = zeros(Int,16,3)
 
     if reloadFile
@@ -3084,7 +3088,7 @@ The goal is to have one code to handle all mode/variation of plays:
 function gsStateMachine(gameActions)
     global tusacState, all_discards, all_assets,prevWinner,haBai
     global gameDeck, ad, deckState,gameEnd,HISTORY,currentAction
-    global nwPlayer,nwMaster,playerName,coldStart, FaceDown
+    global nwPlayer,nwMaster,playerName,coldStart, FaceDown,shuffled
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets
@@ -3101,6 +3105,7 @@ function gsStateMachine(gameActions)
             global numberOfSocketPlayer
             global mode
             haBai = false
+            shuffled = false
             if coldStart
                 if !noGUI()
                     GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -4006,7 +4011,7 @@ scanCards(hand, false)
     return TrashCnt < l
 end
 function on_key_down(g)
-    global tusacState, gameDeck, mode_human,msgActor,haBai,
+    global tusacState, gameDeck, mode_human,msgActor,haBai,shuffled,
     playerA_hand,
     playerB_hand,
     playerC_hand,
@@ -4033,6 +4038,7 @@ function on_key_down(g)
             msgActor = TextActor("X  H","asapvar",font_size=fontSize,color=[0,0,0,0])
             msgActor.pos = tableGridXY(1,20)
             if g.keyboard.S
+                shuffled = true
                 autoHumanShuffle(10)
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
             elseif g.keyboard.H
@@ -4041,6 +4047,7 @@ function on_key_down(g)
             elseif g.keyboard.B
                 println("Bai no tung!, (random shuffle) ")
                 randomShuffle()
+                shuffled = true
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
             end
         elseif tusacState == tsHistory
@@ -4455,7 +4462,7 @@ function update(g)
     if tusacState == tsSdealCards
       
         if (deckState[5] > 10)
-           
+            shuffled = true
             TuSacCards.humanShuffle!(gameDeck, 14, deckState[5])
             deckState = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
         end
