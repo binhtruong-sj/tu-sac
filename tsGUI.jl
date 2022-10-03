@@ -1207,9 +1207,7 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets,gameDeck
     global RFstates
 
-    if shuffled == false
-        randomShuffle()
-    end
+    
     moveArray = zeros(Int,16,3)
 
     if reloadFile
@@ -3142,9 +3140,13 @@ function gsStateMachine(gameActions)
                 updateHandPic(prevWinner)
                 updateWinnerPic(0)
                 updateErrorPic(0)
+                if shuffled == false
+                    randomShuffle()
+               end
             else
                 autoHumanShuffle(rand(10:60))
             end
+           
             if mode != m_standalone && noGUI()
                 anewDeck = deepcopy(playersSyncDeck!(gameDeck))
                 pop!(gameDeck,112)
