@@ -1144,9 +1144,8 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
             modified_cardXdim = div(cardXdim * cardScale,100)
             modified_cardYdim = div(cardYdim * cardScale,100)
         else
-            t = (cardYdim >> 4)
             modified_cardYdim =
-                faceDown ? (cardYdim - 12*t) : (cardYdim - 10*t)
+                faceDown ? div( (cardYdim*33),100 ) : div( (cardYdim*45),100)
             modified_cardXdim = div(cardXdim * cardScale,100)
             modified_cardYdim = div(modified_cardYdim * cardScale,100)
 
