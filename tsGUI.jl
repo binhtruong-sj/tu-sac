@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.600"
+version = "0.603"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -849,6 +849,7 @@ function config(fn)
                 reloadFile = true
                 RF = open(rl[2],"r") 
                 RFindex = rl[3]
+                println(RFindex)
             elseif rl[1] == "GUI"
                     global GUI = rl[2] == "true"
             end
@@ -1226,32 +1227,25 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
 
     if reloadFile
         found = false
-        aline = ""
-        readline(RF);
+        aline = readline(RF)
+        RFstates = split(aline,", ")
         while true
-            readline(RF);readline(RF);readline(RF);readline(RF);
-            readline(RF);readline(RF);readline(RF);readline(RF);
-            readline(RF);readline(RF);readline(RF);readline(RF);
-            RFstates = split(readline(RF),", ")
-            println(RFstates[1])
             if RFstates[1] == RFindex
-                found = true
+                break
             end
-            while true
+            readline(RF)
+            readline(RF);readline(RF);readline(RF);readline(RF);
+            readline(RF);readline(RF);readline(RF);readline(RF);
+            readline(RF);readline(RF);readline(RF);readline(RF);
+            while !eof(RF)
                 aline = readline(RF)
-                strs = split(aline,", ")
-                println(aline)
-
-                if strs[1] != "(\"M\""
+                RFstates = split(aline,", ")
+                if RFstates[1] != "(\"M\""
                     break
                 end
             end
-            if found 
-                break
-            end
         end
-        println(aline)
-        P0_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,aline))
+        P0_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
         P1_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
         P2_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
         P3_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
@@ -1832,7 +1826,7 @@ function scanCards(inHand, silence = false)
                 print((length(p),ts(p[1])))
             end
         end
-        print("\nsingle= ")
+        print("single= ")
         for c in single
             print(" ", ts(c))
         end
@@ -1844,14 +1838,14 @@ function scanCards(inHand, silence = false)
         for c in chot1Special
             print(" ", ts(c))
         end
-        print("\nmissT=")
+        print("missT=")
         for tc in missT
             for c in tc
                 print(" ", ts(c))
             end
             print("|")
         end
-        print("\nmiss1= ")
+        print("miss1= ")
         for tc in miss1
             for c in tc
                 print(" ", ts(c))
@@ -2790,6 +2784,7 @@ function SNAPSHOT()
                     break
                 end
             end
+            println(HF,currentStates)
             println(HF,playerA_hand)
             println(HF,playerB_hand)
             println(HF,playerC_hand)
@@ -2806,7 +2801,6 @@ function SNAPSHOT()
             println(HF,playerD_discards)
             println(HF,gameDeck)
 
-            println(HF,currentStates)
             flush(HF)
         end
 end
@@ -3192,7 +3186,7 @@ global GUI_ready = false
                 println("Prev Game Winner =", gameEnd)
             end
             prevWinner = gameEnd
-            println(("\nreloadfile",reloadFile))
+            println(("\nreloadFile",reloadFile))
             tusacDeal(prevWinner,reloadFile, RF, RFindex)
             gameOver(0)
             organizeHand(playerA_hand)
@@ -3601,7 +3595,7 @@ function chk1(playCard)
     end
     function chk1Print()
         for s in singles
-            print(" s",(ts(s)))
+            print(" (s)",(ts(s)))
             @assert !is_c(s)
             if card_equal(s, playCard)
                 print("@")
@@ -3611,7 +3605,7 @@ function chk1(playCard)
     
         for mt in missTs
             m = missPiece(mt[1], mt[2])
-            print(" mT=", ts(m))
+            print(" (mT)", ts(m))
             if card_equal(m, playCard)
                 print("@")
                 return 
@@ -3626,7 +3620,7 @@ function chk1(playCard)
     
         for m1 in miss1s
             m = missPiece(m1[1], m1[2])
-            print(" m1=", (length(miss1s),ts(playCard),ts(m)))
+            print(" (m1)", (length(miss1s),ts(playCard),ts(m)))
             if card_equal(m, playCard)
                 print("@")
                 return 
@@ -3690,9 +3684,9 @@ function chk2(playCard)
             end
         end
         for p = 1:2
-            print("   pair-",p," -- ")
+            print(" (pair)",(p+1))
             for ap in allPairs[p]
-                print(" ",ts(ap[1]))
+                print(ts(ap[1]))
                 if is_T(playCard)
                     if p == 3 && card_equal(ap[1], playCard)
                         print("@")
@@ -3750,7 +3744,9 @@ function chk2(playCard)
                      return ap
                 end
             elseif inSuit(ap[1], playCard)  # CASE X PP ? M
-                push!(inSuitArr, ap[1]) # put in array to check
+                if length(inSuitArr) == 0
+                    push!(inSuitArr, ap[1]) # put in array to check
+                end
             end
         end
     end
@@ -3832,6 +3828,9 @@ end
 function gpHandleMatch1or2Card(pcard)
     card1 = chk1(pcard)
     card2 = chk2(pcard)
+    if allowPrint
+        println("chk1-",(card1)," chk2-",(card2))
+    end
     if length(card2) == 3
         return card2
     elseif length(card1) >0
@@ -3982,12 +3981,12 @@ function adjustCnt(cnt,max,dir)
 end
 
 function restartGame()
-    global gameDeck,prevWinner,currentPlayer
+    global gameDeck,prevWinner,currentPlayer,HF
     global FaceDown = false
     global coldStart = false
     if histFile
         close(HF)
-        open(histFILENAME,"w")
+        HF = open(histFILENAME,"w")
     end
     currentPlayer = prevWinner  
         newDeck = (union(
