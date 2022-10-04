@@ -1639,6 +1639,9 @@ function c_match(p,s,n)
                 end
             end
         end
+        if length(rt) == 0
+            rt = s
+        end
     elseif length(s)==1
         if card_equal(s[1],n)
             rt = s
