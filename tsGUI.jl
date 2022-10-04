@@ -1220,7 +1220,7 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand,moveArray
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets,gameDeck
-    global RFstates
+    global RFstates,glPrevPlayer,glNeedaPlayCard
 
     
     moveArray = zeros(Int,16,3)
@@ -1231,6 +1231,7 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
         RFstates = split(aline,", ")
         while true
             if RFstates[1] == RFindex
+
                 break
             end
             readline(RF)
@@ -1263,7 +1264,9 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
 
         gd = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
         gameDeck = deepcopy(gd)
-        winner = 1
+        winner = parse(Int,RFstates[3])
+        glPrevPlayer = winner
+        glNeedaPlayCard = RFstates[2] == "true"
         rPlayer = 5 + myPlayer - winner
         playerSel = rPlayer > 4 ? rPlayer - 4 : rPlayer
         if playerSel == 1
@@ -1331,11 +1334,7 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
             playerC_discards = P1_discards
             playerD_discards = P2_discards
         end
-        RFstates = split(readline(RF),", ")
-        if allowPrint
-            println(RFstates)
-        end
-≈    else
+    else
         P0_hand = TuSacCards.Deck(pop!(gameDeck, 6))
         P1_hand = TuSacCards.Deck(pop!(gameDeck, 5))
         P2_hand = TuSacCards.Deck(pop!(gameDeck, 5))
@@ -2083,12 +2082,16 @@ end
 nextPlayer(p) = p == 4 ? 1 : p + 1
 
 function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
-    function getl(card, n, r)
+    function getl!(card, n, r)
         l = length(r)
         if (l > 1) && !card_equal(r[1], r[2]) # not pairs
             l = 1
         end
-       
+        newHand = sort(cat(card,r;dims = 1))
+        aps, ss, cs, m1s, mTs, m1sb,cPs,c1Specials = scanCards(newHand, true)
+        if (length(ss)+length(cs)+length(m1s)+length(mTs)) > 0
+            return 0, false, []
+        end
         thand = deepcopy(all_hands[n])
         moreTrash = false
         ops,oss,ocs,om1s,omts,ombs =  scanCards(thand, true)
@@ -2122,6 +2125,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                 ts_s(oc)
                 end
                 l = 0
+                r = []
             end
             if ll == 0
                 if allowPrint
@@ -2131,13 +2135,13 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                 win = true
             end 
         end
-        return l, win
+        return l, win,r
     end
 
-    l1, w1 = getl(card, n1, r1)
-    l2, w2 = getl(card, n2, r2)
-    l3, w3 = getl(card, n3, r3)
-    l4, w4 = getl(card, n4, r4)
+    l1, w1, r1 = getl!(card, n1, r1)
+    l2, w2, r2 = getl!(card, n2, r2)
+    l3, w3, r3 = getl!(card, n3, r3)
+    l4, w4, r3 = getl!(card, n4, r4)
     if is_T(card) 
         l2 = l2 != 4 ? 0 : 4
         l3 = l3 != 4 ? 0 : 4
@@ -4206,7 +4210,7 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
                 end
            end
         end
-        newHand = cat(matchC,cards;dims=1)
+        newHand = sort(cat(matchC,cards;dims=1))
         aps, ss, cs, m1s, mTs, m1sb,cPs,c1Specials = scanCards(newHand, true)
         if (length(ss)+length(cs)+length(m1s)+length(mTs)) > 0
             println("LOUSY PLAY")
