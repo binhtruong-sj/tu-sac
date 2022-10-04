@@ -2087,20 +2087,22 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
         if (l > 1) && !card_equal(r[1], r[2]) # not pairs
             l = 1
         end
-        newHand = sort(cat(card,r;dims = 1))
-        aps, ss, cs, m1s, mTs, m1sb,cPs,c1Specials = scanCards(newHand, true)
-        if (length(ss)+length(cs)+length(m1s)+length(mTs)) > 0
-            return 0, false, []
+        if length(r) > 0
+            newHand = sort(cat(card,r;dims = 1))
+            aps, ss, cs, m1s, mTs, m1sb,cPs,c1Specials = scanCards(newHand, true)
+            if (length(ss)+length(cs)+length(m1s)+length(mTs)) > 0
+                if allowPrint
+                    println("whoWin(getl)",(length(ss),length(cs),length(m1s),length(mTs)))
+                end
+                return 0, false, []
+            end
         end
         thand = deepcopy(all_hands[n])
         moreTrash = false
         ops,oss,ocs,om1s,omts,ombs =  scanCards(thand, true)
         TrashCnt = length(ocs)
-
         win = false
         if l > 0 || is_T(card)# only check winner that has matched cards
-           
-
             for e in r
                 filter!(x -> x != e, thand)
             end
@@ -2115,7 +2117,6 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                     end
                 end
             end
-          
             ll = length(union(ss, cs, m1s, mts, mbs)) 
             lc = length(cs)
             if false && TrashCnt < lc  # need more work
@@ -2141,7 +2142,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     l1, w1, r1 = getl!(card, n1, r1)
     l2, w2, r2 = getl!(card, n2, r2)
     l3, w3, r3 = getl!(card, n3, r3)
-    l4, w4, r3 = getl!(card, n4, r4)
+    l4, w4, r4 = getl!(card, n4, r4)
     if is_T(card) 
         l2 = l2 != 4 ? 0 : 4
         l3 = l3 != 4 ? 0 : 4
@@ -3237,7 +3238,7 @@ global GUI_ready = false
         global currentAction = gpPlay1card
         if reloadFile
             glNeedaPlayCard = RFstates[2] == "true"
-            glPrevPlayer = parse(Int, RFstates[3])
+            glPrevPlayer = myPlayer
             ActiveCard = 0
         else
             global glNeedaPlayCard = true
