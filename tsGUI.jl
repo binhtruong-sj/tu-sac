@@ -13,7 +13,7 @@ const m_client = 0
 const m_server = 1
 const m_standalone = 2
  allowPrint = false
-cardScale = 90
+cardScale = 80
 wantFaceDown = true
 noGUI_list = [true,true,true,true]
 PlayerList =[plBot1,plBot1,plBot1,plBot1]
@@ -1128,7 +1128,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
             modified_cardYdim = cardYdim
         else
             modified_cardYdim =
-                faceDown ? (cardYdim >> 2) : (cardYdim - (cardYdim >> 2))
+                faceDown ? div( (cardYdim*33),100 ) : div( (cardYdim*45),100)
         end
         yDim = div(l, xDim)
         if (xDim * yDim ) < l
@@ -1146,7 +1146,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
         else
             t = (cardYdim >> 4)
             modified_cardYdim =
-                faceDown ? (cardYdim - 8*t) : (cardYdim - 5*t)
+                faceDown ? (cardYdim - 12*t) : (cardYdim - 10*t)
             modified_cardXdim = div(cardXdim * cardScale,100)
             modified_cardYdim = div(modified_cardYdim * cardScale,100)
 
