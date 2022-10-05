@@ -990,9 +990,8 @@ function gameOver(n)
         updateWinnerPic(n)
         println(HF,(playerName)," Winner = ",playerName[n])
     end
-    
+    gameEnd = prevWinner
     replayHistory(0)
-    
 end
 isGameOver() = gameEnd > 0
 
@@ -2746,9 +2745,12 @@ function gamePlay1Iteration()
             return
         end
         FaceDown = !isGameOver()
-
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
-        if coDoi > 0 && length(r) == 0
+        if allowPrint
+            println("coDoi,cards,winner,r,length", (coDoi,coDoiCards,winner,r,length(r)))
+        end
+        Doi = (length(r) == 2 && coDoi >0) ? coDoiCards[1] == r[1] && coDoiCards[2] == r[2] : false
+        if coDoi > 0  && !Doi
             if allowPrint
                 println("Player", coDoi, " bo doi ", ts(coDoiCards[1]))
             end
@@ -2769,7 +2771,6 @@ function gamePlay1Iteration()
         end
         removeCards!(all_hands, nPlayer, r)
         if (winner == 0) && (length(r) == 0) # nobody match
-          
             if is_T(glNewCard)
                 addCards!(all_assets,0, nPlayer, glNewCard)
                 glNeedaPlayCard = true
@@ -2778,7 +2779,6 @@ function gamePlay1Iteration()
                 if glNeedaPlayCard
                     addCards!(all_discards, 1,glPrevPlayer, 
                     glNewCard)
-              
                 else
                     addCards!(all_discards, 1,nPlayer, glNewCard)
                     glPrevPlayer = nPlayer
@@ -3318,7 +3318,7 @@ global GUI_ready = false
             end
             restartGame()
         else
-            if length(gameDeckArray) >= gameDeckMinimum
+            if length(gameDeckArray) >= gameDeckMinimum+21
                     if  isGameOver() == false
                         if rem(glIterationCnt,4) == 0
                             SNAPSHOT()
@@ -3328,12 +3328,11 @@ global GUI_ready = false
                         gamePlay1Iteration()
                     end
             else
-                openAllCard = true
-                if allowPrint
-                    println("Bai thui!")
+                if !isGameOver()
+                    openAllCard = true
+                    gameOver(5)
+                    push!(gameDeck,ts(glNewCard))
                 end
-                gameOver(5)
-                glIterationCnt += 50
             end
         end
     elseif tusacState == tsRestart
@@ -3730,8 +3729,8 @@ function chk2(playCard)
         found = false
         for m1 in miss1s # CAAE XX PM ? X
             if card_equal(playCard, missPiece(m1[1], m1[2])) &&
-               !is_T(m1[1]) &&
-               !is_T(m1[2])
+                !is_T(m1[1]) &&
+                !is_T(m1[2])
                 found = true
                 break
             end
@@ -3759,7 +3758,7 @@ function chk2(playCard)
                                 end
                             end
                         end
-                         return
+                        return
                     end
                 end
             end
@@ -3791,6 +3790,9 @@ function chk2(playCard)
                 else
                     if p == 1
                         if length(coDoiCards) == 0
+                            if allowPrint
+                                println("chk2-codoi-",ap)
+                            end
                             push!(coDoiCards,ap[1],ap[2])
                         end
                     end
@@ -4231,7 +4233,9 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
         for ps in allPairs[1]
             if card_equal(ps[1],matchC[1])
                 for mb in miss1sbar
-                    if card_equal(ps[1],mb)
+                    if card_equal(ps[1],mb) &&
+                        !is_s(mb) &&
+                        !is_t(mb)
                         return false
                     end
                 end
@@ -4375,7 +4379,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         end
 function foundSaki(card,miss1sbar)
     for m in miss1sbar
-        if card_equal(card,m)
+        if card_equal(card,m) && !is_t(m) && !is_s(m)
             return true
         end
     end
