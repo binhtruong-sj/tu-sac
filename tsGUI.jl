@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.603"
+version = "0.604"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -844,7 +844,9 @@ function config(fn)
             elseif rl[1] == "histFile"
                 histFile = true
                 histFILENAME = rl[2]
-                HF = open(histFILENAME,"w") 
+                hfName = nextFileName(histFILENAME)
+                HF = open(hfName,"w") 
+                histFILENAME = hfName
             elseif rl[1] == "reloadFile"
                 reloadFile = true
                 RF = open(rl[2],"r") 
@@ -866,6 +868,46 @@ function config(fn)
     end
     return (PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer)
 end
+saveNameLoc = 0
+function nextFileName(fn)
+    global saveNameLoc
+
+    n = findfirst('#',fn)
+    println("N=",n)
+    if n === nothing
+        n = saveNameLoc
+        achar = fn[n]
+        anum = parse(Int,achar)
+        anum = anum + 1
+        if anum > 9
+            anum = 1
+        end
+        rfilename = string(fn[1:n-1],anum,fn[n+1:end])
+    else
+        saveNameLoc = n
+        found = false
+        for i in 1:9
+            global nfn = string(fn[1:n-1],i,fn[n+1:end])
+            if !isfile(nfn)
+                println("fff",nfn)
+                found = true
+                break
+            end
+        end
+        if found
+            println("fff",nfn)
+
+            rfilename = nfn
+        else
+            rfilename = string(fn[1:n-1],1,fn[n+1:end])
+        end 
+    end
+    if allowPrint
+        println("fn=",rfilename)
+    end
+    return rfilename
+end
+    
 prevWinner = 1
 
 
@@ -946,8 +988,11 @@ function gameOver(n)
     global FaceDown = false
     if 0 < n < 5
         updateWinnerPic(n)
+        println(HF,(playerName)," Winner = ",playerName[n])
     end
+    
     replayHistory(0)
+    
 end
 isGameOver() = gameEnd > 0
 
@@ -3989,12 +4034,14 @@ function adjustCnt(cnt,max,dir)
 end
 
 function restartGame()
-    global gameDeck,prevWinner,currentPlayer,HF
+    global gameDeck,prevWinner,currentPlayer,HF,histFILENAME
     global FaceDown = false
     global coldStart = false
     if histFile
         close(HF)
-        HF = open(histFILENAME,"w")
+        hfName = nextFileName(histFILENAME)
+        HF = open(hfName,"w") 
+        histFILENAME = hfName
     end
     currentPlayer = prevWinner  
         newDeck = (union(
@@ -4120,6 +4167,7 @@ function on_key_down(g)
             msgActor.pos = tableGridXY(1,20)
         if g.keyboard.R 
             checkForRestart()
+
         elseif g.keyboard.X
             msgActor = TextActor("arrow keys, Xong(spacebar),M","asapvar",font_size=fontSize,color=[0,0,0,0])
             msgActor.pos = tableGridXY(1,20)
@@ -4334,7 +4382,6 @@ function foundSaki(card,miss1sbar)
     return false
 end
         if is_c(pcard) || length(cards) == 0
-           
             # check for bo doi
             if length(cards) == 0
                 for ps in allPairs
