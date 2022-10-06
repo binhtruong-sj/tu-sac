@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.605"
+version = "0.609"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -24,6 +24,8 @@ shuffled = false
 coDoi = 0
 coDoiCards = []
 gameCmd = '.'
+namestr = "123456789abcdefghijklmpqrstuv"
+
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
@@ -873,30 +875,27 @@ function nextFileName(fn)
     global saveNameLoc
 
     n = findfirst('#',fn)
-    println("N=",n)
     if n === nothing
         n = saveNameLoc
         achar = fn[n]
-        anum = parse(Int,achar)
-        anum = anum + 1
-        if anum > 9
-            anum = 1
+        cl = findfirst(achar,namestr)
+        if cl == length(namestr)
+            cl = 1
+        else
+            cl += 1
         end
-        rfilename = string(fn[1:n-1],anum,fn[n+1:end])
+        rfilename = string(fn[1:n-1],namestr[cl],fn[n+1:end])
     else
         saveNameLoc = n
         found = false
-        for i in 1:9
+        for i in namestr
             global nfn = string(fn[1:n-1],i,fn[n+1:end])
             if !isfile(nfn)
-                println("fff",nfn)
                 found = true
                 break
             end
         end
         if found
-            println("fff",nfn)
-
             rfilename = nfn
         else
             rfilename = string(fn[1:n-1],1,fn[n+1:end])
@@ -1678,14 +1677,15 @@ TBW
 """
 function c_match(p,s,n)
     if length(union(s,n)) > 1 && allowPrint
-         println("c-match ",(p,s,n))
+         println("c-match ",(p,s,n,length(s)))
     end
+
 
     if length(s) > 1
         rt = []
         for es in s
             if card_equal(es,n)
-                if length(s) < 3
+                if length(s) != 3 
                     rt = [es]
                 end
             end
@@ -4109,7 +4109,7 @@ scanCards(hand, false)
     return TrashCnt < l
 end
 function on_key_down(g)
-    global tusacState, gameDeck, mode_human,msgActor,haBai,shuffled,
+    global tusacState, gameDeck, mode_human,haBai,shuffled,
     playerA_hand,
     playerB_hand,
     playerC_hand,
@@ -4129,12 +4129,7 @@ function on_key_down(g)
         elseif g.keyboard.T
             println("key-T")
         end
-        if tusacState < tsSdealCards
-            msgActor = TextActor("S B","asapvar",font_size=fontSize,color=[0,0,0,0])
-            msgActor.pos = tableGridXY(1,20)
-        elseif tusacState == tsSdealCards
-            msgActor = TextActor("X  H","asapvar",font_size=fontSize,color=[0,0,0,0])
-            msgActor.pos = tableGridXY(1,20)
+       if tusacState == tsSdealCards
             if g.keyboard.S
                 shuffled = true
                 autoHumanShuffle(10)
@@ -4171,14 +4166,10 @@ function on_key_down(g)
                 println(HistCnt)
             end
     elseif tusacState == tsGameLoop
-        msgActor = TextActor("X  H","asapvar",font_size=fontSize,color=[0,0,0,0])
-            msgActor.pos = tableGridXY(1,20)
         if g.keyboard.R 
             checkForRestart()
 
         elseif g.keyboard.X
-            msgActor = TextActor("arrow keys, Xong(spacebar),M","asapvar",font_size=fontSize,color=[0,0,0,0])
-            msgActor.pos = tableGridXY(1,20)
             SNAPSHOT() #taking last SNAPSHOT 
             HistCnt = length(HISTORY)
             tusacState = tsHistory
@@ -4478,7 +4469,7 @@ end
 """
 function on_mouse_down(g, pos)
     global cardsIndxArr
-    global cardSelect,msgActor
+    global cardSelect
     global playCard = []
     global tusacState
     x = pos[1] << macOSconst
@@ -4498,8 +4489,6 @@ function on_mouse_down(g, pos)
         if allowPrint
         println("ORGANIZE")
         end
-        msgActor = TextActor("X  H","asapvar",font_size=fontSize,color=[0,0,0,0])
-        msgActor.pos = tableGridXY(1,20)
        gsStateMachine(gsOrganize)
        
     elseif tusacState == tsGameLoop 
@@ -4559,7 +4548,7 @@ if noGUI()
     end
 end
 function update(g)
-    global waitForHuman, msgActor
+    global waitForHuman
     global ad, deckState, gameDeck, tusacState
     global tusacState
     FaceDown = !isGameOver()
@@ -4647,7 +4636,6 @@ function draw(g)
         draw(handPic)
         draw(winnerPic)
         draw(errorPic)
-        draw(msgActor)
         for i in 1:4
             draw(GUIname[i])
         end
