@@ -984,14 +984,21 @@ const eRcheck = 2
 gameEnd = 1
 function gameOver(n) 
     global eRrestart
-    global gameEnd = n
+    global gameEnd
     global FaceDown = false
     if 0 < n < 5
         updateWinnerPic(n)
         println(HF,(playerName)," Winner = ",playerName[n])
+    else
+        sleep(.2)
+        if gameEnd == 0
+            push!(gameDeck,ts(glNewCard))
+        end
     end
-    gameEnd = prevWinner
+    gameEnd = n == 5 ?  prevWinner : n
+
     replayHistory(0)
+    
 end
 isGameOver() = gameEnd > 0
 
@@ -2747,7 +2754,7 @@ function gamePlay1Iteration()
         FaceDown = !isGameOver()
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
         if allowPrint
-            println("coDoi,cards,winner,r,length", (coDoi,coDoiCards,winner,r,length(r)))
+        println("coDoi,cards,winner,r,length", (coDoi,coDoiCards,winner,r,length(r)))
         end
         Doi = (length(r) == 2 && coDoi >0) ? coDoiCards[1] == r[1] && coDoiCards[2] == r[2] : false
         if coDoi > 0  && !Doi
@@ -3318,7 +3325,7 @@ global GUI_ready = false
             end
             restartGame()
         else
-            if length(gameDeckArray) >= gameDeckMinimum+21
+            if length(gameDeckArray) >= gameDeckMinimum 
                     if  isGameOver() == false
                         if rem(glIterationCnt,4) == 0
                             SNAPSHOT()
@@ -3328,11 +3335,10 @@ global GUI_ready = false
                         gamePlay1Iteration()
                     end
             else
-                if !isGameOver()
-                    openAllCard = true
-                    gameOver(5)
-                    push!(gameDeck,ts(glNewCard))
-                end
+                openAllCard = true
+            
+                gameOver(5)
+                glIterationCnt += 50
             end
         end
     elseif tusacState == tsRestart
