@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.609"
+version = "0.610"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -23,8 +23,9 @@ playerName = ["Binh-bot1","Binh-bot2","Binh-bot3","Binh-bot4"]
 shuffled = false
 coDoi = 0
 coDoiCards = []
+coins = []
 gameCmd = '.'
-namestr = "123456789abcdefghijklmpqrstuv"
+namestr = "123456789abcdefghijklmpqrstuvxyz"
 
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
@@ -848,6 +849,9 @@ function config(fn)
                 histFILENAME = rl[2]
                 hfName = nextFileName(histFILENAME)
                 HF = open(hfName,"w") 
+                println(HF,"#")
+                println(HF,"#")
+                println(HF,"#")
                 histFILENAME = hfName
             elseif rl[1] == "reloadFile"
                 reloadFile = true
@@ -1277,7 +1281,13 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
 
     if reloadFile
         found = false
-        aline = readline(RF)
+        while true
+            aline = readline(RF)
+            if aline[1] != "#"
+                break
+            end
+        end
+ 
         RFstates = split(aline,", ")
         while true
             if RFstates[1] == RFindex
@@ -1636,14 +1646,14 @@ end
         scan/c_analyzer all the chots. Return singles.
 TBW
 """
-function c_scan(p,s)
+function c_scan(p,s;win=false)
     if length(s) >0 && allowPrint
          println("c-scan",(p,s))
     end
     if length(s) > 2
         return []
     elseif length(s) == 2
-        if length(p[2])>0
+        if length(p[2])>0 && win
             return[]
         else
             if length(p[1])>1
@@ -1655,9 +1665,9 @@ function c_scan(p,s)
             end
         end
     else 
-        if length(p[2])>1
+        if length(p[2])>1 && win
             return[]
-        elseif length(p[2])==1
+        elseif length(p[2])==1 && win
             return s
         else
             if length(p[1]) > 2
@@ -1675,7 +1685,7 @@ end
             singles.
 TBW
 """
-function c_match(p,s,n)
+function c_match(p,s,n;win=false)
     if length(union(s,n)) > 1 && allowPrint
          println("c-match ",(p,s,n,length(s)))
     end
@@ -1683,22 +1693,30 @@ function c_match(p,s,n)
 
     if length(s) > 1
         rt = []
+        nrt = []
         for es in s
             if card_equal(es,n)
                 if length(s) != 3 
                     rt = [es]
                 end
+            else
+                push!(nrt,es)
             end
         end
-        if length(rt) == 0
+        if length(rt) == 0 && length(s) != 3
             rt = s
+        else
+            if length(p[1]) > 0 && length(nrt) == 2 
+                print("nrt",nrt)
+                rt = [nrt[1],p[1][1][1]]
+            end
         end
     elseif length(s)==1
         if card_equal(s[1],n)
             rt = s
         else
         # now we have 2 uniq chots
-            if length(p[2])>0 # at least 1 3-pair
+            if length(p[2])>0 && win# at least 1 3-pair
                 rt =  [p[2][1][1],s[1]] # use 1 of the 3-pair
             else
                 if length(p[1])>1 # at least 2 2-pair and 1-single
@@ -1716,7 +1734,7 @@ function c_match(p,s,n)
             end
         end
     else 
-        if length(p[2])>1  #not sure about this
+        if length(p[2])>1  && win#not sure about this
             rt = [p[2][1][1],p[2][2][1]]
         elseif length(p[2])==1
             rt =  []
@@ -1768,9 +1786,11 @@ function scanCards(inHand, silence = false)
                     if pairOf == 1 # Tuong pair of 2 is not really a pair
                         push!(rhand, prevAcard) # put 1 back for rescan
                     else
+                        #=
                         if pairOf == 2 # T pairof 3 is a pair, but put 1 back for rescan
                             push!(rhand, prevAcard)
                         end
+                        =#
                         push!(pairs, prevAcard)
                         push!(allPairs[pairOf], pairs)
                     end
@@ -3159,7 +3179,7 @@ The goal is to have one code to handle all mode/variation of plays:
 
 """
 function gsStateMachine(gameActions)
-    global tusacState, all_discards, all_assets,prevWinner,haBai
+    global tusacState, all_discards, all_assets,prevWinner,haBai,coins
     global gameDeck, ad, deckState,gameEnd,HISTORY,currentAction
     global nwPlayer,nwMaster,playerName,coldStart, FaceDown,shuffled
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
@@ -3260,8 +3280,10 @@ global GUI_ready = false
                 println("\nDealing is completed,prevWinner=",prevWinner)
             end
             getData_all_discard_assets()
+            coins = []
         if !reloadFile
             for i in 1:4
+                coinsCnt = 0
                 allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
                 scanCards(all_hands[i],false)
                 for pss in allPairs
@@ -3279,6 +3301,15 @@ global GUI_ready = false
                             addCards!(all_assets,0,i,ps[2])
                             addCards!(all_assets,0,i,ps[3])
                             addCards!(all_assets,0,i,ps[4])
+                        elseif length(ps) == 3
+                            coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
+                            coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
+                                             i == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                                             i == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                                             tableGridXY(5,10+coinsCnt*1) 
+                            push!(coins,coinActor)
+                            println("ADDING COINS")
+                            coinsCnt += 1
                         end
                     end
                 end
@@ -3729,7 +3760,7 @@ end
 chk2(playCard) check for pairs -- also check for P XX ? M
 
 """
-function chk2(playCard)
+function chk2(playCard;win=false)
     global coDoiCards
     function chk2Print()
         found = false
@@ -3746,7 +3777,7 @@ function chk2(playCard)
             for ap in allPairs[p]
                 print(ts(ap[1]))
                 if is_T(playCard)
-                    if p == 3 && card_equal(ap[1], playCard)
+                    if p == 2 && card_equal(ap[1], playCard)
                         print("@")
                         return 
                     end
@@ -3804,7 +3835,7 @@ function chk2(playCard)
                     end
                      return ap
                 end
-            elseif inSuit(ap[1], playCard)  # CASE X PP ? M
+            elseif inSuit(ap[1], playCard) && p == 1 # CASE X PP ? M
                 if length(inSuitArr) == 0
                     push!(inSuitArr, ap[1]) # put in array to check
                 end
@@ -4636,6 +4667,11 @@ function draw(g)
         draw(handPic)
         draw(winnerPic)
         draw(errorPic)
+        if length(coins) > 0
+            for c in coins
+                draw(c)
+            end
+        end
         for i in 1:4
             draw(GUIname[i])
         end
