@@ -933,8 +933,8 @@ const macOSconst = 1
     WIDTH = div(gameW * 16, 9)
     realHEIGHT = HEIGHT * 2
     realWIDTH = WIDTH * 2
-    cardXdim = 64
-    cardYdim = 210
+    cardXdim = 90
+    cardYdim = 295
     zoomCardYdim = 400
     GENERIC = 0
 else
@@ -950,8 +950,8 @@ else
         zoomCardYdim = 210
     elseif GENERIC == 3
         gameW = 820
-        cardXdim = 47
-        cardYdim = 150
+        cardXdim = 49
+        cardYdim = 170
         zoomCardYdim = 210
     elseif GENERIC == 4
         gameW = 820
@@ -1020,7 +1020,7 @@ function RESET1()
     end
     global gotClick = false
     global GUI_array=[]
-    global GUI_ready=false
+    global GUI_ready=true
     FaceDown = wantFaceDown
     global HISTORY = []
     global waitForHuman = false
@@ -1080,9 +1080,9 @@ function setupActorgameDeck()
                 if macOS
                     mapr = r < 4 ? r : (r == 4 ? 7 : r - 1)
 
-                    st = string(s, mapr, ".png")
+                    st = string(s, "-m",mapr, ".png")
                     big_st = string(s, "-", mapr, ".png")
-                    afc = Actor("fc.png")
+                    afc = Actor("fc-m.png")
                 else
                     if GENERIC == 1
                         local m = r < 4 ? r : (r == 4 ? 7 : r - 1)
@@ -1196,12 +1196,19 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
         l = length(deck)
         if xDim > 20
             xDim = l
-            modified_cardXdim = div(cardXdim * cardScale,100)
+            modified_cardXdim = 
+                                faceDown ? div( (cardXdim*80),100 ) : 
+                                cardXdim
+            modified_cardXdim = div(modified_cardXdim * cardScale,100)
             modified_cardYdim = div(cardYdim * cardScale,100)
         else
+            modified_cardXdim = 
+                                faceDown ? div( (cardXdim*80),100 ) : 
+                                cardXdim
+            modified_cardXdim = div(modified_cardXdim * cardScale,100)
+
             modified_cardYdim =
                 faceDown ? div( (cardYdim*33),100 ) : div( (cardYdim*45),100)
-            modified_cardXdim = div(cardXdim * cardScale,100)
             modified_cardYdim = div(modified_cardYdim * cardScale,100)
 
         end
@@ -1281,8 +1288,9 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
 
     if reloadFile
         found = false
+        aline = ""
         while true
-            aline = readline(RF)
+            global aline = readline(RF)
             if aline[1] != "#"
                 break
             end
@@ -2556,7 +2564,6 @@ function gamePlay1Iteration()
                         print("Human-p: ", player," PlayCard = ")
                          ts_s(rQ[player])
                     end
-                    GUI_ready = false
                 else
                     return false
                 end
@@ -3602,9 +3609,7 @@ function mouseDownOnBox(x, y, boxState)
         up = div(up, div(cardYdim, 2))
         loc = div((boxState[3] - boxState[1]), modified_cardXdim) * dy + dx + 1
     end
-    if allowPrint
-        println("l,r",(loc,up)) 
-    end
+ 
     return loc, up
 end
 
@@ -3960,9 +3965,15 @@ function hgamePlay(
     rQ,
     rReady
 )
-    global rQ, rReady, coDoi, coDoiCards,currentCards,currentAction, currentPlayCard
+
+    global rQ, rReady, coDoi, coDoiCards, GUI_ready, GUI_array,
+    currentCards,currentAction, currentPlayCard
     if(gpPlayer==myPlayer)
         currentAction = gpAction
+        if playerIsHuman(myPlayer)
+            GUI_ready = false
+            GUI_array = []
+        end
     end
     currentPlayCard = pcard
     FaceDown = !isGameOver() && wantFaceDown
@@ -4256,8 +4267,8 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
     if action == gpPlay1card
         for ps in allPairs
             for p in ps
-                if length(p) == 3 && card_equal(p[1],cards[1])
-                    return true
+                if length(p) == 3 
+                    return card_equal(p[1],cards[1])
                 end
             end
         end
@@ -4317,6 +4328,7 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
     return false
 end
 function badPlay(cards,player, hand,action,botCards,matchC)
+    println("BADPLAY,",(cards,matchC))
     if badPlay1(cards,player, hand,action,botCards,matchC)
         return true
     end
@@ -4529,46 +4541,45 @@ function on_mouse_down(g, pos)
        gsStateMachine(gsOrganize)
        
     elseif tusacState == tsGameLoop 
-        if !isGameOver() && playerIsHuman(myPlayer) 
+        if !isGameOver() && playerIsHuman(myPlayer)
             if haBai 
                 GUI_ready = true
                 GUI_array = currentCards
             else
-                cindx, yPortion = mouseDownOnBox(x, y, human_state)
-                if cindx != 0
-                    click_card(cindx, yPortion, playerA_hand)
-                end
-                if currentAction == gpPlay1card 
-                    cindx, yPortion = mouseDownOnBox(x, y, pBseat)
-                else
-                    bc = ActiveCard 
-                    bx,by = big_actors[bc].pos
-                    hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
-                    cindx, yPortion = mouseDownOnBox(x, y, hotseat)
-                end
-                if cindx != 0
-                    global GUI_array, GUI_ready
-                    GUI_array = []
-                    for ci in cardsIndxArr
-                        ac= TuSacCards.getCards(playerA_hand, ci)
-                        push!(GUI_array,ac)
-                        if allowPrint
-                        print("click_card, index,card=",(ci,ac))
-                        println(" ",ts(ac))
+                if GUI_ready == false
+                    cindx, yPortion = mouseDownOnBox(x, y, human_state)
+                    if cindx != 0
+                        click_card(cindx, yPortion, playerA_hand)
+                    end
+                    if currentAction == gpPlay1card 
+                        cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+                    else
+                        bc = ActiveCard 
+                        bx,by = big_actors[bc].pos
+                        hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
+                        cindx, yPortion = mouseDownOnBox(x, y, hotseat)
+                    end
+                    if cindx != 0
+                        global GUI_array, GUI_ready
+                        GUI_array = []
+                        for ci in cardsIndxArr
+                            ac= TuSacCards.getCards(playerA_hand, ci)
+                            push!(GUI_array,ac)
                         end
-                    end
-                    if allowPrint
-                    println("\nDanh Bai XONG ROI")
-                    end
-                    setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],100, false)
-                    cardsIndxArr = []
-                    if badPlay(GUI_array,myPlayer,all_hands[myPlayer],
-                        currentAction,currentCards,currentPlayCard)
-                        updateErrorPic(1)
-                        GUI_ready = false
-                    else 
-                        updateErrorPic(0)
-                        GUI_ready = true
+                        if allowPrint
+                            println("\nDanh Bai XONG ROI")
+                        end
+                        setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],100, false)
+                        cardsIndxArr = []
+                        if ( length(GUI_array) > 0 || length(currentPlayCard) > 0 ) &&
+                            badPlay(GUI_array,myPlayer,all_hands[myPlayer],
+                            currentAction,currentCards,currentPlayCard)
+                            updateErrorPic(1)
+                            GUI_ready = false
+                        else 
+                            updateErrorPic(0)
+                            GUI_ready = true
+                        end
                     end
                 end
             end
