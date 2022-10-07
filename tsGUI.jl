@@ -3301,14 +3301,20 @@ global GUI_ready = false
                             addCards!(all_assets,0,i,ps[2])
                             addCards!(all_assets,0,i,ps[3])
                             addCards!(all_assets,0,i,ps[4])
-                        elseif length(ps) == 3
                             coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
                             coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
                                              i == 2 ? tableGridXY(17,10+coinsCnt*1) :
                                              i == 3 ? tableGridXY(10+coinsCnt*1,5) :
                                              tableGridXY(5,10+coinsCnt*1) 
                             push!(coins,coinActor)
-                            println("ADDING COINS")
+                            coinsCnt += 1
+                        elseif length(ps) == 3
+                            coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
+                            coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
+                                             i == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                                             i == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                                             tableGridXY(5,10+coinsCnt*1) 
+                            push!(coins,coinActor)
                             coinsCnt += 1
                         end
                     end
