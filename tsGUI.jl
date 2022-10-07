@@ -758,9 +758,9 @@ if allowPrint
 println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
 end
 GUILoc = zeros(Int,13,2)
-GUILoc[1,1],GUILoc[1,2] = 7,18
+GUILoc[1,1],GUILoc[1,2] = 6,18
 GUILoc[2,1],GUILoc[2,2] = 20,2
-GUILoc[3,1],GUILoc[3,2] = 7,2
+GUILoc[3,1],GUILoc[3,2] = 6,2
 GUILoc[4,1],GUILoc[4,2] = 1,2
 
 GUILoc[5,1],GUILoc[5,2] = 9,13
@@ -769,8 +769,8 @@ GUILoc[7,1],GUILoc[7,2] = 8,4
 GUILoc[8,1],GUILoc[8,2] = 4,7
 
 GUILoc[9,1],GUILoc[9,2] = 16,15
-GUILoc[10,1],GUILoc[10,2] = 16,2
-GUILoc[11,1],GUILoc[11,2] = 3,2
+GUILoc[10,1],GUILoc[10,2] = 16,3
+GUILoc[11,1],GUILoc[11,2] = 3,3
 GUILoc[12,1],GUILoc[12,2] = 3,16
 
 GUILoc[13,1],GUILoc[13,2] = 8,8
