@@ -1,0 +1,303 @@
+# (68 saki cV problem player 2
+#
+#
+(0, true, 2, 0, 0)
+TV TV tV tV xV pV pV pV mV mV sD sD tD mD tX xX cT cV cV cD 
+TT sV sV xV mV TD TD mD TX sX tX tX xX xX pX mX cT 
+TT TT tT xT xT xT mT sV pV pD pD TX TX tX mX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+
+sT sT sT TD 
+pT pT xX mX pX 
+cT cD cX xD xD 
+mT xD 
+tD 
+
+pX sX 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD xV pD tV mD 
+("M", tX, 1, 6, 0)
+("M", TX, 2, 6, 0)
+("M", sX, 2, 6, 0)
+(4, true, 3, 0x5f, 0)
+TV TV tV tV xV pV pV pV mV mV sD sD tD mD xX cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX pX mX cT 
+TT TT tT xT xT xT mT sV pV pD pD TX TX tX mX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+
+sT sT sT TD tX TX sX 
+pT pT xX mX pX 
+cT cD cX xD xD 
+mT xD 
+tD 
+
+pX sX 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD xV pD tV mD 
+("M", cT, 2, 10, 0)
+(8, false, 3, 0x0f, 0)
+TV TV tV tV xV pV pV pV mV mV sD sD tD mD xX cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX pX mX 
+TT TT tT xT xT xT mT sV pV pD pD TX TX tX mX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+
+sT sT sT TD tX TX sX 
+pT pT xX mX pX 
+cT cD cX xD xD 
+mT xD 
+tD cT 
+
+pX sX 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD xV pD tV mD 
+("M", mD, 2, 11, 0)
+(12, false, 4, 0x52, 0)
+TV TV tV tV xV pV pV pV mV mV sD sD tD mD xX cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX pX mX 
+TT TT tT xT xT xT mT sV pV pD pD TX TX tX mX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+
+sT sT sT TD tX TX sX 
+pT pT xX mX pX 
+cT cD cX xD xD 
+mT xD 
+tD cT 
+mD 
+pX sX 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD xV pD tV 
+("M", tV, 1, 5, 0)
+("M", tV, 1, 5, 0)
+("M", tV, 2, 12, 0)
+(16, false, 1, 0x25, 0)
+TV TV xV pV pV pV mV mV sD sD tD mD xX cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX pX mX 
+TT TT tT xT xT xT mT sV pV pD pD TX TX tX mX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+tV tV 
+sT sT sT TD tX TX sX 
+pT pT xX mX pX 
+cT cD cX xD xD 
+mT xD 
+tD cT 
+mD 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD xV pD 
+("M", pD, 3, 7, 0)
+("M", pD, 3, 7, 0)
+("M", pD, 2, 7, 0)
+(20, true, 4, 0x4f, 0)
+TV TV xV pV pV pV mV mV sD sD tD mD xX cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX pX mX 
+TT TT tT xT xT xT mT sV pV TX TX tX mX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+tV tV 
+sT sT sT TD tX TX sX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD 
+mT xD 
+tD cT 
+mD 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD xV 
+("M", mX, 3, 11, 0)
+(24, false, 4, 0x70, 0)
+TV TV xV pV pV pV mV mV sD sD tD mD xX cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX pX mX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+tV tV 
+sT sT sT TD tX TX sX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD 
+mT xD 
+tD cT 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD xV 
+("M", xV, 1, 5, 0)
+("M", xV, 3, 5, 0)
+(28, true, 2, 0x2e, 0)
+TV TV pV pV pV mV mV sD sD tD mD xX cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX pX mX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+tV tV xV xV 
+sT sT sT TD tX TX sX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD 
+mT xD 
+tD cT 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD 
+("M", xX, 1, 6, 0)
+("M", pX, 2, 6, 0)
+("M", mX, 2, 6, 0)
+(32, true, 3, 0x67, 0)
+TV TV pV pV pV mV mV sD sD tD mD cT cV cV cD 
+TT sV sV xV mV TD TD mD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+tV tV xV xV 
+sT sT sT TD tX TX sX xX pX mX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD 
+mT xD 
+tD cT 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD 
+("M", mD, 2, 10, 0)
+(36, false, 3, 0x51, 0)
+TV TV pV pV pV mV mV sD sD tD mD cT cV cV cD 
+TT sV sV xV mV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD cT cV 
+tV tV xV xV 
+sT sT sT TD tX TX sX xX pX mX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD 
+mT xD 
+tD cT mD 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV cD 
+("M", cT, 4, 8, 0)
+("M", cV, 4, 8, 0)
+("M", cD, 2, 8, 0)
+(40, true, 1, 0x46, 0)
+TV TV pV pV pV mV mV sD sD tD mD cT cV cV cD 
+TT sV sV xV mV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV mV TD sD sD 
+tV tV xV xV 
+sT sT sT TD tX TX sX xX pX mX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD 
+tD cT mD 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV 
+("M", mV, 4, 5, 0)
+("M", mV, 1, 5, 0)
+("M", mV, 1, 5, 0)
+(44, true, 2, 0x35, 0)
+TV TV pV pV pV sD sD tD mD cT cV cV cD 
+TT sV sV xV mV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV 
+sT sT sT TD tX TX sX xX pX mX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD 
+tD cT mD 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV 
+("M", mD, 1, 9, 0)
+(48, false, 2, 0x54, 0)
+TV TV pV pV pV sD sD tD cT cV cV cD 
+TT sV sV xV mV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV 
+sT sT sT TD tX TX sX xX pX mX 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD mD 
+tD cT mD 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX xV 
+("M", xV, 2, 6, 0)
+("M", xV, 1, 6, 0)
+(52, true, 3, 0x30, 0)
+TV TV pV pV pV sD sD tD cT cV cV cD 
+TT sV sV mV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV 
+sT sT sT TD tX TX sX xX pX mX xV xV 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD mD 
+tD cT mD 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX 
+("M", mV, 2, 10, 0)
+(56, false, 3, 0x36, 0)
+TV TV pV pV pV sD sD tD cT cV cV cD 
+TT sV sV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV 
+sT sT sT TD tX TX sX xX pX mX xV xV 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD mD 
+tD cT mD mV 
+mD mX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT cX 
+("M", cX, 2, 11, 0)
+(60, false, 4, 0x62, 0)
+TV TV pV pV pV sD sD tD cT cV cV cD 
+TT sV sV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV 
+sT sT sT TD tX TX sX xX pX mX xV xV 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD mD 
+tD cT mD mV 
+mD mX cX 
+pX sX tV 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV pT 
+("M", pT, 2, 12, 0)
+(64, false, 1, 0x15, 0)
+TV TV pV pV pV sD sD tD cT cV cV cD 
+TT sV sV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV 
+sT sT sT TD tX TX sX xX pX mX xV xV 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD mD 
+tD cT mD mV 
+mD mX cX 
+pX sX tV pT 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV tV 
+("M", tV, 2, 9, 0)
+(68, false, 2, 0x28, 0)
+TV TV pV pV pV sD sD tD cT cV cV cD 
+TT sV sV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV 
+sT sT sT TD tX TX sX xX pX mX xV xV 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD mD tV 
+tD cT mD mV 
+mD mX cX 
+pX sX tV pT 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX cV 
+("M", cV, 1, 5, 0)
+("M", cV, 1, 5, 0)
+("M", cV, 1, 5, 0)
+(72, true, 2, 0x2a, 0)
+TV TV pV pV pV sD sD tD cT cD 
+TT sV sV TD TD tX tX xX xX 
+TT TT tT xT xT xT mT sV pV TX TX tX 
+TT sT tT tT tT xT pT mT TV TD sD sD 
+tV tV xV xV mV mV mV cV cV cV 
+sT sT sT TD tX TX sX xX pX mX xV xV 
+pT pT xX mX pX pD pD pD 
+cT cD cX xD xD cD cT cV 
+mT xD mD tV 
+tD cT mD mV 
+mD mX cX 
+pX sX tV pT 
+cD tD sV cX xD sX tD pX TV mD cX sX TX pD mT mX 
