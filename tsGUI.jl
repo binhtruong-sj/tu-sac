@@ -1301,6 +1301,16 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
         end
         RFstates = split(aline,", ")
         while true
+            println("aline=",aline," RFS=",RFstates)
+            if RFstates[1] == "(\"M\""
+                while !eof(RF)
+                    aline = readline(RF)
+                    RFstates = split(aline,", ")
+                    if RFstates[1] != "(\"M\""
+                        break
+                    end
+                end
+            end
             if RFstates[1] == RFindex
                 break
             end
@@ -1308,13 +1318,9 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
             readline(RF);readline(RF);readline(RF);readline(RF);
             readline(RF);readline(RF);readline(RF);readline(RF);
             readline(RF);readline(RF);readline(RF);readline(RF);
-            while !eof(RF)
-                aline = readline(RF)
-                RFstates = split(aline,", ")
-                if RFstates[1] != "(\"M\""
-                    break
-                end
-            end
+            aline = readline(RF)
+            RFstates = split(aline,", ")
+
         end
         P0_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
         P1_hand = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
@@ -2190,7 +2196,8 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
         thand = deepcopy(all_hands[n])
         moreTrash = false
         ops,oss,ocs,om1s,omts,ombs =  scanCards(thand, true)
-        TrashCnt = length(ocs)
+        oll = length(oss) + length(ocs) + length(om1s) + length(omts)
+
         win = false
         if l > 0 || is_T(card)# only check winner that has matched cards
             for e in r
@@ -2207,13 +2214,15 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                     end
                 end
             end
-            ll = length(union(ss, cs, m1s, mts, mbs)) 
-            lc = length(cs)
-            if false && TrashCnt < lc  # need more work
+            ll = length(ss) + length(cs) + length(m1s) + length(mts)
+            println("whowin, chking more Trsh:",
+                    (length(ss) , length(cs) , length(m1s) , length(mts)),
+                    (length(oss) , length(ocs) , length(om1s) , length(omts)))
+            if oll < ll  
                 if allowPrint
-                println("Illegal match -- creating more trash ",(TrashCnt,lc))
-                ts_s(ocs)
-                ts_s(oc)
+                    println("whowin, chking more Trsh:",
+                    (length(ss) , length(cs) , length(m1s) , length(mts)),
+                    (length(oss) , length(ocs) , length(om1s) , length(omts)))
                 end
                 l = 0
                 r = []
@@ -4221,8 +4230,8 @@ function on_key_down(g)
                 dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
                 global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
                 replayHistory(HistCnt)
+                println("(",(HistCnt-1)*4)
                 printHistory(HistCnt)
-                println(HistCnt)
             end
     elseif tusacState == tsGameLoop
         if g.keyboard.R 
