@@ -1,4 +1,4 @@
-# (12 cX -- not very good matching
+# (12 cX player 1 -- not very good matching
 #
 #
 ("M", pX, 2, 6, 0)
