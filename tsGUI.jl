@@ -1714,8 +1714,6 @@ function c_match(p,s,n;win=false)
     if length(union(s,n)) > 1 && allowPrint
          println("c-match ",(p,s,n,length(s)))
     end
-
-
     if length(s) > 1
         rt = []
         nrt = []
@@ -1728,11 +1726,19 @@ function c_match(p,s,n;win=false)
                 push!(nrt,es)
             end
         end
-        if length(rt) == 0 && length(s) != 3
-            rt = s
+        if length(rt) != 0 
+            if length(p[1]) == 2
+                return [nrt[1],p[1][1][1],p[1][2][1]]
+            elseif length(s) != 3
+                rt = s
+            end
         else
-            if length(p[1]) > 0 && length(nrt) == 2 
-                print("nrt",nrt)
+            if length(s) == 3
+                rt = s
+            elseif length(p[1]) > 0 && length(nrt) == 2 
+                if allowPrint
+                   print("nrt",nrt)
+                end
                 rt = [nrt[1],p[1][1][1]]
             end
         end
