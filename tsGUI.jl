@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.612"
+version = "0.613"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -764,9 +764,9 @@ GUILoc[3,1],GUILoc[3,2],GUILoc[3,3] = 6,2,21
 GUILoc[4,1],GUILoc[4,2],GUILoc[4,3] = 1,2,2
 
 GUILoc[5,1],GUILoc[5,2],GUILoc[5,3] = 7,13,21
-GUILoc[6,1],GUILoc[6,2],GUILoc[6,3] = 16,7,6
+GUILoc[6,1],GUILoc[6,2],GUILoc[6,3] = 16,8,6
 GUILoc[7,1],GUILoc[7,2],GUILoc[7,3] = 7,4,21
-GUILoc[8,1],GUILoc[8,2],GUILoc[8,3] = 3,7,6
+GUILoc[8,1],GUILoc[8,2],GUILoc[8,3] = 3,8,6
 
 GUILoc[9,1], GUILoc[9,2], GUILoc[9,3] = 17,16,5
 GUILoc[10,1],GUILoc[10,2],GUILoc[10,3] = 16,1,5
@@ -2173,6 +2173,10 @@ function replayHistory(index)
         global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
         updateHandPic(glPrevPlayer)
     end
+    FaceDown = !isGameOver()
+
+    a5 = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], GUILoc[13,3], FaceDown)
+
     d1 = setupDrawDeck(playerA_discards, GUILoc[9,1], GUILoc[9,2], GUILoc[9,3], false)
     d2 = setupDrawDeck(playerB_discards, GUILoc[10,1], GUILoc[10,2], GUILoc[10,3], false)
     d3 = setupDrawDeck(playerC_discards, GUILoc[11,1], GUILoc[11,2],  GUILoc[11,3], false)
@@ -2182,13 +2186,11 @@ function replayHistory(index)
     d6 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2], GUILoc[6,3], false,true)
     d7 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], GUILoc[7,3], false,true)
     d8 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], GUILoc[8,3], false,true)
-    FaceDown = !isGameOver()
 
     global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], GUILoc[1,3], false)
                     a2 = setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], GUILoc[2,3], FaceDown)
                     a3 = setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], GUILoc[3,3], FaceDown)
                     a4 = setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], GUILoc[4,3], FaceDown)
-                    a5 = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], GUILoc[13,3], FaceDown)
     getData_all_hands()
     getData_all_discard_assets()
 
