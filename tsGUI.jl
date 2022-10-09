@@ -3989,11 +3989,12 @@ function hgamePlay(
     rReady
 )
 
-    global rQ, rReady, coDoi, coDoiCards, GUI_ready, GUI_array,
+    global rQ, rReady, coDoi, coDoiCards, GUI_ready, GUI_array, GUI_busy,
     currentCards,currentAction, currentPlayCard
     if(gpPlayer==myPlayer)
         currentAction = gpAction
         if playerIsHuman(myPlayer)
+            GUI_busy = false
             GUI_ready = false
             GUI_array = []
         end
@@ -4557,6 +4558,7 @@ function on_mouse_down(g, pos)
     global cardSelect
     global playCard = []
     global tusacState
+    global GUI_busy
     x = pos[1] << macOSconst
     y = pos[2] << macOSconst
     if tusacState == tsSdealCards
@@ -4582,7 +4584,7 @@ function on_mouse_down(g, pos)
                 GUI_ready = true
                 GUI_array = currentCards
             else
-                if GUI_ready == false
+                if GUI_ready == false && !GUI_busy
                     cindx, yPortion = mouseDownOnBox(x, y, human_state)
                     if cindx != 0
                         click_card(cindx, yPortion, playerA_hand)
@@ -4597,6 +4599,7 @@ function on_mouse_down(g, pos)
                     end
                     if cindx != 0
                         global GUI_array, GUI_ready
+                        GUI_busy = true
                         GUI_array = []
                         for ci in cardsIndxArr
                             ac= TuSacCards.getCards(playerA_hand, ci)
@@ -4612,6 +4615,7 @@ function on_mouse_down(g, pos)
                             currentAction,currentCards,currentPlayCard)
                             updateErrorPic(1)
                             GUI_ready = false
+                            GUI_busy = false
                         else 
                             updateErrorPic(0)
                             GUI_ready = true
