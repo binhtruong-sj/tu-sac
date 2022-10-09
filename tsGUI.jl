@@ -4728,12 +4728,12 @@ function draw(g)
             end
         end
     elseif (tusacState == tsGameLoop)||(tusacState == tsHistory)
+        saveI = saveI + drawAhand(TuSacCards.getDeckArray(gameDeck))
         for i in 1:4
             saveI = saveI + drawAhand(all_hands[i])
             saveI = saveI + drawAhand(all_assets[i])
             saveI = saveI + drawAhand(all_discards[i])
         end
-        saveI = saveI + drawAhand(TuSacCards.getDeckArray(gameDeck))
         if saveI != 0
             draw(big_actors[saveI])
         end
