@@ -1,0 +1,5 @@
+cd $HOME
+rm -fr tu-sac
+git clone https://github.com/binhtruong-sj/tu-sac.git
+cd tu-sac
+chmod +x n b update
