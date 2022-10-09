@@ -21,12 +21,12 @@ GUIname = Vector{Any}(undef,4)
 numberOfSocketPlayer = 0
 playerName = ["Binh-bot1","Binh-bot2","Binh-bot3","Binh-bot4"]
 shuffled = false
-coDoi = 0
+coDoiPlayer = 0
 coDoiCards = []
 coins = []
 gameCmd = '.'
 namestr = "123456789abcdefghijklmpqrstuvxyz"
-
+GUI_busy = false
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
@@ -1038,6 +1038,7 @@ function RESET1()
 global all_hands = []
 global all_discards = []
 global all_assets = []
+global all_assets_marks = falses(128)
 global gameDeckArray =[]
 
 end
@@ -1172,12 +1173,11 @@ dims: 0: Vertical
       mx0,my0,mx1,my1 are place holder for state usage
       return array, x0,y0,x1,y1,state, mx0,mx1,my0,my1
 """
-function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui = true)
+function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,assets = false)
     global modified_cardXdim, modified_cardYdim
     if noGUI()
         return
     end
-    i = 0
     x, y = tableGridXY(gx, gy)
 
     if length(deck) == 0
@@ -1216,24 +1216,27 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,gui
             modified_cardYdim = div(modified_cardYdim * cardScale,100)
 
         end
-        for card in deck
+        dx = 0
+        for (i,card) in enumerate(deck)
             m = mapToActors[card.value]
-            px = x + (modified_cardXdim * rem(i, xDim))
-            py = y + (modified_cardYdim * div(i, xDim))
-            actors[m].pos = px, py
+            px = x + (modified_cardXdim * rem(i-1, xDim))
+            py = y + (modified_cardYdim * div(i-1, xDim))
+            if assets
+                dx = all_assets_marks[card.value] ? 0 : dx + 15
+            end
+            actors[m].pos = px-dx, py
             fc_actors[m].pos = px, py
             if (py + cardYdim * 2) > realHEIGHT
                 bpy = py + cardYdim - zoomCardYdim
             else
                 bpy = py
             end
-            big_actors[m].pos = px, bpy
+            big_actors[m].pos = px-dx, bpy
             if (faceDown)
                 mask[m] = mask[m] | 0x1
             else
                 mask[m] = mask[m] & 0xFFFFFFFE
             end
-            i = i + 1
         end
         yDim = div(l, xDim)
         if xDim * yDim < l
@@ -1521,6 +1524,8 @@ end
 is_T(v) = (v & 0x1C) == 0x4
 is_s(v) = (v & 0x1C) == 0x8
 is_t(v) = (v & 0x1C) == 0xc
+is_Tst(v) = 0xd > (v & 0x1C) > 3
+
 
 """
     c(v) is a chot
@@ -1539,6 +1544,7 @@ is_p(v) = (v & 0x1C) == 0x18
 """
 is_m(v) = (v & 0x1C) == 0x1c
 
+is_xpm(v) = 0x1d > (v & 0x1C) > 0x13
 
 """
     inSuit(a,b): check if a,b is in the same sequence cards (Tst) or (xpm)
@@ -1719,9 +1725,7 @@ function c_match(p,s,n;win=false)
         nrt = []
         for es in s
             if card_equal(es,n)
-                if length(s) != 3 
                     rt = [es]
-                end
             else
                 push!(nrt,es)
             end
@@ -1729,18 +1733,19 @@ function c_match(p,s,n;win=false)
         if length(rt) != 0 
             if length(p[1]) == 2
                 return [nrt[1],p[1][1][1],p[1][2][1]]
-            elseif length(s) != 3
-                rt = s
+            elseif length(s) == 3
+                if length(p[1]) > 0
+                    if length(nrt) > 1
+                        pop!(nrt)
+                    end
+                    push!(nrt,p[1][1][1])
+                    rt = nrt
+                else
+                    rt = []
+                end
             end
         else
-            if length(s) == 3
-                rt = s
-            elseif length(p[1]) > 0 && length(nrt) == 2 
-                if allowPrint
-                   print("nrt",nrt)
-                end
-                rt = [nrt[1],p[1][1][1]]
-            end
+            rt = s
         end
     elseif length(s)==1
         if card_equal(s[1],n)
@@ -1777,6 +1782,16 @@ function c_match(p,s,n;win=false)
             end
         end
     end
+    if length(rt) == 0
+        for aps in p
+            for ap in aps
+                if card_equal(ap[1],n)
+                    return(ap)
+                end
+            end
+        end
+    end
+
     if allowPrint
         println("c-match-result = ", rt); ts_s(rt)
     end
@@ -2090,19 +2105,19 @@ function addCards!(array,arrNo, n, cards)
         if arrNo == 0
             if m== 1
                 push!(playerA_assets,ts(c))
-                asset1 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], GUILoc[5,3], false)
+                asset1 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], GUILoc[5,3], false,true)
 
             elseif m == 2
                 push!(playerB_assets,ts(c))
-                asset2 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2],GUILoc[6,3], false)
+                asset2 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2],GUILoc[6,3], false,true)
 
             elseif m == 3
                 push!(playerC_assets,ts(c))
-                asset3 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2],GUILoc[7,3], false)
+                asset3 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2],GUILoc[7,3], false,true)
 
             elseif m == 4
                 push!(playerD_assets,ts(c))
-                asset4 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2],GUILoc[8,3],false)
+                asset4 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2],GUILoc[8,3],false,true)
 
             end
         else
@@ -2161,10 +2176,10 @@ function replayHistory(index)
     d3 = setupDrawDeck(playerC_discards, GUILoc[11,1], GUILoc[11,2],  GUILoc[11,3], false)
     d4 = setupDrawDeck(playerD_discards, GUILoc[12,1], GUILoc[12,2], GUILoc[12,3], false)
 
-    d5 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], GUILoc[5,3], false)
-    d6 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2], GUILoc[6,3], false)
-    d7 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], GUILoc[7,3], false)
-    d8 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], GUILoc[8,3], false)
+    d5 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], GUILoc[5,3], false,true)
+    d6 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2], GUILoc[6,3], false,true)
+    d7 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], GUILoc[7,3], false,true)
+    d8 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], GUILoc[8,3], false,true)
     FaceDown = !isGameOver()
 
     global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], GUILoc[1,3], false)
@@ -2212,7 +2227,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
             ps, ss, cs, m1s, mts, mbs = scanCards(thand, false)
             if (l == 2) && card_equal(r[1],r[2]) # check for SAKI
                 for m in mbs
-                    if card_equal(m,r[1]) && !is_t(m) && !is_s(m)
+                    if card_equal(m,r[1]) && !is_Tst(m)
                         if allowPrint
                         println("match ",ts_s(r)," is SAKI, not accepted")
                         end
@@ -2574,7 +2589,7 @@ function gamePlay1Iteration()
     global glPrevPlayer
     global glIterationCnt
     global t1Player,t2Player,t3Player,t4Player
-    global n1c,n2c,n3c,n4c,coDoi, coDoiCards
+    global n1c,n2c,n3c,n4c,coDoiPlayer, coDoiCards
 
     function checkHumanResponse(player)
         global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
@@ -2804,17 +2819,18 @@ function gamePlay1Iteration()
         FaceDown = !isGameOver()
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
         if allowPrint
-        println("coDoi,cards,winner,r,length", (coDoi,coDoiCards,winner,r,length(r)))
+        println("coDoi,cards,winner,r,length", (coDoiPlayer,coDoiCards,winner,r,length(r)))
         end
-        Doi = (length(r) == 2 && coDoi >0) ? coDoiCards[1] == r[1] && coDoiCards[2] == r[2] : false
-        if coDoi > 0  && !Doi && !suit(r,glNewCard)
+        Doi = (length(r) == 2 && coDoiPlayer >0) ? coDoiCards[1] == r[1] && coDoiCards[2] == r[2] : false
+        if coDoiPlayer > 0  && !Doi && !suit(r,glNewCard)
             if allowPrint
-                println("Player", coDoi, " bo doi ", ts(coDoiCards[1]))
+                println("Player", coDoiPlayer, " bo doi ", ts(coDoiCards[1]))
             end
-            removeCards!(all_hands,coDoi,coDoiCards[1])
-            removeCards!(all_hands,coDoi,coDoiCards[2])
-            addCards!(all_assets,0,coDoi,coDoiCards[1])
-            addCards!(all_assets,0,coDoi,coDoiCards[2])
+            removeCards!(all_hands,coDoiPlayer,coDoiCards[1])
+            removeCards!(all_hands,coDoiPlayer,coDoiCards[2])
+            addCards!(all_assets,0,coDoiPlayer,coDoiCards[1])
+            all_assets_marks[coDoiCards[1]] = true
+            addCards!(all_assets,0,coDoiPlayer,coDoiCards[2])
             coDoi = 0
             coDoiCards = []
         end
@@ -2861,6 +2877,8 @@ function gamePlay1Iteration()
             glPrevPlayer = nPlayer
             glNeedaPlayCard = true
         end
+        all_assets_marks[glNewCard] = true
+
     end
 end
 
@@ -3328,6 +3346,8 @@ global GUI_ready = false
                             removeCards!(all_hands,i,ps[3])
                             removeCards!(all_hands,i,ps[4])
                             addCards!(all_assets,0,i,ps[1])
+                            all_assets_marks[ps[1]] = true
+
                             addCards!(all_assets,0,i,ps[2])
                             addCards!(all_assets,0,i,ps[3])
                             addCards!(all_assets,0,i,ps[4])
@@ -4004,21 +4024,21 @@ function hgamePlay(
     if gpPlayer == 1 
         global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], GUILoc[1,3],  false)
         discard1 = setupDrawDeck(playerA_discards,GUILoc[9,1], GUILoc[9,2], GUILoc[9,3],  false)
-        asset1 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], GUILoc[5,3], false)
+        asset1 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], GUILoc[5,3], false,true)
 
     elseif gpPlayer == 2
         setupDrawDeck(playerB_hand, GUILoc[2,1], GUILoc[2,2], GUILoc[2,3], FaceDown)
         discard2 = setupDrawDeck(playerB_discards, GUILoc[10,1], GUILoc[10,2],GUILoc[10,3],  false)
-        asset2 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2],GUILoc[6,3],  false)
+        asset2 = setupDrawDeck(playerB_assets, GUILoc[6,1], GUILoc[6,2],GUILoc[6,3],  false,true)
 
     elseif gpPlayer == 3
         setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], GUILoc[3,3], FaceDown)
         discard3 = setupDrawDeck(playerC_discards, GUILoc[11,1], GUILoc[11,2],GUILoc[11,3],  false)
-        asset3 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], GUILoc[7,3], false)
+        asset3 = setupDrawDeck(playerC_assets, GUILoc[7,1], GUILoc[7,2], GUILoc[7,3], false,true)
     else
         setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], GUILoc[4,3], FaceDown)
         discard4 = setupDrawDeck(playerD_discards, GUILoc[12,1], GUILoc[12,2],GUILoc[12,3],  false)
-        asset4 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], GUILoc[8,3], false)
+        asset4 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], GUILoc[8,3], false,true)
 
     end
     
@@ -4306,8 +4326,7 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
             if card_equal(ps[1],matchC[1])
                 for mb in miss1sbar
                     if card_equal(ps[1],mb) &&
-                        !is_s(mb) &&
-                        !is_t(mb)
+                        !is_Tst(mb) &&
                         println("saki case,, mb =", ts(mb))
                         return false
                     end
@@ -4431,7 +4450,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                 if (length(cards) == 2) # check for SAKI
                     ps, ss, cs, m1s, mts, mbs = scanCards(hand, true)
                     for m in mbs
-                        if card_equal(m,cards[1]) && !is_t(m) && !is_s(m)
+                        if card_equal(m,cards[1]) && !is_Tst(m)
                             if allowPrint
                             println("match ",ts_s(cards)," is SAKI, not accepted")
                             end
@@ -4462,7 +4481,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         end
 function foundSaki(card,miss1sbar)
     for m in miss1sbar
-        if card_equal(card,m) && !is_t(m) && !is_s(m)
+        if card_equal(card,m) && !is_Tst(m)
             return true
         end
     end
