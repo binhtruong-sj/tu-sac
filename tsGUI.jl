@@ -928,6 +928,7 @@ if coldStart
     eRrestart = false
 end
 if macOS
+    adx = 15
     if allowPrint
     println("macOS")
     end
@@ -942,6 +943,7 @@ const macOSconst = 1
     zoomCardYdim = 400
     GENERIC = 0
 else
+    adx = 8
     if GENERIC == 1    
         gameW = 820
         cardXdim = 24
@@ -1222,7 +1224,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,ass
             px = x + (modified_cardXdim * rem(i-1, xDim))
             py = y + (modified_cardYdim * div(i-1, xDim))
             if assets
-                dx = all_assets_marks[card.value] ? 0 : dx + 15
+                dx = all_assets_marks[card.value] ? 0 : dx + adx
             end
             actors[m].pos = px-dx, py
             fc_actors[m].pos = px, py
