@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.613"
+version = "0.614"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -2231,9 +2231,11 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                 end
             end
             ll = length(ss) + length(cs) + length(m1s) + length(mts)
-            println("whowin, chking more Trsh:",
-                    (length(ss) , length(cs) , length(m1s) , length(mts)),
-                    (length(oss) , length(ocs) , length(om1s) , length(omts)))
+            if allowPrint
+                println("whowin, chking more Trsh:",
+                        (length(ss) , length(cs) , length(m1s) , length(mts)),
+                        (length(oss) , length(ocs) , length(om1s) , length(omts)))
+            end
             if oll < ll  
                 if allowPrint
                     println("whowin, chking more Trsh:",
@@ -2245,7 +2247,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
             end
             if ll == 0
                 if allowPrint
-                println("WINWINWINWINWINWINWINWINWINWIWN")
+                    println("WINWINWINWINWINWINWINWINWINWIWN")
                 end
                 l = 4
                 win = true
@@ -3285,7 +3287,7 @@ function gsStateMachine(gameActions)
                     randomShuffle()
                end
             else
-                autoHumanShuffle(rand(10:60))
+                autoHumanShuffle(rand(4:8))
             end
            
             if mode != m_standalone && noGUI()
@@ -3309,7 +3311,6 @@ global GUI_ready = false
                 println("Prev Game Winner =", gameEnd)
             end
             prevWinner = gameEnd
-            println(("\nreloadFile",reloadFile))
             tusacDeal(prevWinner,reloadFile, RF, RFindex)
             gameOver(0)
             organizeHand(playerA_hand)
@@ -4218,7 +4219,7 @@ function on_key_down(g)
        if tusacState == tsSdealCards
             if g.keyboard.S
                 shuffled = true
-                autoHumanShuffle(10)
+                autoHumanShuffle(4)
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
             elseif g.keyboard.H
                 mode_human = !mode_human
