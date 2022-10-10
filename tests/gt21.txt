@@ -1,5 +1,5 @@
 # (48 - chot not matching pair
-#
+# (40 - chot saki
 #
 (0, true, 3, 0, 0)
 TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX cV 
@@ -14,7 +14,7 @@ TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX pX cT cT
 
 
 
-cD TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT sX tD 
+TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT sX cT cD
 ("M", pT, 3, 6, 0)
 ("M", pT, 2, 6, 0)
 ("M", pT, 2, 6, 0)
@@ -165,8 +165,8 @@ cD TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX
 (40, true, 4, 0x4b, 0)
 TT sT sT sT tT mT sV tV tD xD pD pX mX cV 
 tT tT TV sV TD TD sD sD TX xX xX pX pX mX 
-TT mT mT mT mV sD xD pD mD xX xX cT cT cV cV cD cD 
-TT sT tT pT TV TV xV xV pV TD sD tD pD pD mD sX pX cT cT 
+TT mT mT mT mV sD xD pD mD xX xX cX cV cD cD sX pX
+TT sT tT pT TV TV xV xV pV TD sD tD pD pD mD cV cD cT cT 
 xT xT xT pV pV pV 
 pT pT pT tX tX tX 
 sX sX sX 
@@ -175,7 +175,7 @@ mV tX
 tD xT 
 
 
-cD TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX 
+TX cX mV mV sV tV TV cV tV xV mD cX TT TD mX TX tV xV sV tD cX mD cT cD
 ("M", pT, 4, 12, 0)
 (44, false, 4, 0x15, 0)
 TT sT sT sT tT mT sV tV tD xD pD pX mX cV 
