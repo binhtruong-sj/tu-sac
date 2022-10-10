@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.618"
+version = "0.619"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -4327,6 +4327,9 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
                         return false
                     end
                 end
+                if is_c(ps[1]) && length(chot1Specials)==2
+                    return false
+                end
                 bp1BoDoiCnt += 1
                 if bp1BoDoiCnt > 1
                     return false
@@ -4379,9 +4382,22 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
     end
     return false
 end
+function foundSaki(card,miss1sbar,csps)
+    for m in miss1sbar
+        if card_equal(card,m) && !is_Tst(m)
+            return true
+        end
+    end
+    if is_c(card) && length(csps) == 2
+        return true
+    end
+    return false
+end
 function badPlay(cards,player, hand,action,botCards,matchC)
-    println("BADPLAY,",(cards,matchC))
     if badPlay1(cards,player, hand,action,botCards,matchC)
+        if allowPrint
+            println("badPlay1 reject")
+        end
         return true
     end
     if length(matchC) > 0
@@ -4475,14 +4491,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         if allowPrint
         ts_s(hand)
         end
-function foundSaki(card,miss1sbar)
-    for m in miss1sbar
-        if card_equal(card,m) && !is_Tst(m)
-            return true
-        end
-    end
-    return false
-end
+
         if is_c(pcard) || length(cards) == 0
             # check for bo doi
             if length(cards) == 0
@@ -4494,7 +4503,7 @@ end
                                # end
                             end
                             if length(p) == 2 
-                                if !foundSaki(pcard,miss1sbar) && !isMoreTrash(cards,hand)
+                                if !foundSaki(pcard,miss1sbar,chot1Specials) && !isMoreTrash(cards,hand)
                                     if allowPrint
                                         println("BO DOI")
                                     end
@@ -4628,6 +4637,9 @@ function on_mouse_down(g, pos)
                         if ( length(GUI_array) > 0 || length(currentPlayCard) > 0 ) &&
                             badPlay(GUI_array,myPlayer,all_hands[myPlayer],
                             currentAction,currentCards,currentPlayCard)
+                            if allowPrint
+                                println("badPlay reject")
+                            end
                             updateErrorPic(1)
                             GUI_ready = false
                             GUI_busy = false
