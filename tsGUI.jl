@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.614"
+version = "0.617"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -754,8 +754,9 @@ GUI = true
 RF = 0
 NAME= "PLayer?"
 fontSize = 50
+showLocation = false
 if allowPrint
-println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer))
+println((PlayerList, mode,mode_human,serverURL,serverIP,serverPort, gamew,macOS,numberOfSocketPlayer,myPlayer))
 end
 GUILoc = zeros(Int,13,3)
 GUILoc[1,1],GUILoc[1,2],GUILoc[1,3] = 6,18,21
@@ -774,11 +775,11 @@ GUILoc[11,1],GUILoc[11,2],GUILoc[11,3] = 3,1,5
 GUILoc[12,1],GUILoc[12,2],GUILoc[12,3] = 2,16,5
 
 GUILoc[13,1],GUILoc[13,2],GUILoc[13,3] = 9,8,10
-
+gamew = 0
 function config(fn)
     global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,
-    mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,
-    GAMEW,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,RFindex
+    mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,showLocation,
+    gamew,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,RFindex
 
     global GUILoc
     if !isfile(fn)
@@ -802,6 +803,8 @@ function config(fn)
                 mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
             elseif rl[1] == "human"
                 mode_human = rl[2] == "true"
+            elseif rl[1] == "showLocation"
+                showLocation = true
             elseif rl[1] == "allowPrint"
                 allowPrint = true
                 nwAPI.allwPrint()
@@ -821,7 +824,7 @@ function config(fn)
                 println(serverIP)
                 end
             elseif rl[1] == "GAMEW"
-                GAMEW = parse(Int,rl[2])
+                gamew = parse(Int,rl[2])
             elseif rl[1] == "GENERIC"
                 GENERIC = parse(Int,rl[2])
             elseif rl[1] == "hints"
@@ -872,7 +875,7 @@ function config(fn)
     if mode == m_standalone && mode_human
         PlayerList[myPlayer] = plHuman
     end
-    return (PlayerList, mode,mode_human,serverURL,serverIP,serverPort, GAMEW,macOS,numberOfSocketPlayer,myPlayer)
+    return (PlayerList, mode,mode_human,serverURL,serverIP,serverPort, gamew,macOS,numberOfSocketPlayer,myPlayer)
 end
 saveNameLoc = 0
 function nextFileName(fn)
@@ -919,7 +922,7 @@ prevWinner = 1
 
 
 (PlayerList, mode,mode_human,serverURL,serverIP,
-serverPort, GAMEW,macOS,
+serverPort, gamew,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
 
 moveArray = zeros(Int,16,3)
@@ -933,7 +936,7 @@ if macOS
     println("macOS")
     end
 const macOSconst = 1
-    gameW = 900
+    gameW = gamew == 0 ? 900 : gamew
     HEIGHT = gameW
     WIDTH = div(gameW * 16, 9)
     realHEIGHT = HEIGHT * 2
@@ -944,28 +947,25 @@ const macOSconst = 1
     GENERIC = 0
 else
     adx = 8
+    gameW = gamew == 0 ? 820 : gamew
+
     if GENERIC == 1    
-        gameW = 820
         cardXdim = 24
         cardYdim = 80
         zoomCardYdim = 110
     elseif GENERIC == 2
-        gameW = 820
         cardXdim = 34
         cardYdim = 110
         zoomCardYdim = 210
     elseif GENERIC == 3
-        gameW = 820
         cardXdim = 49
         cardYdim = 170
         zoomCardYdim = 210
     elseif GENERIC == 4
-        gameW = 820
         cardXdim = 64
         cardYdim = 210
         zoomCardYdim = 295
     else
-        gameW = 820
         cardXdim = 90
         cardYdim = 295
         zoomCardYdim = 400
@@ -3581,9 +3581,13 @@ function on_mouse_move(g, pos)
         return 0, 0
     end
     ####################
-        x = pos[1] << macOSconst
-        y = pos[2] << macOSconst
-   if tusacState == tsSdealCards
+    x = pos[1] << macOSconst
+    y = pos[2] << macOSconst
+
+    if showLocation 
+        println((x,y,reverseTableGridXY(x,y)))
+    end
+    if tusacState == tsSdealCards
     
         if myPlayer == shufflePlayer
             mouseDirOnBox(x, y, deckState)
