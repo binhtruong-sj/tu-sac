@@ -1226,6 +1226,9 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,ass
             if assets
                 dx = all_assets_marks[card.value] ? 0 : dx + adx
             end
+            if  rem(i-1, xDim) == 0
+                dx = 0
+            end
             actors[m].pos = px-dx, py
             fc_actors[m].pos = px, py
             if (py + cardYdim * 2) > realHEIGHT
@@ -1719,12 +1722,12 @@ end
 TBW
 """
 function c_match(p,s,n;win=false)
-    if length(union(s,n)) > 1 && allowPrint
+    if allowPrint
          println("c-match ",(p,s,n,length(s)))
     end
-    if length(s) > 1
-        rt = []
+    rt = []
         nrt = []
+    if length(s) > 1
         for es in s
             if card_equal(es,n)
                     rt = [es]
@@ -1769,18 +1772,6 @@ function c_match(p,s,n;win=false)
                 else 
                     rt =  []
                 end
-            end
-        end
-    else 
-        if length(p[2])>1  && win#not sure about this
-            rt = [p[2][1][1],p[2][2][1]]
-        elseif length(p[2])==1
-            rt =  []
-        else
-            if length(p[1]) > 2
-                rt =  [p[1][1][1],p[1][2][1],p[1][3][1]]
-            else
-                rt =  []
             end
         end
     end
@@ -4221,12 +4212,8 @@ function on_key_down(g)
     playerB_discards,
     playerC_discards,
     playerD_discards
-        if g.keyboard.X
-            println("Xet bai")
-        elseif g.keyboard.SPACE
-            println("SPACE")
-        elseif g.keyboard.T
-            println("key-T")
+        if g.keyboard.Q
+            exit()
         end
        if tusacState == tsSdealCards
             if g.keyboard.S
