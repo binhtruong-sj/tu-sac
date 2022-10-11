@@ -1015,7 +1015,9 @@ function gameOver(n)
     global FaceDown = false
     if 0 < n < 5
         updateWinnerPic(n)
-        println(HF,(playerName)," Winner = ",playerName[n])
+        if histFile
+            println(HF,(playerName)," Winner = ",playerName[n])
+        end
     else
         sleep(.2)
         if gameEnd == 0
