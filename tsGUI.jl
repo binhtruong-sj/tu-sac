@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.61b"
+version = "0.61c"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -3117,11 +3117,15 @@ global nwPlayer = Vector{Any}(undef,4)
 
 function networkInit()
     global GUIname, connectedPlayer
+    addingPlayer = false
     if mode == m_server
         println("SERVER, expecting ", numberOfSocketPlayer - connectedPlayer, " players.")
         if connectedPlayer == 0
             global myS = nwAPI.serverSetup(serverIP,serverPort)
+        else
+            addingPlayer = true
         end
+        newPlayer = 0
         while connectedPlayer < numberOfSocketPlayer
             global p = nwAPI.acceptClient(myS)
             while true
@@ -3136,49 +3140,51 @@ function networkInit()
             msg = nwAPI.nw_receiveTextFromPlayer(i,nwPlayer[i])
             print("Accepting Player ",i, " Name=",msg)
             playerName[i] = msg
-            
+            newPlayer = i
             connectedPlayer += 1
         end
         so = connectedPlayer
         updated = false
         for s in 1:4
-            if PlayerList[s] == plSocket
-                for i in 1:4
-                    nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
-                end
-                nwAPI.nw_sendToPlayer(s,nwPlayer[s],numberOfSocketPlayer)
-                nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],version)
-                pversion = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
-                println("Player ",playerName[s]," has version ",pversion)
-                if version > pversion
-                    print("Sending updates to Player ", playerName[s])
-                    updated = true
-                    rf = open("tsGUI.jl","r")
-                    while !eof(rf)
-                        aline = readline(rf)
-                        nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],aline)
+            if !(addingPlayer && s != newPlayer)
+                if PlayerList[s] == plSocket
+                    for i in 1:4
+                        nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
                     end
-                    nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],"#=Binh-end=#")
-                    close(rf)
-                    println(" ... done")
-                elseif pversion > version
-                    wf = open("tsGUI.jl","w")
-                    print("Receiving updates from Player ",playerName[s])
-                    while true
-                        aline = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
-                        if aline == "#=Binh-end=#"
-                            break
+                    nwAPI.nw_sendToPlayer(s,nwPlayer[s],numberOfSocketPlayer)
+                    nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],version)
+                    pversion = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
+                    println("Player ",playerName[s]," has version ",pversion)
+                    if version > pversion
+                        print("Sending updates to Player ", playerName[s])
+                        updated = true
+                        rf = open("tsGUI.jl","r")
+                        while !eof(rf)
+                            aline = readline(rf)
+                            nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],aline)
                         end
-                        println(wf,aline)
+                        nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],"#=Binh-end=#")
+                        close(rf)
+                        println(" ... done")
+                    elseif pversion > version
+                        wf = open("tsGUI.jl","w")
+                        print("Receiving updates from Player ",playerName[s])
+                        while true
+                            aline = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
+                            if aline == "#=Binh-end=#"
+                                break
+                            end
+                            println(wf,aline)
+                        end
+                        close(wf)
+                        println(" ... done")
+                        exit()
                     end
-                    close(wf)
-                    println(" ... done")
-                    exit()
-                end
-                if so == 1
-                    break
-                else
-                    so -= 1
+                    if so == 1
+                        break
+                    else
+                        so -= 1
+                    end
                 end
             end
         end
@@ -4378,17 +4384,19 @@ function on_key_down(g)
                 mode_human = !mode_human
                 println("switching human mode to ",mode_human)
             elseif g.keyboard.C
-                if histFile 
-                    close(HF)
-                    histFile = false
+                if mode != m_client
+                    if histFile 
+                        close(HF)
+                        histFile = false
+                    end
+                    if reloadFile
+                        close(RF)
+                        reloadFile = false
+                    end
+                    println("Making connection to server at", serverURL)
+                    mode = m_client
+                    networkInit()
                 end
-                if reloadFile
-                    close(RF)
-                    reloadFile = false
-                end
-                println("Making connection to server at", serverURL)
-                mode = m_client
-                networkInit()
             elseif g.keyboard.M
                 println("Setting up to connect more Player")
                 mode = m_server
