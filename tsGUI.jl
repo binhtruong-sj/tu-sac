@@ -27,6 +27,12 @@ coins = []
 gameCmd = '.'
 namestr = "123456789abcdefghijklmpqrstuvxyz"
 GUI_busy = false
+baiThui = false
+points = zeros(Int8,4)
+kpoints = zeros(Int8,4)
+khui = falses(4)
+pots = zeros(Int,4)
+
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
@@ -1003,7 +1009,7 @@ const eRcheck = 2
 gameEnd = 1
 function gameOver(n)
     global eRrestart
-    global gameEnd
+    global gameEnd, baiThui
     global FaceDown = false
     if 0 < n < 5
         updateWinnerPic(n)
@@ -1013,6 +1019,7 @@ function gameOver(n)
         if gameEnd == 0
             push!(gameDeck,ts(glNewCard))
         end
+        baiThui = true
     end
     gameEnd = n == 5 ?  prevWinner : n
 
@@ -1028,11 +1035,12 @@ end
 humanIsGUI() = mode_human & !noGUI()
 
 function RESET1()
-        
+        global baiThui
     if coldStart
         global currentPlayer = 1
     else
         global currentPlayer = gameEnd
+     
     end
     global gotClick = false
     global GUI_array=[]
@@ -1725,6 +1733,25 @@ function c_scan(p,s;win=false)
     end
 end
 
+function c_points(p,s)
+    points = 0
+    if length(p[1]) == 4
+        points = 4
+    elseif length(p[1]) == 3
+        points = 2
+        if length(s) > 0
+            points = 3
+        end
+    elseif length(p[1]) == 2
+        if length(s) == 2
+            points = 2
+        end
+    elseif length(s) > 2
+        points = length(s) - 2
+    end
+    return points
+end
+
 """
     c_match(p,s,n)
         return match for a chot. Taking in account of all chots, not just the
@@ -1808,7 +1835,7 @@ scanCards() scan for single and missing seq
             since it got rescan on every move, the duplication does not affecting correctness
 
 """
-function scanCards(inHand, silence = false)
+function scanCards(inHand, silence = false, psc = false)
     # scan for pairs and remove them
     ahand = deepcopy(inHand)
     pairs = []
@@ -1820,11 +1847,23 @@ function scanCards(inHand, silence = false)
     chot1Special = []
     chotP = [[],[],[]]
     all_chots =[]
+    suitCnt = 0
     if is_c(prevAcard)
         push!(all_chots,prevAcard)
+    elseif is_T(prevAcard)
+        suitCnt += 1
+        if psc
+        println("PsuitCnt=",suitCnt)
+        end
     end
     for i = 2:length(ahand)
         acard = ahand[i]
+        if is_T(acard)
+            suitCnt += 1
+            if psc
+            println("PsuitCnt=",suitCnt)
+            end
+        end
         if card_equal(acard, prevAcard)
             push!(pairs, prevAcard)
             pairOf += 1
@@ -1832,14 +1871,10 @@ function scanCards(inHand, silence = false)
         else
             if pairOf > 0
                 if is_T(prevAcard)
+                   
                     if pairOf == 1 # Tuong pair of 2 is not really a pair
                         push!(rhand, prevAcard) # put 1 back for rescan
                     else
-                        #=
-                        if pairOf == 2 # T pairof 3 is a pair, but put 1 back for rescan
-                            push!(rhand, prevAcard)
-                        end
-                        =#
                         push!(pairs, prevAcard)
                         push!(allPairs[pairOf], pairs)
                     end
@@ -1859,6 +1894,7 @@ function scanCards(inHand, silence = false)
         prevAcard = acard
     end
     if pairOf > 0
+      
         push!(pairs, prevAcard)
         push!(allPairs[pairOf], pairs)
         if is_c(pairs[1])
@@ -1887,7 +1923,14 @@ function scanCards(inHand, silence = false)
                 prev2card = prevAcard
                 seqCnt += 1
             else
-                if seqCnt == 1
+                if seqCnt == 2
+                    if !is_Tst(prevAcard)
+                        suitCnt += 1
+                        if psc
+                            println("suitCnt=",suitCnt)
+                        end
+                    end
+                elseif seqCnt == 1
                     ar = []
                     mc = missPiece(prev2card, prevAcard)
                     push!(miss1Card, mc)
@@ -1911,7 +1954,14 @@ function scanCards(inHand, silence = false)
             end
             prevAcard = acard
         end
-        if seqCnt == 1
+        if seqCnt == 2
+            if !is_Tst(prevAcard)
+                suitCnt += 1
+                if psc
+                    println("suitCnt=",suitCnt)
+                end
+            end
+        elseif seqCnt == 1
             ar = []
             mc = missPiece(prev2card, prevAcard)
             push!(miss1Card, mc)
@@ -1928,6 +1978,18 @@ function scanCards(inHand, silence = false)
                     push!(chot1Special, prevAcard)
                 else
                     push!(single, prevAcard)
+                end
+            end
+        end
+    end
+    if length(allPairs[1]) >= 3
+        for (i,p) in enumerate(allPairs[1])
+            if is_x(p[1]) && (length(allPairs[1]) - i ) > 2  
+                if inSuit(p[1],allPairs[1][i+1][1]) && inSuit(p[1],allPairs[1][i+2][1])
+                    suitCnt += 2
+                    if psc
+                    println("suitCnt=",suitCnt)
+                    end
                 end
             end
         end
@@ -1973,7 +2035,7 @@ function scanCards(inHand, silence = false)
         end
         println()
     end
-    return allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special
+    return allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt
 end
 global rQ = Vector{Any}(undef,4)
 global rReady = Vector{Bool}(undef,4)
@@ -2571,6 +2633,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
                 if allowPrint
                     println("Game Over, player ", nPlayer, " win")
                 end
+              
                 gameOver(nPlayer)
             end
     else
@@ -2853,6 +2916,9 @@ function gamePlay1Iteration()
         if (winner == 0) && (length(r) == 0) # nobody match
             if is_T(glNewCard)
                 addCards!(all_assets,0, nPlayer, glNewCard)
+                points[nPlayer] += 1
+                println("P=",(nPlayer,points[nPlayer]))
+
                 glNeedaPlayCard = true
                 glPrevPlayer = nPlayer
             else
@@ -2866,21 +2932,72 @@ function gamePlay1Iteration()
                 glNeedaPlayCard = false
             end
         elseif winner&0xFF == 0xFE
-            if allowPrint
-                println("GAME OVER, player",
-                nPlayer, " win")
-            end
             addCards!(all_assets,0,nPlayer,glNewCard)
             addCards!(all_assets, 0, nPlayer, r)
-
+            if length(r)== 2 || is_T(glNewCard)
+                points[nPlayer] += 1
+                println("P=",(nPlayer,points[nPlayer]))
+            elseif length(r) == 3
+                if card_equal(r[1],r[2])
+                    kpoints[nPlayer] += 3
+                    khui[nPlayer] = true
+                    println("K=",(nPlayer,kpoints[nPlayer]))
+                else
+                    points[nPlayer] += 2
+                    println("P=",(nPlayer,points[nPlayer]))
+                end
+            end
             updateWinnerPic(nPlayer)
             gameOver(nPlayer)
 
             gameOverCnt = 1
             openAllCard = true
+            if allowPrint
+                println("GAME-OVER, player",
+                nPlayer, " win")
+            end
+            points[nPlayer] += 10
+            if khui[nPlayer]
+                kpoints[nPlayer] *= 2
+            end
+            allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt =
+            scanCards(all_hands[nPlayer],false,true)
+            println("POINTS=",(khui[nPlayer],points[nPlayer],
+            kpoints[nPlayer], suitCnt,c_points(chotP,chot1Special)))
+            points[nPlayer] += suitCnt + c_points(chotP,chot1Special)
+
+            kpoints[nPlayer] += points[nPlayer]
+            c_points(chotP,chot1Special)
+            astr = Vector{String}(undef,4)
+            for p in 1:4
+                astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p])
+                pots[p] += kpoints[p] 
+                println(astr[p])
+            end
+            GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
+            GUIname[2]  = TextActor(astr[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[2].pos = tableGridXY(18,1)
+            GUIname[3]  = TextActor(astr[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[3].pos = tableGridXY(10,1)
+            GUIname[4]  = TextActor(astr[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
+            GUIname[4].pos = tableGridXY(1,1)
         else
             addCards!(all_assets, 0, nPlayer, glNewCard)
             addCards!(all_assets, 0, nPlayer, r)
+            if length(r)== 2
+                points[nPlayer] += 1
+                println("P=",(nPlayer,points[nPlayer]))
+            elseif length(r) == 3
+                if card_equal(r[1],r[2])
+                    kpoints[nPlayer] += 3
+                    khui[nPlayer] = true
+                    println("K=",(nPlayer,kpoints[nPlayer]))
+                else
+                    points[nPlayer] += 2
+                    println("P=",(nPlayer,points[nPlayer]))
+                end
+            end
             glPrevPlayer = nPlayer
             glNeedaPlayCard = true
         end
@@ -3240,6 +3357,7 @@ function gsStateMachine(gameActions)
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets
+    global points,kpoints,khui
    prevIter = 0
    
     #=
@@ -3257,7 +3375,7 @@ function gsStateMachine(gameActions)
             if coldStart
                 if !noGUI()
                     GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
-                    GUIname[1].pos = tableGridXY(10,20)
+                    GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
                     GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
                     GUIname[2].pos = tableGridXY(18,1)
                     GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -3346,7 +3464,7 @@ global GUI_ready = false
                             println("checking for Khui")
                             println(ps,length(ps))
                         end
-                        if length(ps) == 4
+                            if length(ps) == 4
                             removeCards!(all_hands,i,ps[1])
                             removeCards!(all_hands,i,ps[2])
                             removeCards!(all_hands,i,ps[3])
@@ -3357,6 +3475,9 @@ global GUI_ready = false
                             addCards!(all_assets,0,i,ps[2])
                             addCards!(all_assets,0,i,ps[3])
                             addCards!(all_assets,0,i,ps[4])
+                            kpoints[i] += 8
+                            khui[i] = true
+
                             coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
                             coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
                                              i == 2 ? tableGridXY(17,10+coinsCnt*1) :
@@ -3365,6 +3486,11 @@ global GUI_ready = false
                             push!(coins,coinActor)
                             coinsCnt += 1
                         elseif length(ps) == 3
+                            kpoints[i] += 3
+                            if is_T(ps[1])
+                                points[i] -= 3
+                            end
+
                             coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
                             coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
                                              i == 2 ? tableGridXY(17,10+coinsCnt*1) :
@@ -3406,6 +3532,9 @@ global GUI_ready = false
             RESET1()
             RESET2()
             RESET3()
+            points = zeros(Int8,4)
+            kpoints = zeros(Int8,4)
+            khui = falses(4)
             coldStart = false
             FaceDown = wantFaceDown
             ActiveCard = 0
