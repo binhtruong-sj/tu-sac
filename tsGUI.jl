@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.61a"
+version = "0.61b"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -32,6 +32,8 @@ points = zeros(Int8,4)
 kpoints = zeros(Int8,4)
 khui = falses(4)
 pots = zeros(Int,4)
+histFile = false
+reloadFile = false
 
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
@@ -3183,7 +3185,7 @@ function networkInit()
         global GUIname = Vector{Any}(undef,4)
         if !noGUI()
             GUIname[1]  = TextActor(playerName[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
-            GUIname[1].pos = tableGridXY(10,20)
+            GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
             GUIname[2]  = TextActor(playerName[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
             GUIname[2].pos = tableGridXY(18,1)
             GUIname[3]  = TextActor(playerName[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -3211,7 +3213,7 @@ function networkInit()
         nameRound(n)  = n > 4 ? n - 4 : n
         if !noGUI()
             GUIname[1]  = TextActor(playerName[nameRound(myPlayer-1+1)],"asapvar",font_size=fontSize,color=[0,0,0,0])
-            GUIname[1].pos = tableGridXY(10,20)
+            GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
             GUIname[2]  = TextActor(playerName[nameRound(myPlayer-1+2)],"asapvar",font_size=fontSize,color=[0,0,0,0])
             GUIname[2].pos = tableGridXY(18,1)
             GUIname[3]  = TextActor(playerName[nameRound(myPlayer-1+3)],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -4343,7 +4345,7 @@ scanCards(hand, false)
     return TrashCnt < l
 end
 function on_key_down(g)
-    global tusacState, gameDeck, mode_human,haBai,shuffled,
+    global tusacState, gameDeck, mode_human,haBai,shuffled,mode,
     playerA_hand,
     playerB_hand,
     playerC_hand,
@@ -4355,7 +4357,8 @@ function on_key_down(g)
     playerA_discards,
     playerB_discards,
     playerC_discards,
-    playerD_discards
+    playerD_discards,
+    histFile,reloadFile
         if g.keyboard.Q
             exit()
         end
@@ -4364,9 +4367,23 @@ function on_key_down(g)
                 shuffled = true
                 autoHumanShuffle(4)
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
-            elseif g.keyboard.H
+            elseif g.keyboard.A
                 mode_human = !mode_human
-                println("Human mode to ")
+                println("switching human mode to ",mode_human)
+            elseif g.keyboard.C
+                if histFile 
+                    close(HF)
+                    histFile = false
+                end
+                if reloadFile
+                    close(RF)
+                    reloadFile = false
+                end
+                println("Making connection to server at", serverURL)
+                mode = m_client
+                networkInit()
+            elseif g.keyboard.M
+               
             elseif g.keyboard.B
                 println("Bai no tung!, (random shuffle) ")
                 randomShuffle()
