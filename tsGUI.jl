@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.619"
+version = "0.61a"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -924,6 +924,16 @@ prevWinner = 1
 (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, gamew,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
+
+if isfile(".tusacrc") 
+    (PlayerList, mode,mode_human,serverURL,serverIP,
+serverPort, gamew,macOS,
+numberOfSocketPlayer,myPlayer) =config(".tusacrc")
+elseif isfile("../.tusacrc") 
+    (PlayerList, mode,mode_human,serverURL,serverIP,
+serverPort, gamew,macOS,
+numberOfSocketPlayer,myPlayer) =config("../.tusacrc")
+end
 
 moveArray = zeros(Int,16,3)
 
