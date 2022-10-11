@@ -34,6 +34,7 @@ khui = falses(4)
 pots = zeros(Int,4)
 histFile = false
 reloadFile = false
+connectedPlayer = 0
 
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
@@ -3115,12 +3116,13 @@ end
 global nwPlayer = Vector{Any}(undef,4)
 
 function networkInit()
-    global GUIname
+    global GUIname, connectedPlayer
     if mode == m_server
-        println("SERVER, expecting ", numberOfSocketPlayer, " players.")
-        global myS = nwAPI.serverSetup(serverIP,serverPort)
-        signedOnPlayer = 0
-        while signedOnPlayer < numberOfSocketPlayer
+        println("SERVER, expecting ", numberOfSocketPlayer - connectedPlayer, " players.")
+        if connectedPlayer == 0
+            global myS = nwAPI.serverSetup(serverIP,serverPort)
+        end
+        while connectedPlayer < numberOfSocketPlayer
             global p = nwAPI.acceptClient(myS)
             while true
                 global i = rand(2:4)
@@ -3135,9 +3137,9 @@ function networkInit()
             print("Accepting Player ",i, " Name=",msg)
             playerName[i] = msg
             
-            signedOnPlayer += 1
+            connectedPlayer += 1
         end
-        so = signedOnPlayer
+        so = connectedPlayer
         updated = false
         for s in 1:4
             if PlayerList[s] == plSocket
@@ -4363,7 +4365,7 @@ function on_key_down(g)
     playerB_discards,
     playerC_discards,
     playerD_discards,
-    histFile,reloadFile
+    histFile,reloadFile,numberOfSocketPlayer
         if g.keyboard.Q
             exit()
         end
@@ -4388,7 +4390,10 @@ function on_key_down(g)
                 mode = m_client
                 networkInit()
             elseif g.keyboard.M
-               
+                println("Setting up to connect more Player")
+                mode = m_server
+                numberOfSocketPlayer += 1
+                networkInit()
             elseif g.keyboard.B
                 println("Bai no tung!, (random shuffle) ")
                 randomShuffle()
