@@ -33,7 +33,7 @@ noGUI() = noGUI_list[myPlayer]
 
 module nwAPI
     using Sockets
-    export nw_sendToMaster, nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer, 
+    export nw_sendToMaster, nw_sendTextToMaster,nw_receiveFromMaster,nw_receiveFromPlayer,nw_receiveTextFromPlayer,
     nw_sentToPlayer, nw_getR, serverSetup, clientSetup, allwPrint
     allowPrint = false
 
@@ -65,7 +65,7 @@ module nwAPI
                 s_arr[i+1] = a
             end
             if allowPrint
-            println("Data = ",s_arr)        
+            println("Data = ",s_arr)
             end
         else
             s_arr = Vector{UInt8}(undef,l)
@@ -129,7 +129,7 @@ module nwAPI
     end
 
     function nw_receiveTextFromPlayer(id,connection)
-        return readline(connection)  
+        return readline(connection)
     end
 
     function nw_sendTextToPlayer(id, connection, txt)
@@ -152,8 +152,8 @@ module nwAPI
                 s_arr[i+1] = a
             end
             if allowPrint
-            println("Data = ",s_arr)   
-            end     
+            println("Data = ",s_arr)
+            end
         else
         
             s_arr = Vector{UInt8}(undef,l)
@@ -851,14 +851,14 @@ function config(fn)
                 histFile = true
                 histFILENAME = rl[2]
                 hfName = nextFileName(histFILENAME)
-                HF = open(hfName,"w") 
+                HF = open(hfName,"w")
                 println(HF,"#")
                 println(HF,"#")
                 println(HF,"#")
                 histFILENAME = hfName
             elseif rl[1] == "reloadFile"
                 reloadFile = true
-                RF = open(rl[2],"r") 
+                RF = open(rl[2],"r")
                 RFindex = rl[3]
                 println(RFindex)
             elseif rl[1] == "GUI"
@@ -910,7 +910,7 @@ function nextFileName(fn)
             rfilename = nfn
         else
             rfilename = string(fn[1:n-1],1,fn[n+1:end])
-        end 
+        end
     end
     if allowPrint
         println("fn=",rfilename)
@@ -925,11 +925,11 @@ prevWinner = 1
 serverPort, gamew,macOS,
 numberOfSocketPlayer,myPlayer) = config(fn)
 
-if isfile(".tusacrc") 
+if isfile(".tusacrc")
     (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, gamew,macOS,
 numberOfSocketPlayer,myPlayer) =config(".tusacrc")
-elseif isfile("../.tusacrc") 
+elseif isfile("../.tusacrc")
     (PlayerList, mode,mode_human,serverURL,serverIP,
 serverPort, gamew,macOS,
 numberOfSocketPlayer,myPlayer) =config("../.tusacrc")
@@ -959,7 +959,7 @@ else
     adx = 8
     gameW = gamew == 0 ? 820 : gamew
 
-    if GENERIC == 1    
+    if GENERIC == 1
         cardXdim = 24
         cardYdim = 80
         zoomCardYdim = 110
@@ -1001,7 +1001,7 @@ const gameDeckMinimum = 9
 eRrestart = 1
 const eRcheck = 2
 gameEnd = 1
-function gameOver(n) 
+function gameOver(n)
     global eRrestart
     global gameEnd
     global FaceDown = false
@@ -1022,7 +1022,7 @@ end
 isGameOver() = gameEnd > 0
 
 
-function playerIsHuman(p) 
+function playerIsHuman(p)
     return (p == myPlayer && mode_human)
 end
 humanIsGUI() = mode_human & !noGUI()
@@ -1151,7 +1151,7 @@ function setupActorgameDeck()
 end
 function RESET3()
     global actors, fc_actors, big_actors, mapToActors , mask,
-    all_hands,all_discards,all_assets,gameDeckArray,ActiveCard,BIGcard 
+    all_hands,all_discards,all_assets,gameDeckArray,ActiveCard,BIGcard
     ActiveCard,BIGcard = 0,0
     all_hands = []
     all_discards = []
@@ -1212,14 +1212,14 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,ass
         l = length(deck)
         if xDim > 20
             xDim = l
-            modified_cardXdim = 
-                                faceDown ? div( (cardXdim*80),100 ) : 
+            modified_cardXdim =
+                                faceDown ? div( (cardXdim*80),100 ) :
                                 cardXdim
             modified_cardXdim = div(modified_cardXdim * cardScale,100)
             modified_cardYdim = div(cardYdim * cardScale,100)
         else
-            modified_cardXdim = 
-                                faceDown ? div( (cardXdim*80),100 ) : 
+            modified_cardXdim =
+                                faceDown ? div( (cardXdim*80),100 ) :
                                 cardXdim
             modified_cardXdim = div(modified_cardXdim * cardScale,100)
 
@@ -1571,7 +1571,7 @@ inSuit(a, b) = (a & 0xc != 0) && (b & 0xc != 0) && (a & 0xF0 == b & 0xF0)
 
 """
 inTSuit(a) = (a&0x1c == 0x08) || (a&0x1c == 0x0C)
-function suit(r,matchc) 
+function suit(r,matchc)
     if length(r) != 2
         return false
     end
@@ -1587,8 +1587,8 @@ end
 """
 missPiece(s1, s2) = (s2 > s1) ? (((((s2 & 0xc) - (s1 & 0xc)) == 4 ) ?
                                 ( ((s1 & 0xc) == 4) ? 0xc : 4 ) : 8) |
-                                (s1 & 0xF3)) :  
-                                (((((s1 & 0xc) - (s2 & 0xc)) == 4 ) ? 
+                                (s1 & 0xF3)) :
+                                (((((s1 & 0xc) - (s2 & 0xc)) == 4 ) ?
                                 ( ((s2 & 0xc) == 4) ? 0xc : 4 ) : 8) |
                                     (s2 & 0xF3))
 
@@ -1596,7 +1596,7 @@ missPiece(s1, s2) = (s2 > s1) ? (((((s2 & 0xc) - (s1 & 0xc)) == 4 ) ?
     all_chots(cards,pc)
 all is Chots
 """
-function all_chots(cards,pc) 
+function all_chots(cards,pc)
     for c in cards
         if card_equal(pc,c)
             return false
@@ -1706,11 +1706,11 @@ function c_scan(p,s;win=false)
                 return []
             elseif length(p[1])==1
                 return [p[1][1][1]]
-            else 
+            else
                 return s
             end
         end
-    else 
+    else
         if length(p[2])>1 && win
             return[]
         elseif length(p[2])==1 && win
@@ -1745,7 +1745,7 @@ function c_match(p,s,n;win=false)
                 push!(nrt,es)
             end
         end
-        if length(rt) != 0 
+        if length(rt) != 0
             if length(p[1]) == 2
                 return [nrt[1],p[1][1][1],p[1][2][1]]
             elseif length(s) == 3
@@ -1776,10 +1776,10 @@ function c_match(p,s,n;win=false)
                         rt =  [p[1][1][1],p[1][2][1]]
                     else
                         rt = []
-                    end                        
+                    end
                 elseif length(p[1])==1 && !card_equal(n,p[1][1][1])
                     rt =  [p[1][1][1],s[1]]
-                else 
+                else
                     rt =  []
                 end
             end
@@ -1846,7 +1846,7 @@ function scanCards(inHand, silence = false)
                 else
                     push!(pairs, prevAcard)
                     push!(allPairs[pairOf], pairs)
-                    if is_c(pairs[1]) 
+                    if is_c(pairs[1])
                         push!(chotP[pairOf],pairs)
                     end
                 end
@@ -1861,7 +1861,7 @@ function scanCards(inHand, silence = false)
     if pairOf > 0
         push!(pairs, prevAcard)
         push!(allPairs[pairOf], pairs)
-        if is_c(pairs[1]) 
+        if is_c(pairs[1])
             push!(chotP[pairOf],pairs)
         end
     else
@@ -1980,13 +1980,13 @@ global rReady = Vector{Bool}(undef,4)
 
 function updateHandPic(np)
    cp = playerMaptoGUI(np)
-    if cp == 1 
+    if cp == 1
         gx,gy = 7, 14
     elseif cp == 2
         gx,gy = 17,12
     elseif cp == 3
         gx,gy = 12, 6
-    else 
+    else
         gx,gy = 3,12
     end
     handPic.pos = tableGridXY(gx, gy)
@@ -2000,7 +2000,7 @@ function  updateErrorPic(cp)
     errorPic.pos = tableGridXY(gx, gy)
 end
 
-function updateWinnerPic(np) 
+function updateWinnerPic(np)
 
     if noGUI()
         return
@@ -2009,13 +2009,13 @@ function updateWinnerPic(np)
     
     if np == 0
         gx,gy = 20,20
-    elseif cp == 1 
+    elseif cp == 1
         gx,gy = 7, 14
     elseif cp == 2
         gx,gy = 17,12
     elseif cp == 3
         gx,gy = 12, 6
-    else 
+    else
         gx,gy = 3,12
     end
     winnerPic.pos = tableGridXY(gx, gy)
@@ -2035,11 +2035,11 @@ function removeCards!(array, n, cards)
                     break
                 elseif moveArray[i,1] == 0
                     moveArray[i,1] = c
-                    moveArray[i,2] = m      
+                    moveArray[i,2] = m
                     break
                 end
             end
-        end         
+        end
         if allowPrint
             println("REMOVE ",ts(c)," from ",n," map-> ",playerMaptoGUI(n))
         end
@@ -2246,7 +2246,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                         (length(ss) , length(cs) , length(m1s) , length(mts)),
                         (length(oss) , length(ocs) , length(om1s) , length(omts)))
             end
-            if oll < ll  
+            if oll < ll
                 if allowPrint
                     println("whowin, chking more Trsh:",
                     (length(ss) , length(cs) , length(m1s) , length(mts)),
@@ -2261,7 +2261,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                 end
                 l = 4
                 win = true
-            end 
+            end
         end
         return l, win,r
     end
@@ -2270,7 +2270,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     l2, w2, r2 = getl!(card, n2, r2)
     l3, w3, r3 = getl!(card, n3, r3)
     l4, w4, r4 = getl!(card, n4, r4)
-    if is_T(card) 
+    if is_T(card)
         l2 = l2 != 4 ? 0 : 4
         l3 = l3 != 4 ? 0 : 4
         l4 = l4 != 4 ? 0 : 4
@@ -2300,7 +2300,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
         else
             if play4 && (l2 > 0) && (l1 == 0)
                 w = 1
-            else 
+            else
                 w = 0
             end
         end
@@ -2437,7 +2437,7 @@ function getData_all_hands()
     end
 end
 
-function toDeck(arr,brr,crr,d) 
+function toDeck(arr,brr,crr,d)
     r = Vector{UInt8}(undef,112+12)
     i = 1
     for mr in [arr,brr,crr]
@@ -2527,10 +2527,10 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
             t4Player,
             n4c,
         )
-        function nw_makeR2(a,b,r) 
+        function nw_makeR2(a,b,r)
             s_ar = []
             push!(s_ar,a,b,length(r))
-            for ar in r 
+            for ar in r
                 push!(s_ar,ar)
             end
             return s_ar
@@ -2591,7 +2591,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
 end
 
 function gamePlay1Iteration()
-    global glNewCard, ActiveCard 
+    global glNewCard, ActiveCard
     global glNeedaPlayCard
     global glPrevPlayer
     global glIterationCnt
@@ -2612,7 +2612,7 @@ function gamePlay1Iteration()
                 else
                     return false
                 end
-            else  
+            else
                 cards = keyboardInput(player)
                 ts_s(cards)
                 rQ[player]=cards
@@ -2623,7 +2623,7 @@ function gamePlay1Iteration()
         end
         return true
     end
-    function All_hand_updateActor(card,facedown) 
+    function All_hand_updateActor(card,facedown)
         if noGUI()
             return
         end
@@ -2655,13 +2655,13 @@ function gamePlay1Iteration()
             if allowPrint
                 println((ts(cards[1]),UInt8(cards[1])))
             end
-            isMaster = (PlayerList[myPlayer] != plSocket) 
-            if isMaster  
-                if PlayerList[gpPlayer] == plSocket 
+            isMaster = (PlayerList[myPlayer] != plSocket)
+            if isMaster
+                if PlayerList[gpPlayer] == plSocket
                     msg = nwAPI.nw_receiveFromPlayer(gpPlayer, nwPlayer[gpPlayer], 8)
                     final_card = msg[2]
                 else
-                    final_card = cards 
+                    final_card = cards
                 end
                 for p in 1:4
                     if PlayerList[p] == plSocket
@@ -2670,8 +2670,8 @@ function gamePlay1Iteration()
                         end
                     end
                 end
-            else 
-                if gpPlayer == myPlayer 
+            else
+                if gpPlayer == myPlayer
                     final_card = cards
                     nwAPI.nw_sendToMaster(myPlayer, nwMaster,final_card)
                 else
@@ -2695,7 +2695,7 @@ function gamePlay1Iteration()
                 (glIterationCnt, glNeedaPlayCard, glPrevPlayer),
                 "+++++++++++++++++++++++++++",
             )
-                printAllInfo() 
+                printAllInfo()
         end
           
      
@@ -2750,7 +2750,7 @@ function gamePlay1Iteration()
                 println("pick a card from Deck=", nc[1], " for player", nextPlayer(glPrevPlayer))
                 println("Active6 = ", currentPlayer)
             end
-        end  
+        end
     elseif(rem(glIterationCnt,4) ==2)
         t1Player = nextPlayer(glPrevPlayer)
         glIterationCnt += 1
@@ -2815,7 +2815,7 @@ function gamePlay1Iteration()
         gotHumanInput = true
         for i in  1:4
             if !(glNeedaPlayCard && (i == 4 ))
-                gotHumanInput = gotHumanInput && checkHumanResponse(aplayer) 
+                gotHumanInput = gotHumanInput && checkHumanResponse(aplayer)
             end
             aplayer = nextPlayer(aplayer)
         end
@@ -2857,7 +2857,7 @@ function gamePlay1Iteration()
                 glPrevPlayer = nPlayer
             else
                 if glNeedaPlayCard
-                    addCards!(all_discards, 1,glPrevPlayer, 
+                    addCards!(all_discards, 1,glPrevPlayer,
                     glNewCard)
                 else
                     addCards!(all_discards, 1,nPlayer, glNewCard)
@@ -2867,7 +2867,7 @@ function gamePlay1Iteration()
             end
         elseif winner&0xFF == 0xFE
             if allowPrint
-                println("GAME OVER, player", 
+                println("GAME OVER, player",
                 nPlayer, " win")
             end
             addCards!(all_assets,0,nPlayer,glNewCard)
@@ -2943,7 +2943,7 @@ end
 function playersSyncDeck!(deck::TuSacCards.Deck)
     global myPlayer
    
-    isMaster = (PlayerList[myPlayer] != plSocket) 
+    isMaster = (PlayerList[myPlayer] != plSocket)
     if allowPrint
         println("in SYNC DECK MY player", myPlayer)
         println(PlayerList)
@@ -2999,7 +2999,7 @@ function networkInit()
         println("SERVER, expecting ", numberOfSocketPlayer, " players.")
         global myS = nwAPI.serverSetup(serverIP,serverPort)
         signedOnPlayer = 0
-        while signedOnPlayer < numberOfSocketPlayer 
+        while signedOnPlayer < numberOfSocketPlayer
             global p = nwAPI.acceptClient(myS)
             while true
                 global i = rand(2:4)
@@ -3018,7 +3018,7 @@ function networkInit()
         end
         so = signedOnPlayer
         updated = false
-        for s in 1:4 
+        for s in 1:4
             if PlayerList[s] == plSocket
                 for i in 1:4
                     nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
@@ -3081,7 +3081,7 @@ function networkInit()
         println(msg)
         global myPlayer = msg[2]
         PlayerList[myPlayer] = plSocket
-        if GUI 
+        if GUI
             noGUI_list[myPlayer] = false
         end
         println("Accepted as Player number ",myPlayer)
@@ -3141,34 +3141,34 @@ gsStateMachine(gameActions)
 
 gsStateMachine: control the flow/setup of the game
 
-states  --  
+states  --
 
     Flow of the card game is as follow:
 
     1) build gamedeck by calling ordered_deck
     2) function to mix up the card (multiple version), it can be autoShuffle
     or human-directed-shuffle (to emulate how human does it, not too random)
-    3) dealCards: pretty simple, just like how the game supposed to deal, 1st 
+    3) dealCards: pretty simple, just like how the game supposed to deal, 1st
     player get 6-cards.  All subsequence deals, 5 cards each.
-    4) now it goes to gameloop by running gamePlay1Iteration, each iteration is always 
-    fall-through (no-blocking), so that mouse/graphic still works. 
-    5) A round of game take 4 iterations, allowing async events (waiting for player 
-    to complete move) to complete. 
-        5a) The first part of the round, is after figuring who win the round and become the 
-        next player (done on previous iteration). 
+    4) now it goes to gameloop by running gamePlay1Iteration, each iteration is always
+    fall-through (no-blocking), so that mouse/graphic still works.
+    5) A round of game take 4 iterations, allowing async events (waiting for player
+    to complete move) to complete.
+        5a) The first part of the round, is after figuring who win the round and become the
+        next player (done on previous iteration).
         On this iteration, a player is either play a card, or picking a card from the deck.
         a call is made to gamePlay() to get current play to play the card if needed "glNeedaPlayCard"
 
-        5b) after get the playcard (glNewCard), it is send to other players on a non-blocking call to 
+        5b) after get the playcard (glNewCard), it is send to other players on a non-blocking call to
         gamePlay() with the gpCheckMatch2/glCheckMatch1or2 command.  In this case,
         if player1 pick a card from the deck, then the round involves 4-player(1,2,3,4). If not, it
-        only involves 3 players (1,2,3). All players works ASYNC and provide the results on the array "rQ" with 
+        only involves 3 players (1,2,3). All players works ASYNC and provide the results on the array "rQ" with
         ready bits "rReady". The code will spin on the same iteration waiting for rReady bits.  Human player control
         the GUI will select the card the "click_card" and entering his choice.  It will
-        be slow and async to the bots players. 
+        be slow and async to the bots players.
         Once all the results come in, whoWin is call to figure out who win the
         round.  It checks for legal move and final winning here too.
-        5c + 5d) not much -- must moving cards from one pile to the others base on the 
+        5c + 5d) not much -- must moving cards from one pile to the others base on the
         result of the round. Here is where the cards GUI got updated,
         The purpose of breaking the round into 4 is to allow non-blocking, making call to 4
         players and getting data back asyncronously.
@@ -3176,25 +3176,25 @@ states  --
     6) The iteration will continue until the gameDeck become too small (9) or somebody win.
     7) Not yet written (partially).  Reset the game, merge the cards and allow new game start with
     the ordered left by the game. Shuffle is still allowed on the next round (just the cards is not a new Deck)
-    8)  Should be the same as (1) 
+    8)  Should be the same as (1)
     
-    That is the flow of a standalone game against 3 bots. With network-game against 3 other humans (some can be bots). 
-    The following changes/problems are needed to be addressed: 
+    That is the flow of a standalone game against 3 bots. With network-game against 3 other humans (some can be bots).
+    The following changes/problems are needed to be addressed:
 
-    1) shuffle can be done by any player, so the game-master/game-master must allow for that. 
+    1) shuffle can be done by any player, so the game-master/game-master must allow for that.
     2) More than 1 human players (which does not present a problem), results will be out-of-order, and slow, but as soon as the
-    last player enter his/her move, it will be fast. 
-    3) All the bots will be on the game-master (dont have plan to support 2 players on 1 player). 
+    last player enter his/her move, it will be fast.
+    3) All the bots will be on the game-master (dont have plan to support 2 players on 1 player).
     So, experimental bots will need to be updated on the master version.
-    4) It will be hard to synchonize all the variables on 4 versions of the code. 
+    4) It will be hard to synchonize all the variables on 4 versions of the code.
 
 
 The goal is to have one code to handle all mode/variation of plays:
-            a) GUI 1-human against computer bots. 
-            b) all 4 bots, with GUI, against each other. 
+            a) GUI 1-human against computer bots.
+            b) all 4 bots, with GUI, against each other.
             c) 4 bots, no GUI.
             d) any combination human/bots on Network with GUI. In this
-            case, a bots can be configureed to play instead of Human on remote computer. 
+            case, a bots can be configureed to play instead of Human on remote computer.
             
     d) Requires change to the code to support multiple/remote (different computer) (async) players.
        However, 4 four computer must be synchonized for correctness.
@@ -3202,32 +3202,32 @@ The goal is to have one code to handle all mode/variation of plays:
     These are the changes need on the step number:
     I)  on Step 2) after local shuffle (or not), the deck will be send to game-master for sync up.
                 - game-master get all player to send their gameDeck.
-                - game-master decide who should have the turn to shuffle.  The new-deck will then 
+                - game-master decide who should have the turn to shuffle.  The new-deck will then
                 be sent back to all players.
                 This is done before 3).  But since all players have the same card-deck, the
-                card-dealing will result in match hands. 
+                card-dealing will result in match hands.
             
     II) on Step 5a) : new function needed to sync all-player on the same deck.
-            - noted, on the computer that is act as a player, the game behave as if it is a master, playing 1-human (the human is also a socket player) against 3 bots. 
+            - noted, on the computer that is act as a player, the game behave as if it is a master, playing 1-human (the human is also a socket player) against 3 bots.
             The game is sync because they all have the same deck-of-card, The bots decision/play -- wil be dropped -- substitude by
             the real-network player (if it is configured to be)
-             on 5a) a request wil be send to the player computer which has the real human player. 
+             on 5a) a request wil be send to the player computer which has the real human player.
              the same-function call is made (but to the network version) when the data comeback without much different
              than the bots player (asynchronously)
 
                 5b) here 3/or2 calls are made to network to get the results back.
-            Noted that the computers are synchronized on the flow of the game.  Only the results of the call to "hgamePlay" that is need to be update/overrided by the master. 
-            In a round, there are 2 place of synchronization of results.  First, "play1card", it is send to just 1 player to get a card as the result.  We dont need to send command+card.  The Master need the Player to send the pcard back. Then it send it out to other players as command+card.  However, it does not need to send command, just the card (for simplication). The PLAYER will automatically wait to receive Card. 
+            Noted that the computers are synchronized on the flow of the game.  Only the results of the call to "hgamePlay" that is need to be update/overrided by the master.
+            In a round, there are 2 place of synchronization of results.  First, "play1card", it is send to just 1 player to get a card as the result.  We dont need to send command+card.  The Master need the Player to send the pcard back. Then it send it out to other players as command+card.  However, it does not need to send command, just the card (for simplication). The PLAYER will automatically wait to receive Card.
 
             in similar way, their results are wait till ready ()
-                function whoWin() will need to be 'network' awared.  Making call to master/player 
-                to get all result backs. 
+                function whoWin() will need to be 'network' awared.  Making call to master/player
+                to get all result backs.
 
     III) funtion gamePlay, will need a new version nwGamePlay, to be handling the sending data to master/player
-    on each round, each of the call will need 2 things: actions and playcard. 
-    on the return(or result), it will be either be a)none or b) 1,2 or 3 cards. 
+    on each round, each of the call will need 2 things: actions and playcard.
+    on the return(or result), it will be either be a)none or b) 1,2 or 3 cards.
     All results will go back to master.  Once all data is collected. Master will send combine results to all-players,
-    as well as the result of who win.  These information will replace/supersede the local version on each computer. 
+    as well as the result of who win.  These information will replace/supersede the local version on each computer.
     The game will behave as if it is 1-human against 3 bots.
 
 
@@ -3276,8 +3276,8 @@ function gsStateMachine(gameActions)
                         global handPic = Actor("hand4.png")
                         global winnerPic = Actor("winner2.png")
                     elseif GENERIC == 2
-                        global handPic = Actor("hand3.png")
-                        global winnerPic = Actor("winner2.png")
+                        global handPic = Actor("hand31.png")
+                        global winnerPic = Actor("winner21.png")
                     elseif GENERIC == 3
                         global handPic = Actor("hand31.png")
                         global winnerPic = Actor("winner21.png")
@@ -3361,7 +3361,7 @@ global GUI_ready = false
                             coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
                                              i == 2 ? tableGridXY(17,10+coinsCnt*1) :
                                              i == 3 ? tableGridXY(10+coinsCnt*1,5) :
-                                             tableGridXY(5,10+coinsCnt*1) 
+                                             tableGridXY(5,10+coinsCnt*1)
                             push!(coins,coinActor)
                             coinsCnt += 1
                         elseif length(ps) == 3
@@ -3369,7 +3369,7 @@ global GUI_ready = false
                             coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
                                              i == 2 ? tableGridXY(17,10+coinsCnt*1) :
                                              i == 3 ? tableGridXY(10+coinsCnt*1,5) :
-                                             tableGridXY(5,10+coinsCnt*1) 
+                                             tableGridXY(5,10+coinsCnt*1)
                             push!(coins,coinActor)
                             coinsCnt += 1
                         end
@@ -3418,7 +3418,7 @@ global GUI_ready = false
             end
             restartGame()
         else
-            if length(gameDeckArray) >= gameDeckMinimum 
+            if length(gameDeckArray) >= gameDeckMinimum
                     if  isGameOver() == false
                         if rem(glIterationCnt,4) == 0
                             SNAPSHOT()
@@ -3441,7 +3441,7 @@ end
 """
     socketSYNC()
         sync point for all socket players, ... global command can be
-            inserted here. 
+            inserted here.
 TBW
 """
 function socketSYNC()
@@ -3594,7 +3594,7 @@ function on_mouse_move(g, pos)
     x = pos[1] << macOSconst
     y = pos[2] << macOSconst
 
-    if showLocation 
+    if showLocation
         println((x,y,reverseTableGridXY(x,y)))
     end
     if tusacState == tsSdealCards
@@ -3732,7 +3732,7 @@ function humanInput()
 end
 
 global rf1,rf2,rf3,rf4
-function failCheckPoint(dArray,all_hands,all_assets,all_discards) 
+function failCheckPoint(dArray,all_hands,all_assets,all_discards)
     return false
 end
 
@@ -3761,13 +3761,13 @@ function chk1(playCard)
             print(" (mT)", ts(m))
             if card_equal(m, playCard)
                 print("@")
-                return 
+                return
             elseif card_equal(mt[1], playCard) && !is_T(playCard)
                 print("@")
-                return 
+                return
             elseif card_equal(mt[2], playCard) && !is_T(playCard)
                 print("@")
-                return 
+                return
             end
         end
     
@@ -3776,13 +3776,13 @@ function chk1(playCard)
             print(" (m1)", (length(miss1s),ts(playCard),ts(m)))
             if card_equal(m, playCard)
                 print("@")
-                return 
+                return
             elseif card_equal(m1[1], playCard) && !is_T(playCard)
                 print("@")
-                return 
+                return
             elseif card_equal(m1[2], playCard) && !is_T(playCard)
                 print("@")
-                return 
+                return
             end
         end
     end
@@ -3832,7 +3832,7 @@ function chk2(playCard;win=false)
             for m1 in miss1s # CAAE XX PM ? X
                 if card_equal(playCard, missPiece(m1[1], m1[2])) &&
                     !is_T(m1[1]) &&
-                    !is_T(m1[2]) 
+                    !is_T(m1[2])
                     if allowPrint
                     println("Found Saki -- allow bo doi")
                     end
@@ -3848,13 +3848,13 @@ function chk2(playCard;win=false)
                 if is_T(playCard)
                     if p == 2 && card_equal(ap[1], playCard)
                         print("@")
-                        return 
+                        return
                     end
-                elseif !is_c(playCard) && card_equal(ap[1], playCard) 
+                elseif !is_c(playCard) && card_equal(ap[1], playCard)
                     if (p == 1) && found
                         print(" SAKI ")
                         print("@")
-                        return 
+                        return
                     else
                         print("@")
                         if p == 1
@@ -3965,7 +3965,7 @@ function gpHandlePlay1Card()
         card = []
     end
     return card
-end 
+end
 function gpHandleMatch2Card(pcard)
     card1 = chk1(pcard)
     card2 = chk2(pcard)
@@ -4031,7 +4031,7 @@ function hgamePlay(
     end
     currentPlayCard = pcard
     FaceDown = !isGameOver() && wantFaceDown
-    if gpPlayer == 1 
+    if gpPlayer == 1
         global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], GUILoc[1,3],  false)
         discard1 = setupDrawDeck(playerA_discards,GUILoc[9,1], GUILoc[9,2], GUILoc[9,3],  false)
         asset1 = setupDrawDeck(playerA_assets, GUILoc[5,1], GUILoc[5,2], GUILoc[5,3], false,true)
@@ -4065,7 +4065,7 @@ function hgamePlay(
                 ts(pcard))
             end
     end
-   global allPairs, singles, chot1s, miss1s, missTs, 
+   global allPairs, singles, chot1s, miss1s, missTs,
    miss1sbar,chotPs,chot1Specials = scanCards(all_hands[gpPlayer])
      
         
@@ -4107,7 +4107,7 @@ end
     end
     currentCards = cards
 
-    return 
+    return
 
 end
 
@@ -4150,13 +4150,13 @@ function restartGame()
     if histFile
         close(HF)
         hfName = nextFileName(histFILENAME)
-        HF = open(hfName,"w") 
+        HF = open(hfName,"w")
         println(HF,"#")
         println(HF,"#")
         println(HF,"#")
         histFILENAME = hfName
     end
-    currentPlayer = prevWinner  
+    currentPlayer = prevWinner
         newDeck = (union(
             playerA_hand,
             playerA_assets,
@@ -4267,11 +4267,11 @@ function on_key_down(g)
                 printHistory(HistCnt)
             end
     elseif tusacState == tsGameLoop
-        if g.keyboard.R 
+        if g.keyboard.R
             checkForRestart()
 
         elseif g.keyboard.X
-            SNAPSHOT() #taking last SNAPSHOT 
+            SNAPSHOT() #taking last SNAPSHOT
             HistCnt = length(HISTORY)
             tusacState = tsHistory
             println("Xet bai, coi lai bai,  History mode, size=",HistCnt)
@@ -4320,14 +4320,14 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
     if action == gpPlay1card
         for ps in allPairs
             for p in ps
-                if length(p) == 3 
+                if length(p) == 3
                     return card_equal(p[1],cards[1])
                 end
             end
         end
         return (length(cards) != 1) || is_T(cards[1])
     end
-    if length(cards) == 0 
+    if length(cards) == 0
         for ps in allPairs[1]
             if card_equal(ps[1],matchC[1])
                 for mb in miss1sbar
@@ -4360,8 +4360,8 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
         for ps in allPairs[2]
            for c in cards
                 if card_equal(c,ps[1])
-                    if length(cards) == 3 && 
-                        card_equal(cards[2],cards[3]) && 
+                    if length(cards) == 3 &&
+                        card_equal(cards[2],cards[3]) &&
                         card_equal(cards[2],cards[1])
                        # return false
                     else
@@ -4437,7 +4437,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
         allfound = allfound && found
         if action != gpPlay1card
             for t in allPairs[2]
-                if card_equal(pcard,t[1]) 
+                if card_equal(pcard,t[1])
                     if length(cards) != 3 || !card_equal(cards[1],t[1]) || !card_equal(cards[2],t[1]) || !card_equal(cards[3],t[1])
                         return true
                     end
@@ -4454,9 +4454,9 @@ function badPlay(cards,player, hand,action,botCards,matchC)
     else
         all_in_pairs = true
         all_in_suit = true
-        if length(cards) > 0 
+        if length(cards) > 0
             if card_equal(pcard,cards[1])
-                if length(cards) == 1 
+                if length(cards) == 1
                     return(is_T(pcard))
                 end
                 for c in cards
@@ -4479,7 +4479,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                             return true
                         end
                     end
-                end 
+                end
                 if length(cards) > 1
                     if !is_c(pcard)
                         all_in_suit= card_equal(pcard, missPiece(cards[1],cards[2]))
@@ -4507,18 +4507,18 @@ function badPlay(cards,player, hand,action,botCards,matchC)
             if length(cards) == 0
                 for ps in allPairs
                     for p in ps
-                        if card_equal(p[1],pcard) 
-                            if length(p) == 3 
+                        if card_equal(p[1],pcard)
+                            if length(p) == 3
                                     return true
                                # end
                             end
-                            if length(p) == 2 
+                            if length(p) == 2
                                 if !foundSaki(pcard,miss1sbar,chot1Specials) && !isMoreTrash(cards,hand)
                                     if allowPrint
                                         println("BO DOI")
                                     end
                                     global boDoi += 1
-                                    if boDoi > 2 
+                                    if boDoi > 2
                                         boDoi = 0
                                         return false
                                     else
@@ -4547,7 +4547,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
             elseif length(cards) < 3
                 moreTrash = isMoreTrash(cards,hand)
             end
-        end  
+        end
         if allowPrint
         println("p,s,t",(all_in_pairs ,all_in_suit,moreTrash))
         end
@@ -4556,9 +4556,9 @@ function badPlay(cards,player, hand,action,botCards,matchC)
 end
 
 function checkForRestart()
-    if isGameOver() 
+    if isGameOver()
         if numberOfSocketPlayer > 0
-            if isServer() 
+            if isServer()
                 so = numberOfSocketPlayer
                 for p in 2:4
                     if PlayerList[p] == plSocket
@@ -4612,9 +4612,9 @@ function on_mouse_down(g, pos)
         end
        gsStateMachine(gsOrganize)
        
-    elseif tusacState == tsGameLoop 
+    elseif tusacState == tsGameLoop
         if !isGameOver() && playerIsHuman(myPlayer)
-            if haBai 
+            if haBai
                 GUI_ready = true
                 GUI_array = currentCards
             else
@@ -4623,10 +4623,10 @@ function on_mouse_down(g, pos)
                     if cindx != 0
                         click_card(cindx, yPortion, playerA_hand)
                     end
-                    if currentAction == gpPlay1card 
+                    if currentAction == gpPlay1card
                         cindx, yPortion = mouseDownOnBox(x, y, pBseat)
                     else
-                        bc = ActiveCard 
+                        bc = ActiveCard
                         bx,by = big_actors[bc].pos
                         hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
                         cindx, yPortion = mouseDownOnBox(x, y, hotseat)
@@ -4653,7 +4653,7 @@ function on_mouse_down(g, pos)
                             updateErrorPic(1)
                             GUI_ready = false
                             GUI_busy = false
-                        else 
+                        else
                             updateErrorPic(0)
                             GUI_ready = true
                         end
