@@ -3481,9 +3481,10 @@ global GUI_ready = false
                             khui[i] = true
 
                             coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
-                            coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
-                                             i == 2 ? tableGridXY(17,10+coinsCnt*1) :
-                                             i == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                            mi = playerMaptoGUI(i)
+                            coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
+                                             mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                                             mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
                                              tableGridXY(5,10+coinsCnt*1)
                             push!(coins,coinActor)
                             coinsCnt += 1
@@ -3494,9 +3495,11 @@ global GUI_ready = false
                             end
 
                             coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
-                            coinActor.pos =  i == 1 ? tableGridXY(10+coinsCnt*1,15) :
-                                             i == 2 ? tableGridXY(17,10+coinsCnt*1) :
-                                             i == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                           
+                            mi = playerMaptoGUI(i)
+                            coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
+                                             mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                                             mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
                                              tableGridXY(5,10+coinsCnt*1)
                             push!(coins,coinActor)
                             coinsCnt += 1
