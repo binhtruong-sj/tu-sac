@@ -3598,7 +3598,7 @@ end
 TBW
 """
 function socketSYNC()
-    global nameSynced,mode_human,PlayerList,playerName
+    global nameSynced,mode_human,PlayerList,playerName,connectedPlayer
 
     if numberOfSocketPlayer == 0 
         if haBai
