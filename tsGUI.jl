@@ -35,7 +35,7 @@ pots = zeros(Int,4)
 histFile = false
 reloadFile = false
 connectedPlayer = 0
-nameSync = true
+nameSynced = true
 
 GUIname = Vector{Any}(undef,4)
 
@@ -3119,7 +3119,7 @@ end
 global nwPlayer = Vector{Any}(undef,4)
 
 function networkInit()
-    global GUIname, connectedPlayer,nameSync
+    global GUIname, connectedPlayer,nameSynced
     addingPlayer = false
     if mode == m_server
         println("SERVER, expecting ", numberOfSocketPlayer - connectedPlayer, " players.")
@@ -3629,6 +3629,7 @@ function socketSYNC()
             if smsg == "H"
                 gameOver(prevWinner)
             elseif smsg == "N"
+                nameSynced = true
                 glbNameSync(myPlayer,0)
             end
         elseif PlayerList[myPlayer] == plSocket
