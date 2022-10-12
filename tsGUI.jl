@@ -3618,7 +3618,8 @@ function socketSYNC()
                 end
             end
             println(gmsg)
-            smsg = haBai ? "H" : gmsg
+            smsg = haBai ? "H" : nameSync ? "N" : "."
+
             for p in 1:4
                 if PlayerList[p] == plSocket
                     println("Sending ", smsg)
@@ -3627,14 +3628,19 @@ function socketSYNC()
             end
             if smsg == "H"
                 gameOver(prevWinner)
+            elseif smsg == "N"
+                glbNameSync(myPlayer,0)
             end
         elseif PlayerList[myPlayer] == plSocket
             smsg = haBai ? "H" : "."
+            
             nwAPI.nw_sendTextToMaster(myPlayer, nwMaster,smsg)
             myMsg = nwAPI.nw_receiveTextFromMaster(nwMaster)
             println("receiving ",myMsg)
             if myMsg == "H"
                 gameOver(prevWinner)
+            elseif myMsg == "N"
+                glbNameSync(myPlayer,0)
             end
             println(myMsg)
         end
