@@ -4439,14 +4439,10 @@ function on_key_down(g)
                 end
                 termCnt += 1
             elseif mode == m_client
+                println("Quit... waiting to sync")
                 playerName[myPlayer] = string("QBot-",myPlayer)
                 nameSynced = false
-                while nameSynced == false
-                    sleep(0.05)
-                end
             end
-            exit()
-
         elseif g.keyboard.A
             if mode_human == true
                 playerName[myPlayer] = string("Bot-",NAME)
