@@ -1555,7 +1555,7 @@ end
 is_T(v) = (v & 0x1C) == 0x4
 is_s(v) = (v & 0x1C) == 0x8
 is_t(v) = (v & 0x1C) == 0xc
-is_Tst(v) = 0xd > (v & 0x1C) > 3
+is_Tst(v) = (0xd > (v & 0x1C) > 3)
 
 
 """
@@ -3127,7 +3127,6 @@ function networkInit()
             global myS = nwAPI.serverSetup(serverIP,serverPort)
         else
             addingPlayer = true
-            nameSynced = false
         end
         newPlayer = 0
         while connectedPlayer < numberOfSocketPlayer
@@ -3146,14 +3145,11 @@ function networkInit()
             playerName[i] = msg
             newPlayer = i
             connectedPlayer += 1
+            nameSynced = false
         end
         so = connectedPlayer
         updated = false
-        if addingPlayer
-            np = newPlayer
-        else
-            np = 0
-        end
+        
         for s in 1:4
             if !(addingPlayer && s != newPlayer)
                 if PlayerList[s] == plSocket
@@ -3602,10 +3598,24 @@ end
 TBW
 """
 function socketSYNC()
-    global nameSynced
+    global nameSynced,mode_human,PlayerList,playerName
 
-    if numberOfSocketPlayer == 0 && haBai
-        gameOver(prevWinner)
+    if numberOfSocketPlayer == 0 
+        if haBai
+            gameOver(prevWinner)
+        elseif nameSynced == false
+            println("Doing name sync, new name = ", playerName[myPlayer],SubString(playerName[myPlayer],1,3))
+            if SubString(playerName[myPlayer],1,3) == "Bot"
+                mode_human = false
+                PlayerList[myPlayer] = plBot1
+
+            else
+                mode_human = true
+                PlayerList[myPlayer] = plHuman
+
+            end
+            nameSynced = true
+        end
     else
         if (PlayerList[myPlayer] != plSocket) && isServer()
             msg = Vector{String}(undef,4)
@@ -3614,20 +3624,20 @@ function socketSYNC()
                     msg[p] = nwAPI.nw_receiveTextFromPlayer(p, nwPlayer[p])
                 end
             end
-            gmsg =""
+            gmsg ="."
             for p in 1:4
                 if PlayerList[p] == plSocket
-                    if msg[p] !=" "
+                    if msg[p] !="."
                         gmsg = msg[p]
                     end
                 end
             end
             println(gmsg)
-            smsg = haBai ? "H" : !nameSynced ? "N" : "."
+            smsg = haBai ? "H" : !nameSynced ? "N" : gmsg
 
             for p in 1:4
                 if PlayerList[p] == plSocket
-                    println("Sending ", smsg)
+                    println("S-sending ", smsg)
                     nwAPI.nw_sendTextToPlayer(p, nwPlayer[p],smsg)
                 end
             end
@@ -3635,10 +3645,24 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif smsg == "N"
                 glbNameSync(myPlayer)
+                if  SubString(playerName[myPlayer],1,3) == "Bot" 
+                    mode_human = false
+                else
+                    mode_human = true
+                end
+                for p in 1:4
+                    if PlayerList[p] == plSocket
+                        if SubString(playerName[p],1,4) == "Qbot"
+                            PlayerList[p] = plBot1
+                        end
+                    end
+                end
                 nameSynced = true
             end
         elseif PlayerList[myPlayer] == plSocket
+            println("Doing -- namesync, =",nameSynced)
             smsg = haBai ? "H" : !nameSynced ? "N" : "."
+            println("c-sending ", smsg)
             nwAPI.nw_sendTextToMaster(myPlayer, nwMaster,smsg)
             myMsg = nwAPI.nw_receiveTextFromMaster(nwMaster)
             println("receiving ",myMsg)
@@ -3646,6 +3670,11 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif myMsg == "N"
                 glbNameSync(myPlayer)
+                if SubString(playerName[myPlayer],1,3) == "Bot" 
+                    mode_human = false
+                else
+                    mode_human = true
+                end
                 nameSynced = true
             end
             println(myMsg)
@@ -4379,6 +4408,7 @@ scanCards(hand, false)
     end
     return TrashCnt < l
 end
+termCnt = 0
 function on_key_down(g)
     global tusacState, gameDeck, mode_human,haBai,shuffled,mode,
     playerA_hand,
@@ -4392,33 +4422,47 @@ function on_key_down(g)
     playerA_discards,
     playerB_discards,
     playerC_discards,
-    playerD_discards,
-    histFile,reloadFile,numberOfSocketPlayer
+    playerD_discards,nameSynced,
+    histFile,reloadFile,numberOfSocketPlayer, termCnt
         if g.keyboard.Q
-            mode_human = !mode_human
-            if mode_human == false
-                playerName[myPlayer] = string("QBot-",playerName[myPlayer])
+            if mode == m_server
+                println("Sercer can not quit! -- game will be terminated")
+                if termCnt > 2
+                    exit()
+                end
+                termCnt += 1
+            elseif mode == m_client
+                playerName[myPlayer] = string("QBot-",myPlayer)
                 nameSynced = false
-            end
-            while nameSynced == false
-                sleep(0.01)
+                while nameSynced == false
+                    sleep(0.01)
+                end
             end
             exit()
+
+        elseif g.keyboard.A
+            if mode_human == true
+                playerName[myPlayer] = string("Bot-",NAME)
+            else
+                playerName[myPlayer] = NAME
+            end
+            println("Attempting to switch human-mode from ", mode_human, playerName[myPlayer])
+            nameSynced = false
         end
        if tusacState == tsSdealCards
             if g.keyboard.S
                 shuffled = true
                 autoHumanShuffle(4)
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
-            elseif g.keyboard.A
+            elseif g.keyboard.T
                 mode_human = !mode_human
                 if mode_human == false
                     playerName[myPlayer] = string("Bot",myPlayer)
                     nameSynced = false
                 end
-                println("switching human mode to ",mode_human)
+                println("-switching human mode to ",mode_human)
             elseif g.keyboard.C
-                if mode != m_client
+                if mode == m_standalone
                     if histFile 
                         close(HF)
                         histFile = false
@@ -4432,10 +4476,12 @@ function on_key_down(g)
                     networkInit()
                 end
             elseif g.keyboard.M
-                println("Setting up to connect more Player")
-                mode = m_server
-                numberOfSocketPlayer += 1
-                networkInit()
+                if mode == m_standalone || mode == m_server
+                    println("Setting up to connect more Player")
+                    mode = m_server
+                    numberOfSocketPlayer += 1
+                    networkInit()
+                end
             elseif g.keyboard.B
                 println("Bai no tung!, (random shuffle) ")
                 randomShuffle()
@@ -4476,9 +4522,6 @@ function on_key_down(g)
         elseif g.keyboard.H
             println("Ha Bai!!!")
             haBai = true
-        elseif g.keyboard.A
-            mode_human = !mode_human
-            println("switching human mode to ",mode_human)
         end
     end
 end
