@@ -3645,13 +3645,16 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif smsg == "N"
                 glbNameSync(myPlayer)
-                if  SubString(playerName[myPlayer],1,3) == "Bot" 
+                nstr =  SubString(playerName[myPlayer],1,3)
+                if nstr  == "Bot" 
                     mode_human = false
                 else
                     mode_human = true
                 end
+                println("N: name = ", nstr)
                 for p in 1:4
                     if PlayerList[p] == plSocket
+                        println((p,playerName[p]))
                         if SubString(playerName[p],1,4) == "Qbot"
                             connectedPlayer -= 1
                             PlayerList[p] = plBot1
@@ -3671,8 +3674,11 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif myMsg == "N"
                 glbNameSync(myPlayer)
-                if SubString(playerName[myPlayer],1,3) == "Bot" 
+                nstr = SubString(playerName[myPlayer],1,3)
+                if  nstr == "Bot" 
                     mode_human = false
+                elseif nstr == "Qbo"
+                    exit()
                 else
                     mode_human = true
                 end
