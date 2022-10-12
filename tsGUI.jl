@@ -3655,7 +3655,7 @@ function socketSYNC()
                 for p in 1:4
                     if PlayerList[p] == plSocket
                         println((p,playerName[p]))
-                        if SubString(playerName[p],1,4) == "Qbot"
+                        if SubString(playerName[p],1,4) == "QBot"
                             connectedPlayer -= 1
                             PlayerList[p] = plBot1
                         end
@@ -3677,7 +3677,7 @@ function socketSYNC()
                 nstr = SubString(playerName[myPlayer],1,3)
                 if  nstr == "Bot" 
                     mode_human = false
-                elseif nstr == "Qbo"
+                elseif nstr == "QBo"
                     exit()
                 else
                     mode_human = true
