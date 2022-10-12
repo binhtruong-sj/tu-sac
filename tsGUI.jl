@@ -3127,7 +3127,7 @@ function networkInit()
             global myS = nwAPI.serverSetup(serverIP,serverPort)
         else
             addingPlayer = true
-            nameSync = false
+            nameSynced = false
         end
         newPlayer = 0
         while connectedPlayer < numberOfSocketPlayer
@@ -3597,7 +3597,7 @@ end
 TBW
 """
 function socketSYNC()
-    global nameSync
+    global nameSynced
 
     if numberOfSocketPlayer == 0 && haBai
         gameOver(prevWinner)
@@ -3618,7 +3618,7 @@ function socketSYNC()
                 end
             end
             println(gmsg)
-            smsg = haBai ? "H" : nameSync ? "N" : "."
+            smsg = haBai ? "H" : !nameSynced ? "N" : "."
 
             for p in 1:4
                 if PlayerList[p] == plSocket
