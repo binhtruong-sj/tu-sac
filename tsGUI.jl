@@ -3653,6 +3653,7 @@ function socketSYNC()
                 for p in 1:4
                     if PlayerList[p] == plSocket
                         if SubString(playerName[p],1,4) == "Qbot"
+                            connectedPlayer -= 1
                             PlayerList[p] = plBot1
                         end
                     end
@@ -4435,7 +4436,7 @@ function on_key_down(g)
                 playerName[myPlayer] = string("QBot-",myPlayer)
                 nameSynced = false
                 while nameSynced == false
-                    sleep(0.01)
+                    sleep(0.05)
                 end
             end
             exit()
