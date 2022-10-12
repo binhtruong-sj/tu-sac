@@ -3154,7 +3154,6 @@ function networkInit()
         else
             np = 0
         end
-        glbNameSync(myPlayer,np)
         for s in 1:4
             if !(addingPlayer && s != newPlayer)
                 if PlayerList[s] == plSocket
@@ -3209,8 +3208,8 @@ function networkInit()
             noGUI_list[myPlayer] = false
         end
         println("Accepted as Player number ",myPlayer)
-        nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,NAME)
-        glbNameSync(myPlayer,0)
+        playerName[myPlayer] = NAME
+        nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,playerName[myPlayer])
         println("Player List:",playerName)
         msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
         global numberOfSocketPlayer = msg[2]
@@ -3246,17 +3245,23 @@ function networkInit()
     end
 end
 
-function glbNameSync(myPlayer, newPlayer)
+function glbNameSync(myPlayer)
     global playerName, GUIname
     if mode == m_server
         for s in 1:4
-            if PlayerList[s] == plSocket &&  ((newPlayer == 0) || (s == newPlayer))
+            if PlayerList[s] == plSocket
+                playerName[s] = nwAPI.nw_receiveTextFromPlayer(s,nwPlayer[s])
+            end
+        end
+        for s in 1:4
+            if PlayerList[s] == plSocket
                 for i in 1:4
                     nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
                 end
             end
         end
     elseif mode == m_client
+        nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,playerName[myPlayer])
         for i in 1:4
             name = nwAPI.nw_receiveTextFromMaster(nwMaster)
             playerName[i] = name
@@ -3629,19 +3634,19 @@ function socketSYNC()
             if smsg == "H"
                 gameOver(prevWinner)
             elseif smsg == "N"
+                glbNameSync(myPlayer)
                 nameSynced = true
-                glbNameSync(myPlayer,0)
             end
         elseif PlayerList[myPlayer] == plSocket
-            smsg = haBai ? "H" : "."
-            
+            smsg = haBai ? "H" : !nameSynced ? "N" : "."
             nwAPI.nw_sendTextToMaster(myPlayer, nwMaster,smsg)
             myMsg = nwAPI.nw_receiveTextFromMaster(nwMaster)
             println("receiving ",myMsg)
             if myMsg == "H"
                 gameOver(prevWinner)
             elseif myMsg == "N"
-                glbNameSync(myPlayer,0)
+                glbNameSync(myPlayer)
+                nameSynced = true
             end
             println(myMsg)
         end
@@ -4390,6 +4395,14 @@ function on_key_down(g)
     playerD_discards,
     histFile,reloadFile,numberOfSocketPlayer
         if g.keyboard.Q
+            mode_human = !mode_human
+            if mode_human == false
+                playerName[myPlayer] = string("QBot-",playerName[myPlayer])
+                nameSynced = false
+            end
+            while nameSynced == false
+                sleep(0.01)
+            end
             exit()
         end
        if tusacState == tsSdealCards
@@ -4399,6 +4412,10 @@ function on_key_down(g)
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
             elseif g.keyboard.A
                 mode_human = !mode_human
+                if mode_human == false
+                    playerName[myPlayer] = string("Bot",myPlayer)
+                    nameSynced = false
+                end
                 println("switching human mode to ",mode_human)
             elseif g.keyboard.C
                 if mode != m_client
