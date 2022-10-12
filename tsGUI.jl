@@ -36,7 +36,7 @@ histFile = false
 reloadFile = false
 connectedPlayer = 0
 nameSynced = true
-
+serverSetup = false
 GUIname = Vector{Any}(undef,4)
 
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
@@ -3119,12 +3119,13 @@ end
 global nwPlayer = Vector{Any}(undef,4)
 
 function networkInit()
-    global GUIname, connectedPlayer,nameSynced
+    global GUIname, connectedPlayer,nameSynced, serverSetup
     addingPlayer = false
     if mode == m_server
         println("SERVER, expecting ", numberOfSocketPlayer - connectedPlayer, " players.")
-        if connectedPlayer == 0
+        if serverSetup == false
             global myS = nwAPI.serverSetup(serverIP,serverPort)
+            serverSetup = true
         else
             addingPlayer = true
         end
