@@ -3149,7 +3149,12 @@ function networkInit()
         end
         so = connectedPlayer
         updated = false
-        glbNameSync(myPlayer)
+        if addingPlayer
+            np = newPlayer
+        else
+            np = 0
+        end
+        glbNameSync(myPlayer,np)
         for s in 1:4
             if !(addingPlayer && s != newPlayer)
                 if PlayerList[s] == plSocket
@@ -3205,7 +3210,7 @@ function networkInit()
         end
         println("Accepted as Player number ",myPlayer)
         nwAPI.nw_sendTextToMaster(myPlayer,nwMaster,NAME)
-        glbNameSync(myPlayer)
+        glbNameSync(myPlayer,0)
         println("Player List:",playerName)
         msg = nwAPI.nw_receiveFromMaster(nwMaster,8)
         global numberOfSocketPlayer = msg[2]
@@ -3241,11 +3246,11 @@ function networkInit()
     end
 end
 
-function glbNameSync(myPlayer)
+function glbNameSync(myPlayer, newPlayer)
     global playerName, GUIname
     if mode == m_server
         for s in 1:4
-            if PlayerList[s] == plSocket
+            if PlayerList[s] == plSocket &&  ((newPlayer == 0) || (s == newPlayer))
                 for i in 1:4
                     nwAPI.nw_sendTextToPlayer(s,nwPlayer[s],playerName[i])
                 end
