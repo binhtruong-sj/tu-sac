@@ -1996,7 +1996,7 @@ function scanCards(inHand, silence = false, psc = false)
     end
     if length(allPairs[1]) >= 3
         for (i,p) in enumerate(allPairs[1])
-            if is_x(p[1]) && (length(allPairs[1]) - i ) > 2  
+            if is_x(p[1]) && (length(allPairs[1]) - i ) > 2
                 if inSuit(p[1],allPairs[1][i+1][1]) && inSuit(p[1],allPairs[1][i+2][1])
                     suitCnt += 2
                     if psc
@@ -2927,7 +2927,6 @@ function gamePlay1Iteration()
         end
         removeCards!(all_hands, nPlayer, r)
         GUI_busy = false
-        println("Done")
         if (winner == 0) && (length(r) == 0) # nobody match
             if is_T(glNewCard)
                 addCards!(all_assets,0, nPlayer, glNewCard)
@@ -2986,7 +2985,7 @@ function gamePlay1Iteration()
             astr = Vector{String}(undef,4)
             for p in 1:4
                 astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p])
-                pots[p] += kpoints[p] 
+                pots[p] += kpoints[p]
                 println(astr[p])
             end
             GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -3607,7 +3606,7 @@ TBW
 function socketSYNC()
     global nameSynced,mode_human,PlayerList,playerName,connectedPlayer,nwMaster
 
-    if numberOfSocketPlayer == 0 
+    if numberOfSocketPlayer == 0
         if haBai
             gameOver(prevWinner)
         elseif nameSynced == false
@@ -3652,7 +3651,7 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif smsg == "N"
                 glbNameSync(myPlayer)
-                if length(playerName[myPlayer]) > 2 &&  SubString(playerName[myPlayer],1,3)  == "Bot" 
+                if length(playerName[myPlayer]) > 2 &&  SubString(playerName[myPlayer],1,3)  == "Bot"
                     mode_human = false
                 else
                     mode_human = true
@@ -3679,7 +3678,7 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif myMsg == "N"
                 glbNameSync(myPlayer)
-                if  length(playerName[myPlayer]) > 2 && SubString(playerName[myPlayer],1,3) == "Bot" 
+                if  length(playerName[myPlayer]) > 2 && SubString(playerName[myPlayer],1,3) == "Bot"
                     mode_human = false
                 elseif length(playerName[myPlayer]) > 2 &&  SubString(playerName[myPlayer],1,3)  == "QBo"
                     exit()
@@ -4421,7 +4420,7 @@ scanCards(hand, false)
 end
 termCnt = 0
 function on_key_down(g)
-    global tusacState, gameDeck, mode_human,haBai,shuffled,mode,
+    global tusacState, gameDeck, mode_human,haBai,shuffled,mode,bbox,bbox1,
     playerA_hand,
     playerB_hand,
     playerC_hand,
@@ -4456,7 +4455,25 @@ function on_key_down(g)
             println("Attempting to switch human-mode from ", mode_human, playerName[myPlayer])
             nameSynced = false
         end
-       if tusacState == tsSdealCards
+        
+         if tusacState == tsSdealCards && g.keyboard.return
+            bbox = false
+	          bbox1 = false
+            if mode != m_standalone && !noGUI()
+                if allowPrint
+                println("GUI SYNC")
+                end
+                anewDeck = deepcopy(playersSyncDeck!(gameDeck))
+                pop!(gameDeck,length(gameDeck))
+                push!(gameDeck,anewDeck)
+            end
+            if allowPrint
+            println("ORGANIZE")
+            end
+            GUI_busy = false
+        gsStateMachine(gsOrganize)
+        
+       elseif tusacState == tsSdealCards
             if g.keyboard.S
                 shuffled = true
                 autoHumanShuffle(4)
@@ -4470,7 +4487,7 @@ function on_key_down(g)
                 println("-switching human mode to ",mode_human)
             elseif g.keyboard.C
                 if mode == m_standalone
-                    if histFile 
+                    if histFile
                         close(HF)
                         histFile = false
                     end
@@ -4848,7 +4865,7 @@ function on_mouse_down(g, pos)
 
         if tusacState == tsSdealCards
             bbox = false
-	    bbox1 = false
+	          bbox1 = false
             if mode != m_standalone && !noGUI()
                 if allowPrint
                 println("GUI SYNC")
@@ -4877,7 +4894,7 @@ function on_mouse_down(g, pos)
 			    	bbox = false
 			    end
                         end
-                        if currentAction == gpPlay1card 
+                        if currentAction == gpPlay1card
 			    if bbox == false
                             	cindx, yPortion = mouseDownOnBox(x, y, pBseat)
 			    	if cindx != 0
@@ -4903,7 +4920,6 @@ function on_mouse_down(g, pos)
                                 ac= TuSacCards.getCards(playerA_hand, ci)
                                 push!(GUI_array,ac)
                             end
-                            ts_s(GUI_array)
                             setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],GUILoc[1,3], false)
                             cardsIndxArr = []
                             if ( length(GUI_array) > 0 || length(currentPlayCard) > 0 ) &&
