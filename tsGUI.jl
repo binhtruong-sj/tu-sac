@@ -1767,6 +1767,7 @@ end
 TBW
 """
 function c_match(p,s,n;win=false)
+    global coDoiCards
     if allowPrint
          println("c-match ",(p,s,n,length(s)))
     end
@@ -1824,7 +1825,10 @@ function c_match(p,s,n;win=false)
         for aps in p
             for ap in aps
                 if card_equal(ap[1],n)
-                    return(ap)
+                    if length(ap) == 2
+                        coDoiCards = ap
+                    end
+                    rt = ap
                 end
             end
         end
@@ -2667,7 +2671,7 @@ function gamePlay1Iteration()
     global glPrevPlayer
     global glIterationCnt
     global t1Player,t2Player,t3Player,t4Player
-    global n1c,n2c,n3c,n4c,coDoiPlayer, coDoiCards
+    global n1c,n2c,n3c,n4c,coDoiPlayer, coDoiCards,GUI_busy
 
     function checkHumanResponse(player)
         global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
@@ -2899,7 +2903,7 @@ function gamePlay1Iteration()
         if allowPrint
         println("coDoi,cards,winner,r,length", (coDoiPlayer,coDoiCards,winner,r,length(r)))
         end
-        Doi = (length(r) == 2 && coDoiPlayer >0) ? coDoiCards[1] == r[1] && coDoiCards[2] == r[2] : false
+        Doi = (length(r) == 2 && coDoiPlayer >0) ? card_equal(coDoiCards[1],r[1]) && card_equal(coDoiCards[2],r[2]) : false
         if coDoiPlayer > 0  && !Doi && !suit(r,glNewCard)
             if allowPrint
                 println("Player", coDoiPlayer, " bo doi ", ts(coDoiCards[1]))
@@ -2909,7 +2913,7 @@ function gamePlay1Iteration()
             addCards!(all_assets,0,coDoiPlayer,coDoiCards[1])
             all_assets_marks[coDoiCards[1]] = true
             addCards!(all_assets,0,coDoiPlayer,coDoiCards[2])
-            coDoi = 0
+            coDoiPlayer = 0
             coDoiCards = []
         end
         if glNeedaPlayCard
@@ -2921,6 +2925,8 @@ function gamePlay1Iteration()
             println("Active5 = ", currentPlayer)
         end
         removeCards!(all_hands, nPlayer, r)
+        GUI_busy = false
+
         if (winner == 0) && (length(r) == 0) # nobody match
             if is_T(glNewCard)
                 addCards!(all_assets,0, nPlayer, glNewCard)
@@ -3010,7 +3016,6 @@ function gamePlay1Iteration()
             glNeedaPlayCard = true
         end
         all_assets_marks[glNewCard] = true
-
     end
 end
 
@@ -4219,7 +4224,7 @@ function hgamePlay(
     rReady
 )
 
-    global rQ, rReady, coDoi, coDoiCards, GUI_ready, GUI_array, GUI_busy,
+    global rQ, rReady, coDoiPlayer, coDoiCards, GUI_ready, GUI_array, GUI_busy,
     currentCards,currentAction, currentPlayCard
     if(gpPlayer==myPlayer)
         currentAction = gpAction
@@ -4271,7 +4276,7 @@ function hgamePlay(
         
     if gpAction == gpPlay1card
         @assert length(union(singles, chot1s, miss1s, missTs)) > 0
-        coDoi = 0
+        coDoiPlayer = 0
         coDoiCards = []
         global boDoi = 0
         global bp1BoDoiCnt = 0
@@ -4295,11 +4300,11 @@ end
         print(cards," --  ")
         ts_s(cards)
     end
-    if length(coDoiCards) == 2 && coDoi == 0
+    if length(coDoiCards) == 2 && coDoiPlayer == 0
         if allowPrint
         println("POSS BODOI ", (gpPlayer, coDoiCards))
         end
-        coDoi = gpPlayer
+        coDoiPlayer = gpPlayer
     end
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
@@ -4760,7 +4765,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                                         println("BO DOI")
                                     end
                                     global boDoi += 1
-                                    if boDoi > 2
+                                    if boDoi > 1
                                         boDoi = 0
                                         return false
                                     else
@@ -4835,78 +4840,87 @@ function on_mouse_down(g, pos)
     global playCard = []
     global tusacState
     global GUI_busy
-    x = pos[1] << macOSconst
-    y = pos[2] << macOSconst
-    if tusacState == tsSdealCards
-        if allowPrint
-        println("D")
-        end
-        if mode != m_standalone && !noGUI()
+   
+
+        x = pos[1] << macOSconst
+        y = pos[2] << macOSconst
+        print((x,y)," ")
+
+        if tusacState == tsSdealCards
             if allowPrint
-            println("GUI SYNC")
+            println("D")
             end
-            anewDeck = deepcopy(playersSyncDeck!(gameDeck))
-            pop!(gameDeck,length(gameDeck))
-            push!(gameDeck,anewDeck)
-        end
-        if allowPrint
-        println("ORGANIZE")
-        end
-       gsStateMachine(gsOrganize)
-       
-    elseif tusacState == tsGameLoop
-        if !isGameOver() && playerIsHuman(myPlayer)
-            if haBai
-                GUI_ready = true
-                GUI_array = currentCards
-            else
-                if GUI_ready == false && !GUI_busy
-                    cindx, yPortion = mouseDownOnBox(x, y, human_state)
-                    if cindx != 0
-                        click_card(cindx, yPortion, playerA_hand)
-                    end
-                    if currentAction == gpPlay1card
-                        cindx, yPortion = mouseDownOnBox(x, y, pBseat)
-                    else
-                        bc = ActiveCard
-                        bx,by = big_actors[bc].pos
-                        hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
-                        cindx, yPortion = mouseDownOnBox(x, y, hotseat)
-                    end
-                    if cindx != 0
-                        global GUI_array, GUI_ready
-                        GUI_busy = true
-                        GUI_array = []
-                        for ci in cardsIndxArr
-                            ac= TuSacCards.getCards(playerA_hand, ci)
-                            push!(GUI_array,ac)
+            if mode != m_standalone && !noGUI()
+                if allowPrint
+                println("GUI SYNC")
+                end
+                anewDeck = deepcopy(playersSyncDeck!(gameDeck))
+                pop!(gameDeck,length(gameDeck))
+                push!(gameDeck,anewDeck)
+            end
+            if allowPrint
+            println("ORGANIZE")
+            end
+            GUI_busy = false
+        gsStateMachine(gsOrganize)
+        
+        elseif tusacState == tsGameLoop
+            if !isGameOver() && playerIsHuman(myPlayer)
+                if haBai
+                    GUI_ready = true
+                    GUI_array = currentCards
+                else
+                    if GUI_ready == false && !GUI_busy
+                        cindx, yPortion = mouseDownOnBox(x, y, human_state)
+                        println((cindx,yPortion))
+                        if cindx != 0
+                            click_card(cindx, yPortion, playerA_hand)
                         end
-                        if allowPrint
-                            println("\nDanh Bai XONG ROI")
-                        end
-                        setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],GUILoc[1,3], false)
-                        cardsIndxArr = []
-                        if ( length(GUI_array) > 0 || length(currentPlayCard) > 0 ) &&
-                            badPlay(GUI_array,myPlayer,all_hands[myPlayer],
-                            currentAction,currentCards,currentPlayCard)
-                            if allowPrint
-                                println("badPlay reject")
-                            end
-                            updateErrorPic(1)
-                            GUI_ready = false
-                            GUI_busy = false
+                        if currentAction == gpPlay1card
+                            cindx, yPortion = mouseDownOnBox(x, y, pBseat)
                         else
-                            updateErrorPic(0)
-                            GUI_ready = true
+                            bc = ActiveCard
+                            bx,by = big_actors[bc].pos
+                            hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
+                            cindx, yPortion = mouseDownOnBox(x, y, hotseat)
+                        end
+                        if cindx != 0
+                            GUI_busy = true
+                            global GUI_array, GUI_ready
+                            GUI_array = []
+                            for ci in cardsIndxArr
+                                ac= TuSacCards.getCards(playerA_hand, ci)
+                                push!(GUI_array,ac)
+                            end
+                            if allowPrint
+                                println("\nDanh Bai XONG ROI")
+                            end
+                            ts_s(GUI_array)
+                            setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],GUILoc[1,3], false)
+                            cardsIndxArr = []
+                            if ( length(GUI_array) > 0 || length(currentPlayCard) > 0 ) &&
+                                badPlay(GUI_array,myPlayer,all_hands[myPlayer],
+                                currentAction,currentCards,currentPlayCard)
+                                if allowPrint
+                                    println("badPlay reject")
+                                end
+                                updateErrorPic(1)
+                                GUI_ready = false
+                                GUI_busy = false
+
+                            else
+                                updateErrorPic(0)
+                                GUI_ready = true
+                            end
+
                         end
                     end
                 end
             end
+        elseif tusacState == tsRestart
+            anewDeck = []
+            global boxes = []
         end
-    elseif tusacState == tsRestart
-        anewDeck = []
-        global boxes = []
-    end
 end
 if noGUI()
     while(true)
