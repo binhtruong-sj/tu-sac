@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.61d"
+version = "0.61e"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -1821,7 +1821,14 @@ function c_match(p,s,n;win=false)
             end
         end
     end
-    if length(rt) == 0
+    if length(rt) != 0
+        for ap in p[2]
+            if card_equal(ap[1],n)
+                rt = ap
+                break
+            end
+        end
+    else
         for aps in p
             for ap in aps
                 if card_equal(ap[1],n)
@@ -1829,6 +1836,7 @@ function c_match(p,s,n;win=false)
                         coDoiCards = ap
                     end
                     rt = ap
+                    break
                 end
             end
         end
