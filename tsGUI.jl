@@ -3119,7 +3119,7 @@ end
 global nwPlayer = Vector{Any}(undef,4)
 
 function networkInit()
-    global GUIname, connectedPlayer,nameSynced, serverSetup
+    global GUIname, connectedPlayer,nameSynced, serverSetup, nwMaster, nwPlayer
     addingPlayer = false
     if mode == m_server
         println("SERVER, expecting ", numberOfSocketPlayer - connectedPlayer, " players.")
@@ -3599,7 +3599,7 @@ end
 TBW
 """
 function socketSYNC()
-    global nameSynced,mode_human,PlayerList,playerName,connectedPlayer
+    global nameSynced,mode_human,PlayerList,playerName,connectedPlayer,nwMaster
 
     if numberOfSocketPlayer == 0 
         if haBai
