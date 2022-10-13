@@ -3656,7 +3656,7 @@ function socketSYNC()
                 for p in 1:4
                     if PlayerList[p] == plSocket
                         println((p,playerName[p]))
-                        if length(playerName[myPlayer]) > 3 && SubString(playerName[p],1,4) == "QBot"
+                        if length(playerName[p]) > 3 && SubString(playerName[p],1,4) == "QBot"
                             connectedPlayer -= 1
                             PlayerList[p] = plBot1
                         end
