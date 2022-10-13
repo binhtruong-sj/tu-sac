@@ -1,8 +1,9 @@
 # (48 - chot not matching pair
 # (40 - chot saki
-#
+# (0 -player1  chot not bodoi
+# (4 3 chots, 2 singles not match
 (0, true, 3, 0, 0)
-TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX cV 
+TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX sX
 tT tT xT pT pT TV sV pV TD TD sD sD TX tX tX xX xX pX pX mX 
 TT pT mT mT mT mV sD xD pD mD sX sX tX xX xX cT cT cV cV cD cD 
 TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX pX cT cT 
@@ -14,15 +15,15 @@ TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX pX cT cT
 
 
 
-TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT sX cT cD
+TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT cV cT cD
 ("M", pT, 3, 6, 0)
 ("M", pT, 2, 6, 0)
 ("M", pT, 2, 6, 0)
 (4, true, 2, 0x17, 0)
-TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX cV 
+TT mT mT mT mV sD xD pD mD sX sX tX xX xX cT cT cT cV cD pX 
 tT tT xT TV sV pV TD TD sD sD TX tX tX xX xX pX pX mX 
-TT mT mT mT mV sD xD pD mD sX sX tX xX xX cT cT cV cV cD cD 
-TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX pX cT cT 
+TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX cV 
+TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX cT cV cD 
 
 pT pT pT 
 
@@ -31,15 +32,15 @@ pT pT pT
 
 
 
-cD TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT sX tD 
+TX cX mV mV sV tV TV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT sX tD cV cD
 ("M", xT, 2, 5, 0)
 ("M", xT, 1, 5, 0)
 ("M", xT, 1, 5, 0)
 (8, true, 1, 0x12, 0)
 TT sT sT sT tT mT sV tV pV pV mV tD xD pD tX pX mX cV 
 tT tT TV sV pV TD TD sD sD TX tX tX xX xX pX pX mX 
-TT mT mT mT mV sD xD pD mD sX sX tX xX xX cT cT cV cV cD cD 
-TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX pX cT cT 
+TT mT mT mT mV sD xD pD mD sX sX tX xX xX cT cT cT cV cD 
+TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX pX cT cV cD  
 xT xT xT 
 pT pT pT 
 
