@@ -3646,8 +3646,7 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif smsg == "N"
                 glbNameSync(myPlayer)
-                nstr =  SubString(playerName[myPlayer],1,3)
-                if length(playerName[myPlayer]) > 2 && nstr  == "Bot" 
+                if length(playerName[myPlayer]) > 2 &&  SubString(playerName[myPlayer],1,3)  == "Bot" 
                     mode_human = false
                 else
                     mode_human = true
@@ -3675,10 +3674,9 @@ function socketSYNC()
                 gameOver(prevWinner)
             elseif myMsg == "N"
                 glbNameSync(myPlayer)
-                nstr = SubString(playerName[myPlayer],1,3)
-                if  length(playerName[myPlayer]) > 2 && nstr == "Bot" 
+                if  length(playerName[myPlayer]) > 2 && SubString(playerName[myPlayer],1,3) == "Bot" 
                     mode_human = false
-                elseif length(playerName[myPlayer]) > 2 && nstr == "QBo"
+                elseif length(playerName[myPlayer]) > 2 &&  SubString(playerName[myPlayer],1,3)  == "QBo"
                     exit()
                 else
                     mode_human = true
