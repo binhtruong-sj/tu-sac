@@ -2926,7 +2926,7 @@ function gamePlay1Iteration()
         end
         removeCards!(all_hands, nPlayer, r)
         GUI_busy = false
-
+        println("Done")
         if (winner == 0) && (length(r) == 0) # nobody match
             if is_T(glNewCard)
                 addCards!(all_assets,0, nPlayer, glNewCard)
