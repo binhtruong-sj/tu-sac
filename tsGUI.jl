@@ -2669,7 +2669,7 @@ function gamePlay1Iteration()
     global glNewCard, ActiveCard
     global glNeedaPlayCard
     global glPrevPlayer
-    global glIterationCnt
+    global glIterationCnt,bbox1
     global t1Player,t2Player,t3Player,t4Player
     global n1c,n2c,n3c,n4c,coDoiPlayer, coDoiCards,GUI_busy
 
@@ -2916,6 +2916,7 @@ function gamePlay1Iteration()
             coDoiPlayer = 0
             coDoiCards = []
         end
+	bbox1 = false
         if glNeedaPlayCard
             removeCards!(all_hands, glPrevPlayer, glNewCard)
             All_hand_updateActor(glNewCard[1],!FaceDown)
@@ -4839,17 +4840,15 @@ function on_mouse_down(g, pos)
     global cardSelect
     global playCard = []
     global tusacState
-    global GUI_busy
+    global GUI_busy, bbox, bbox1
    
 
         x = pos[1] << macOSconst
         y = pos[2] << macOSconst
-        print((x,y)," ")
 
         if tusacState == tsSdealCards
-            if allowPrint
-            println("D")
-            end
+            bbox = false
+	    bbox1 = false
             if mode != m_standalone && !noGUI()
                 if allowPrint
                 println("GUI SYNC")
@@ -4872,17 +4871,29 @@ function on_mouse_down(g, pos)
                 else
                     if GUI_ready == false && !GUI_busy
                         cindx, yPortion = mouseDownOnBox(x, y, human_state)
-                        println((cindx,yPortion))
                         if cindx != 0
                             click_card(cindx, yPortion, playerA_hand)
+			    if length(cardsIndxArr) > 0
+			    	bbox = false
+			    end
                         end
-                        if currentAction == gpPlay1card
-                            cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+                        if currentAction == gpPlay1card 
+			    if bbox == false
+                            	cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+			    	if cindx != 0
+				    bbox = true
+			    	end
+			    end
                         else
+			    if bbox1 == false
                             bc = ActiveCard
                             bx,by = big_actors[bc].pos
                             hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
                             cindx, yPortion = mouseDownOnBox(x, y, hotseat)
+			    if cindx != 0
+			    	bbox1 = true
+			    end
+			    end
                         end
                         if cindx != 0
                             GUI_busy = true
@@ -4891,9 +4902,6 @@ function on_mouse_down(g, pos)
                             for ci in cardsIndxArr
                                 ac= TuSacCards.getCards(playerA_hand, ci)
                                 push!(GUI_array,ac)
-                            end
-                            if allowPrint
-                                println("\nDanh Bai XONG ROI")
                             end
                             ts_s(GUI_array)
                             setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2],GUILoc[1,3], false)
@@ -4907,7 +4915,8 @@ function on_mouse_down(g, pos)
                                 updateErrorPic(1)
                                 GUI_ready = false
                                 GUI_busy = false
-
+				bbox = false
+				bbox1 = false
                             else
                                 updateErrorPic(0)
                                 GUI_ready = true
