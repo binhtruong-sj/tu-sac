@@ -3651,7 +3651,6 @@ function socketSYNC()
                 else
                     mode_human = true
                 end
-                println("N: name = ", nstr)
                 for p in 1:4
                     if PlayerList[p] == plSocket
                         println((p,playerName[p]))
