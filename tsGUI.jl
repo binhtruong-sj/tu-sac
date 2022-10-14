@@ -760,6 +760,7 @@ GAMEW =900
 GENERIC = 3
 histFile = false
 reloadFile = false
+selftest = false
 RFindex = ""
 hints = 0
 GUI = true
@@ -789,7 +790,7 @@ GUILoc[12,1],GUILoc[12,2],GUILoc[12,3] = 2,16,5
 GUILoc[13,1],GUILoc[13,2],GUILoc[13,3] = 9,8,10
 gamew = 0
 function config(fn)
-    global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,
+    global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,selfTest,
     mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,showLocation,
     gamew,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,RFindex
 
@@ -873,6 +874,8 @@ function config(fn)
                 RF = open(rl[2],"r")
                 RFindex = rl[3]
                 println(RFindex)
+            elseif rl[1] == "selfTest"
+                selfTest = rl[2] == "true"
             elseif rl[1] == "GUI"
                     global GUI = rl[2] == "true"
             end
@@ -1373,12 +1376,19 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
         
 
         gd = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
+        while true
+            aline = readline(RF)
+            RFstates = split(aline,", ")
+            if RFstates[1] != "(\"M\""
+                break
+            end
+        end
+
         gameDeck = deepcopy(gd)
-        winner = parse(Int,RFstates[3])
+        playerSel = parse(Int,RFstates[3])
         glPrevPlayer = winner
         glNeedaPlayCard = RFstates[2] == "true"
-        rPlayer = 5 + myPlayer - winner
-        playerSel = rPlayer > 4 ? rPlayer - 4 : rPlayer
+
         if playerSel == 1
             playerA_hand = P0_hand
             playerB_hand = P1_hand
@@ -3051,7 +3061,8 @@ function SNAPSHOT()
         if histFile
             for i in 1:16
                 if moveArray[i,1] != 0
-                    println(HF,("M",ts(moveArray[i,1]),moveArray[i,2],moveArray[i,3],0))
+                    HFstr = string("M",ts(moveArray[i,1]),moveArray[i,2],moveArray[i,3],0)
+                    println(HF,HFstr)
                     moveArray[i,1] = 0
                 else
                     break
@@ -3290,6 +3301,25 @@ function glbNameSync(myPlayer)
         GUIname[4].pos = tableGridXY(1,1)
     end
 end
+
+function doCardDeal()
+    global bbox,bbox1,gameDeck, GUI_busy
+    bbox = false
+    bbox1 = false
+  if mode != m_standalone && !noGUI()
+      if allowPrint
+      println("GUI SYNC")
+      end
+      anewDeck = deepcopy(playersSyncDeck!(gameDeck))
+      pop!(gameDeck,length(gameDeck))
+      push!(gameDeck,anewDeck)
+  end
+  if allowPrint
+  println("ORGANIZE")
+  end
+  GUI_busy = false
+    gsStateMachine(gsOrganize)
+end
 """
 gsStateMachine(gameActions)
 
@@ -3394,7 +3424,7 @@ function gsStateMachine(gameActions)
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets
-    global points,kpoints,khui
+    global points,kpoints,khui,myPlayer,loadPlayer
    prevIter = 0
    
     #=
@@ -3462,7 +3492,9 @@ function gsStateMachine(gameActions)
             end
           #  println("anew",anewDeck)
             tusacState = tsSdealCards
-
+            if reloadFile
+                doCardDeal()
+            end
         end
 
 # -------------------A
@@ -3552,8 +3584,11 @@ global GUI_ready = false
         global currentAction = gpPlay1card
         if reloadFile
             glNeedaPlayCard = RFstates[2] == "true"
-            glPrevPlayer = myPlayer
-            ActiveCard = 0
+
+            myPlayer = 1
+            glPrevPlayer = 1
+            println((myPlayer,glPrevPlayer))
+           ActiveCard = 0
         else
             global glNeedaPlayCard = true
 
@@ -4464,24 +4499,10 @@ function on_key_down(g)
             nameSynced = false
         end
         
-         if tusacState == tsSdealCards && g.keyboard.return
-            bbox = false
-	          bbox1 = false
-            if mode != m_standalone && !noGUI()
-                if allowPrint
-                println("GUI SYNC")
-                end
-                anewDeck = deepcopy(playersSyncDeck!(gameDeck))
-                pop!(gameDeck,length(gameDeck))
-                push!(gameDeck,anewDeck)
-            end
-            if allowPrint
-            println("ORGANIZE")
-            end
-            GUI_busy = false
-        gsStateMachine(gsOrganize)
-        
-       elseif tusacState == tsSdealCards
+        if tusacState == tsSdealCards && g.keyboard.return
+            doCardDeal()
+            gsStateMachine(gsOrganize)
+        elseif tusacState == tsSdealCards
             if g.keyboard.S
                 shuffled = true
                 autoHumanShuffle(4)
@@ -4856,6 +4877,7 @@ function checkForRestart()
         end
     end
 end
+
 """
     on_mouse_down(g, pos)
 
@@ -4872,21 +4894,7 @@ function on_mouse_down(g, pos)
         y = pos[2] << macOSconst
 
         if tusacState == tsSdealCards
-            bbox = false
-	          bbox1 = false
-            if mode != m_standalone && !noGUI()
-                if allowPrint
-                println("GUI SYNC")
-                end
-                anewDeck = deepcopy(playersSyncDeck!(gameDeck))
-                pop!(gameDeck,length(gameDeck))
-                push!(gameDeck,anewDeck)
-            end
-            if allowPrint
-            println("ORGANIZE")
-            end
-            GUI_busy = false
-        gsStateMachine(gsOrganize)
+            doCardDeal()
         
         elseif tusacState == tsGameLoop
             if !isGameOver() && playerIsHuman(myPlayer)
