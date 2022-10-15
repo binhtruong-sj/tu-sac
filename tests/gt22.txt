@@ -1,0 +1,304 @@
+# (00 true     -player1  chot not bodoi
+# (04 false 3 chots, 2 singles not match
+# (05 false chot saki
+# (06 false - chot not matching pair
+# (07 false - 3 T not pair with a T
+# (44 false  player 1     c-match inefficient, missing case 
+# (45 false  player 1     c-match inefficient, missing case 
+# (46 false  player 1     c-match inefficient, missing case 
+# (47 false  player 1     c-match inefficient, missing case 
+# (49 false  player 1     c-match inefficient, missing case 
+# (4a false  player 1     c-match inefficient, missing case 
+# (4b false  player 1     c-match inefficient, missing case 
+# (50 false 3T
+# (51 false 3T case
+# (52 false 3T case
+# #
+(00, false, 3, 0, 0)
+TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX sX
+tT tT xT pT pT TV sV pV TD TD sD sD TX tX tX xX xX pX pX mX 
+TT pT mT mT mT mV sD xD pD mD sX sX tX xX xX cT cT cV cV cD cD 
+TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX pX cT cT 
+
+
+
+
+
+
+
+
+TX cX mV mV sV tV TV cV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT cV cT cD
+("M", cD, 1, 5, 0)
+("M", cD, 1, 5, 0)
+("M", cD, 0, 10, 0)
+(04, false, 4, 1, 0)
+TT mT mT mT mV sD xD pD mD sX sX tX xX xX cT cT cT cV cD pX 
+tT tT xT TV sV pV TD TD sD sD TX tX tX xX xX pX pX mX 
+TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX cV 
+TT sT tT pT TV TV xV xV pV TD sD tD xD pD pD mD sX cT cV cD 
+
+pT pT pT 
+
+
+
+
+
+
+TX cX mV mV sV tV TV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX TX xD xT sX tD cV cD
+("M", cD, 2, 6, 0)
+("M", cD, 0, 6, 0)
+(05, false, 4, 0, 0)
+TT sT sT sT tT mT sV tV tD xD pD pX mX cV 
+tT tT TV sV TD TD sD sD TX xX xX pX pX mX 
+TT mT mT mT mV sD xD pD mD xX xX cX cV cD cD sX pX
+TT sT tT pT TV TV xV xV pV TD sD tD pD pD mD cV cD cT cT 
+xT xT xT pV pV pV 
+pT pT pT tX tX tX 
+sX sX sX 
+xD xD 
+mV tX 
+tD xT 
+
+
+TX cX mV mV sV tV TV cV tV xV mD cX TT TD mX TX tV xV sV tD cX mD cT cD
+("M", cD, 0, 10, 0)
+(06, false, 1, 0x55, 0)
+TT sT sT sT tT mT sV tV tD xD pD pX mX cV 
+tT tT TV sV TD TD sD sD TX xX xX pX pX mX 
+TT mT mT mT mV sD xD pD mD xX xX cT cT cV cV cD cD 
+TT sT tT TV TV xV xV pV TD sD tD pD pD mD sX pX cT cT 
+xT xT xT pV pV pV TX 
+pT pT pT tX tX tX 
+sX sX sX 
+xD xD 
+mV tX 
+tD xT 
+
+pT 
+cD TX cX mV mV sV tV TV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX cV
+("M", cV, 3, 7, 0)
+("M", cV, 3, 7, 0)
+("M", cV, 0, 7, 0)
+(07, false, 1, 0x55, 0)
+TT sT sT sT tT mT sV tV tD xD pD pX mX cV 
+tT tT TT sV TD TD sD sD TX xX xX pX pX mX 
+TT mT mT mT mV sD xD pD mD xX xX cT cT cV cV cD cD 
+sT tT TV TV TV xV xV pV TD sD tD pD pD mD sX pX cT cT 
+xT xT xT pV pV pV TX 
+pT pT pT tX tX tX 
+sX sX sX 
+xD xD 
+mV tX 
+tD xT 
+
+pT 
+cD TX cX mV mV sV tV tV xV cD mD cX TT TD mX TX cX tV xV sV tD cX mD mX cV TV
+("M", TV, 4, 8, 0)
+("M", TV, 4, 8, 0)
+("M", TV, 4, 8, 0)
+("M", TV, 0, 8, 0)
+(40, true, 2, 0x22, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV tD TX TX tX tX xX pX cT cV cD 
+pT pV mV mV tD xD pD mD TX sX xX xX mX cT cV cX cX 
+TT TT mT mT mV TD sD tD pD sX xX mX cT cV cD cD cX 
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX cX pV xV TD xT sT sX TD tV xD tV xD cT cD cV
+("M", tD, 2, 7, 0)
+("M", tD, 3, 7, 0)
+(44, false, 3, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX cT cV cX cX 
+TT TT mT mT mV TD sD tD pD sX xX mX cT cV cD cD cX 
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cT cD cV cX
+("M", cT, 2, 6, 0)
+("M", cD, 2, 6, 0)
+("M", cX, 0, 6, 0)
+(45, false, 3, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX mX cT cV cX  
+TT TT mT mT mV TD sD tD pD sX xX cT cV cD cD cX cX
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cT cD cV cX
+("M", cT, 2, 6, 0)
+("M", cV, 2, 6, 0)
+("M", cX, 0, 6, 0)
+(46, false, 3, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX mX cT cV cX  
+TT TT mT mT mV TD sD tD pD sX xX cT cV cD cD cX cX
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cT cD cX cV
+("M", cT, 2, 6, 0)
+("M", cD, 2, 6, 0)
+("M", cX, 2, 6, 0)
+("M", cV, 0, 6, 0)
+(47, false, 3, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX mX cT cV cX  
+TT TT mT mT mV TD sD tD pD sX xX cT cV cD cD cX cX
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cT cV cX cD
+("M", cT, 2, 6, 0)
+("M", cV, 2, 6, 0)
+("M", cD, 0, 6, 0)
+(48, false, 1, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX cT cV cX cX 
+TT TT mT mT mV TD sD tD pD sX xX mX cT cV cD cD cX 
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cT cX cV cD
+("M", cD, 4, 8, 0)
+("M", cD, 4, 8, 0)
+("M", cD, 0, 8, 0)
+(49, false, 1, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX mX cT cV cX  
+TT TT mT mT mV TD sD tD pD sX xX cT cV cD cD cX cX
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cT cD cV cX
+("M", cT, 2, 6, 0)
+("M", cV, 2, 6, 0)
+("M", cD, 2, 6, 0)
+("M", cX, 0, 6, 0)
+(4a, false, 1, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX mX cT cV cX  
+TT TT mT mT mV TD sD tD pD sX xX cT cV cD cD cX cX
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cV cD cX cT
+("M", cT, 0, 10, 0)
+(4b, false, 3, 0x43, 0)
+sT tT xT xT mT pV pV sD sD mD mD TX tX mX mX 
+sT sT xT pT mV TX TX tX tX xX pX cT cV cD 
+pT pV mV mV xD pD mD TX sX xX xX mX mX cT cV cD  
+TT TT mT mT mV TD sD tD pD sX xX cT cV cD cX cX cX
+sD TD tD pT pT 
+xV xV xV sV sV sV 
+pX pX pX tD tD 
+tT tT tT 
+pD 
+pD 
+xD 
+tV 
+mT TV TV TV mD TV tV TT TT tX sV sX pV xV TD xT sT sX TD tV xD tV xD cT cV cD cX
+("M", cX, 2, 6, 0)
+("M", cX, 2, 6, 0)
+("M", cX, 2, 6, 0)
+("M", cX, 0, 6, 0)
+(50, false, 3, 0x0d, 0)
+sT tT xT xT TV mD TD sD tD tD xD pD TX TX sX sX xX pX cV 
+TT xT sV tV xV xV xV mV tX xX pX cT cV cV cX 
+sT sT xT pT pT mT sV TD sD tD mD TX TX tX cD 
+sT pT pT mT mT TV TV TV sV tV TD pD mD tX xX mX mX mX cX 
+cT cT 
+pV pV cD cD cD 
+tV tV pD mD xD 
+TD 
+
+sD 
+mV pX 
+pV 
+TT cX mX TT sX sD tT tT pD mV xV xX tX cV pV cT xD tD TT tT xD sX pX mT cX mV sV 
+("M", sV, 2, 6, 0)
+("M", sV, 0, 6, 0)
+(51, false, 1, 0x29, 0)
+sT tT xT xT sV TD sD tD tD xD pD TX TX sX sX xX pX mD
+TT xT sV tV xV xV xV mV tX xX pX 
+sT sT xT pT pT mT sV TD sD tD mD TX TX tX cD 
+sT pT pT mT mT TV TV TV sV tV TD pD mD tX xX mX mX mX cX 
+cT cT 
+pV pV cD cD cD cV cV cV cT cX 
+tV tV pD mD xD 
+TD 
+
+sD 
+mV pX 
+pV 
+TT cX mX TT sX sD tT tT pD mV xV xX tX cV pV cT xD tD TT tT xD sX pX mT cX mV TV 
+("M", TV, 4, 8, 0)
+("M", TV, 4, 8, 0)
+("M", TV, 4, 8, 0)
+("M", TV, 0, 8, 0)
+(52, false, 3, 0x29, 0)
+sT tT xT xT sV TD sD tD tD xD pD TX TX sX sX xX pX mD
+TT xT sV tV xV xV xV mV tX xX pX 
+sT sT xT pT pT mT sV TD sD tD mD TX TX tX cD 
+sT pT pT mT mT TV TV TV sV tV TD pD mD tX xX mX mX mX cX 
+cT cT 
+pV pV cD cD cD cV cV cV cT cX 
+tV tV pD mD xD 
+TD 
+
+sD 
+mV pX 
+pV 
+TT cX mX TT sX sD tT tT pD mV xV xX tX cV pV cT xD tD TT tT xD sX pX mT cX mV TV 
+("M", TV, 2, 6, 0)
+("M", TV, 2, 6, 0)
+("M", TV, 2, 6, 0)
+("M", TV, 0, 6, 0)
