@@ -2697,11 +2697,14 @@ function gamePlay1Iteration()
     global t1Player,t2Player,t3Player,t4Player
     global n1c,n2c,n3c,n4c,coDoiPlayer, coDoiCards,GUI_busy
 
-    function checkHumanResponse(player)
+    function checkHumanResponse(player,cmd)
         global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
         if playerIsHuman(player)
             if humanIsGUI()
-                if GUI_ready
+                if GUI_ready 
+                    if cmd == glNeedaPlayCard && length(GUI_array) > 0
+                        return false
+                    end
                     rReady[player] = true
                     rQ[player]=GUI_array
                     if allowPrint
@@ -2813,7 +2816,7 @@ function gamePlay1Iteration()
 
         glIterationCnt += 1
         if glNeedaPlayCard
-            checkHumanResponse(glPrevPlayer)
+            checkHumanResponse(glPrevPlayer,glNeedaPlayCard)
             checkMaster(gpPlay1card,glPrevPlayer)
 
             if rReady[glPrevPlayer]
@@ -2910,7 +2913,7 @@ function gamePlay1Iteration()
         gotHumanInput = true
         for i in  1:4
             if !(glNeedaPlayCard && (i == 4 ))
-                gotHumanInput = gotHumanInput && checkHumanResponse(aplayer)
+                gotHumanInput = gotHumanInput && checkHumanResponse(aplayer,gpCheckMatch1or2)
             end
             aplayer = nextPlayer(aplayer)
         end
@@ -3641,6 +3644,7 @@ global GUI_ready = false
             restartGame()
         else
             if length(gameDeckArray) >= gameDeckMinimum
+                    t = ""
                     if  isGameOver() == false
                         if  isTestFile && rem(glIterationCnt,4) == 0 
                             if length(testList) > 0
@@ -4951,27 +4955,29 @@ function on_mouse_down(g, pos)
                         cindx, yPortion = mouseDownOnBox(x, y, human_state)
                         if cindx != 0
                             click_card(cindx, yPortion, playerA_hand)
-			    if length(cardsIndxArr) > 0
-			    	bbox = false
-			    end
+			                if length(cardsIndxArr) > 0
+			    	            bbox = false
+			                end
                         end
                         if currentAction == gpPlay1card
-			    if bbox == false
-                            	cindx, yPortion = mouseDownOnBox(x, y, pBseat)
-			    	if cindx != 0
-				    bbox = true
-			    	end
-			    end
+                            if bbox == false
+                                cindx, yPortion = mouseDownOnBox(x, y, pBseat)
+                                if cindx != 0 && length(cardsIndxArr) > 0
+                                    bbox = true
+                                else
+                                    cindx = 0
+                                end
+                            end
                         else
-			    if bbox1 == false
-                            bc = ActiveCard
-                            bx,by = big_actors[bc].pos
-                            hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
-                            cindx, yPortion = mouseDownOnBox(x, y, hotseat)
-			    if cindx != 0
-			    	bbox1 = true
-			    end
-			    end
+                            if bbox1 == false
+                                bc = ActiveCard
+                                bx,by = big_actors[bc].pos
+                                hotseat = [bx,by,bx+zoomCardXdim,by+zoomCardYdim]
+                                cindx, yPortion = mouseDownOnBox(x, y, hotseat)
+                                if cindx != 0
+                                    bbox1 = true
+                                end
+                            end
                         end
                         if cindx != 0
                             GUI_busy = true
@@ -4992,21 +4998,20 @@ function on_mouse_down(g, pos)
                                 updateErrorPic(1)
                                 GUI_ready = false
                                 GUI_busy = false
-				bbox = false
-				bbox1 = false
+                                bbox = false
+                                bbox1 = false
                             else
                                 updateErrorPic(0)
                                 GUI_ready = true
                             end
-
                         end
-                    end
                 end
             end
-        elseif tusacState == tsRestart
+        end
+    elseif tusacState == tsRestart
             anewDeck = []
             global boxes = []
-        end
+    end
 end
 if noGUI()
     while(true)
