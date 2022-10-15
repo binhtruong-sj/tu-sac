@@ -877,12 +877,23 @@ function config(fn)
                 histFILENAME = hfName
             elseif rl[1] == "reloadFile"
                 reloadFile = true
-                RF = open(rl[2],"r")
+                testFile = string("tests/",rl[2])
+                if isfile(testFile)
+                    RF = open(testFile,"r")
+                else
+                    println(testFile," not exist")
+                    exit()
+                end
                 RFindex = rl[3]
                 println(RFindex)
             elseif rl[1] == "testFile"
-                testFile = rl[2]
-                RF = open(rl[2],"r")
+                testFile = string("tests/",rl[2])
+                if isfile(testFile)
+                    RF = open(testFile,"r")
+                else
+                    println(testFile," not exist")
+                    exit()
+                end
                 testList = []
                 while true
                     RFaline = readline(RF)
@@ -890,8 +901,12 @@ function config(fn)
                     if RFstates[1] != "#"
                         break
                     end
-                    if RFstates[2][1] == '('
-                        push!(testList,(RFstates[2],RFstates[3]=="true"))
+                    if length(RFstates) > 1 && RFstates[2][1] == '('
+                        if trial
+                            push!(testList,(RFstates[2],true))
+                        else
+                            push!(testList,(RFstates[2],RFstates[3]=="true"))
+                        end
                     end
                 end
                 sort!(testList)
@@ -1354,7 +1369,6 @@ function readRFDeck(RF,gameDeck)
     tstMoveArray = []
     while true
         global RFaline = readline(RF)
-        println(RFaline)
         RFp = split(RFaline,", ")
         if RFp[1] != "(\"M\""
             break
@@ -1376,7 +1390,6 @@ function readRFNsearch!(RF,index,RFaline="#")
         if RFstates[1] == "(\"M\""
             while !eof(RF)
                 RFaline = readline(RF)
-                println(RFaline)
                 RFstates = split(RFaline,", ")
                 if RFstates[1] != "(\"M\""
                     break
@@ -1406,7 +1419,6 @@ function tusacDeal(winner,reloadFile,RF,RFindex)
         found = false
         readRFNsearch!(RF,RFindex)
         a,ma,al = readRFDeck(RF,gameDeck)
-        println(a)
       
         gameDeck = deepcopy(a[13])
         playerSel = parse(Int,RFstates[3])
@@ -1752,7 +1764,7 @@ end
             singles.
 TBW
 """
-function c_match(p,s,n;win=false)
+function c_match(p,s,n,cmd;win=false)
     global coDoiCards
     if allowPrint
          println("c-match ",(p,s,n,length(s)))
@@ -1811,6 +1823,16 @@ function c_match(p,s,n;win=false)
         for ap in p[2]
             if card_equal(ap[1],n)
                 rt = ap
+                break
+            end
+        end
+        for ap in p[1]
+            if card_equal(ap[1],n)
+                if length(rt)==3 
+                    rt = ap
+                elseif length(rt) == 1 && cmd == gpCheckMatch2
+                    rt = ap
+                end
                 break
             end
         end
@@ -3077,13 +3099,17 @@ function SNAPSHOT(testnum=0)
                 if moveArray[i,1] != 0
                     astr = string(ts(moveArray[i,1]),moveArray[i,2],moveArray[i,3])
                     moveArray[i,1] = 0
-                    if isTestFile && astr != tstMoveArray[i]
+                    if length(tstMoveArray)<i 
                         println("Failed : test #",testnum)
-                        println((astr))
-                        println(tstMoveArray[i])
-                    end
-                    if isTestFile && !trial
-                       @assert astr == tstMoveArray[i]
+                    else
+                        if isTestFile && astr != tstMoveArray[i]
+                            println("Failed : test #",testnum)
+                            println((astr))
+                            println(tstMoveArray[i])
+                        end
+                        if isTestFile && !trial
+                        @assert astr == tstMoveArray[i]
+                        end
                     end
                 else
                     break
@@ -3644,22 +3670,20 @@ global GUI_ready = false
             restartGame()
         else
             if length(gameDeckArray) >= gameDeckMinimum
-                    t = ""
+                global atest
                     if  isGameOver() == false
                         if  isTestFile && rem(glIterationCnt,4) == 0 
                             if length(testList) > 0
-                                global t = popfirst!(testList)
-                                println("==================",t)
+                                atest = popfirst!(testList)
+                                println("=========TEST=========",atest)
 
-                                readRFNsearch!(RF,t[1],RFaline)
-                                mode_human = t[2]
+                                readRFNsearch!(RF,atest[1],RFaline)
+                                mode_human = atest[2]
                                 gameDeck = TuSacCards.ordered_deck()
                                 a,tstMoveArray,RFaline = readRFDeck(RF,gameDeck)
-                                println("RFaline=",RFaline)
                                 playerSel = parse(Int,RFstates[3])
                                 glPrevPlayer = myPlayer
                                 glNeedaPlayCard = RFstates[2] == "true"
-                                println("SEL=",playerSel)
                                 replayHistory(-1,a,playerSel)
                             else
                                 if isTestFile 
@@ -3673,7 +3697,7 @@ global GUI_ready = false
                         gamePlay1Iteration()
                     end
                     if rem(glIterationCnt,4) == 0
-                        SNAPSHOT(t)
+                        SNAPSHOT(atest)
                         moveArray = zeros(Int,16,3)
                         socketSYNC()
                     end
@@ -4036,7 +4060,7 @@ chk1(playCard)
 """
 function chk1(playCard)
     if is_c(playCard)
-             r  = c_match(chotPs,chot1Specials,playCard)
+             r  = c_match(chotPs,chot1Specials,playCard,currentAction)
       if length(r) > 0
         return r
       end
