@@ -2727,7 +2727,7 @@ function gamePlay1Iteration()
         if playerIsHuman(player)
             if humanIsGUI()
                 if GUI_ready 
-                    if cmd == glNeedaPlayCard && length(GUI_array) > 0
+                    if cmd == glNeedaPlayCard && length(GUI_array) == 0
                         return false
                     end
                     rReady[player] = true
