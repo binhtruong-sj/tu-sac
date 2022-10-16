@@ -3734,7 +3734,8 @@ end
 TBW
 """
 function socketSYNC()
-    global nameSynced,mode_human,PlayerList,playerName,connectedPlayer,nwMaster
+    global nameSynced,mode_human,PlayerList,
+    playerName,connectedPlayer,nwMaster, wantFaceDown
 
     if numberOfSocketPlayer == 0
         if haBai
