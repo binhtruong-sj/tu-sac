@@ -1,6 +1,6 @@
 using GameZero
 using Sockets
-version = "0.61e"
+version = "0.61f"
 macOS = false
 myPlayer = 1
 haBai = false
@@ -14,15 +14,23 @@ const m_server = 1
 const m_standalone = 2
 boxes = []
 
+const bGeneric = 1
+const bProbability = 2
+const bMax = 3
+const bAI = 4
+
 faceDownSync = false
 allowPrint = 0
 cardScale = 80
 wantFaceDown = true
 noGUI_list = [true,true,true,true]
 PlayerList =[plBot1,plBot1,plBot1,plBot1]
+aiType = [rand(1:4),rand(1:4),rand(1:4),rand(1:4)]
+#aiType = [3,3,3,3]
 GUIname = Vector{Any}(undef,4)
 numberOfSocketPlayer = 0
-playerName = ["Binh-bot1","Binh-bot2","Binh-bot3","Binh-bot4"]
+playerName = [string("Bbot",aiType[1]),string("Bbot",aiType[2]),
+                string("Bbot",aiType[3]),string("Bbot",aiType[4])]
 shuffled = false
 coDoiPlayer = 0
 coDoiCards = []
@@ -243,6 +251,11 @@ module TuSacCards
 
     Return the unicode characters:
     """
+    const T = Suit(0)
+    const V = Suit(1)
+    const D = Suit(2)
+    const X = Suit(3)
+
     char(s::Suit) = Char("TVDX"[s.i+1])
     Base.string(s::Suit) = string(char(s))
     Base.show(io::IO, s::Suit) = print(io, char(s))
@@ -818,7 +831,7 @@ function config(fn)
                     rl = split(line,' ')
             if rl[1] == "name"
                 NAME = rl[2]
-                playerName[myPlayer] =NAME
+                playerName[myPlayer] = string(NAME,aiType[myPlayer])
             elseif rl[1] == "mode"
                 mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
             elseif rl[1] == "human"
@@ -1562,10 +1575,16 @@ function ts_s(rt)
     println()
     return
 end
+const T = 0
+const V = 1 << 5
+const D = 2 << 5
+const X = 3 << 5
 
 is_T(v) = (v & 0x1C) == 0x4
 is_s(v) = (v & 0x1C) == 0x8
+to_s(v) = v&0xf3 | 0x8
 is_t(v) = (v & 0x1C) == 0xc
+to_t(v) = v&0xf3 | 0xc
 is_Tst(v) = (0xd > (v & 0x1C) > 3)
 
 
@@ -1573,20 +1592,62 @@ is_Tst(v) = (0xd > (v & 0x1C) > 3)
     c(v) is a chot
 """
 is_c(v) = ((v & 0x1C) == 0x10)
+
+is_colorT(v) = ((v & 0x60) == 0x00)
+is_colorV(v) = ((v & 0x60) == 0x30)
+is_colorX(v) = ((v & 0x60) == 0x50)
+is_colorD(v) = ((v & 0x60) == 0x70)
+
+to_colorT(v) = ((v & 0x1c) | T)
+to_colorV(v) = ((v & 0x1c) | V)
+to_colorD(v) = ((v & 0x1c) | D)
+to_colorX(v) = ((v & 0x1c) | X)
 """
     x(v) is a xe
 """
 is_x(v) = ((v & 0x1C) == 0x14)
+to_x(v) = v&0xf3 | 0x4
+
 """
     p(v) is a phao
 """
 is_p(v) = (v & 0x1C) == 0x18
+to_p(v) = v&0xf3 | 0x8
+
 """
     m(v) is a ma
 """
 is_m(v) = (v & 0x1C) == 0x1c
+to_m(v) = v&0xf3 | 0xc
+
 
 is_xpm(v) = 0x1d > (v & 0x1C) > 0x13
+function suitCards(v) 
+    println("in-suit-cards ",ts(v))
+    if is_Tst(v)
+        return [is_s(v) ? to_t(v) : to_s(v)]
+    elseif is_xpm(v)
+        if is_x(v) 
+            return [to_p(v),to_m(v)]
+        elseif is_p(v)
+            return [to_x(v),to_m(v)]
+        else
+            return [to_x(v),to_p(v)]
+        end
+    else
+        if is_colorT(v)
+            return [to_colorV(v),to_colorD(v),to_colorX(v)]
+        elseif is_colorV(v)
+            return [to_colorT(v),to_colorD(v),to_colorX(v)]
+        elseif is_colorD(v)
+            return [to_colorT(v),to_colorV(v),to_colorX(v)]
+        else
+            return [to_colorT(v),to_colorV(v),to_colorD(v)]
+        end
+    end
+end
+
+
 
 """
     inSuit(a,b): check if a,b is in the same sequence cards (Tst) or (xpm)
@@ -1893,9 +1954,6 @@ function scanCards(inHand, silence = false, psc = false)
         push!(all_chots,prevAcard)
     elseif is_T(prevAcard)
         suitCnt += 1
-        if allowPrint ==3
-         println("PsuitCnt=",suitCnt)
-        end
     end
     for i = 2:length(ahand)
         acard = ahand[i]
@@ -2281,27 +2339,6 @@ function replayHistory(index,a=[],sel=1)
         playerD_discards = deepcopy(a[indexSel(sel,4) + 8])
 
         gameDeck = deepcopy(a[13])
-        println(a[1])
-        println(a[2])
-        println(a[3])
-        println(a[4])
-
-        println(playerA_hand)
-        println(playerB_hand)
-        println(playerC_hand)
-        println(playerD_hand)
-
-        println(playerA_assets)
-        println(playerB_assets)
-        println(playerC_assets)
-        println(playerD_assets)
-
-        println(playerA_discards)
-        println(playerB_discards)
-        println(playerC_discards)
-        println(playerD_discards)
-
-        println(gameDeck)
 
         if(index > 0)
             global glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,BIGcard = a[14]
@@ -3057,12 +3094,7 @@ function gamePlay1Iteration()
                     println(astr[p])
                 end
             end
-            for i in 1:32
-                c = i << 2
-                if cardCnt[i] > 0
-                    println((ts(c),cardCnt[i]))
-                end
-            end
+          
             GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
             GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
             GUIname[2]  = TextActor(astr[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -3705,39 +3737,38 @@ global GUI_ready = false
             restartGame()
         else
             if length(gameDeckArray) >= gameDeckMinimum
+                global atest
+                global tstMoveArray
+                if  isGameOver() == false
+                    if  isTestFile && rem(glIterationCnt,4) == 0 
+                        if length(testList) > 0
+                            atest = popfirst!(testList)
+                            println("=========TEST=========",atest)
 
-                    global atest
-                    global tstMoveArray
-                    if  isGameOver() == false
-                        if  isTestFile && rem(glIterationCnt,4) == 0 
-                            if length(testList) > 0
-                                atest = popfirst!(testList)
-                                println("=========TEST=========",atest)
-
-                                readRFNsearch!(RF,atest[1],RFaline)
-                                mode_human = atest[2]
-                                gameDeck = TuSacCards.ordered_deck()
-                                a,tstMoveArray,RFaline = readRFDeck(RF,gameDeck)
-                                playerSel = parse(Int,RFstates[3])
-                                glPrevPlayer = myPlayer
-                                glNeedaPlayCard = RFstates[2] == "true"
-                                replayHistory(-1,a,playerSel)
-                            else
-                                if isTestFile 
-                                    isTestFile = false 
-                                    if !trial
-                                        exit()
-                                    end
+                            readRFNsearch!(RF,atest[1],RFaline)
+                            mode_human = atest[2]
+                            gameDeck = TuSacCards.ordered_deck()
+                            a,tstMoveArray,RFaline = readRFDeck(RF,gameDeck)
+                            playerSel = parse(Int,RFstates[3])
+                            glPrevPlayer = myPlayer
+                            glNeedaPlayCard = RFstates[2] == "true"
+                            replayHistory(-1,a,playerSel)
+                        else
+                            if isTestFile 
+                                isTestFile = false 
+                                if !trial
+                                    exit()
                                 end
                             end
                         end
-                        gamePlay1Iteration()
                     end
+                    gamePlay1Iteration()
                     if rem(glIterationCnt,4) == 0
                         SNAPSHOT(atest)
                         moveArray = zeros(Int,16,3)
                         socketSYNC()
                     end
+                end
             else
                 openAllCard = true
                 gameOver(5)
@@ -4317,9 +4348,14 @@ function gpHandlePlay1Card(player)
             end
         end
     end
+    ts_s(singles)
     if length(singles) > 0
     #    ts_s(singles)
-        if player < 3 &&length(singles) > 1
+        if length(singles) == 1
+            card = singles[1]
+        elseif aiType[player] == bGeneric || aiType[player] == bAI
+            card = singles[rand(1:length(singles))]
+        elseif aiType[player] == bProbability 
             pickArray = []
             for s in singles
                 s1 = s >> 2
@@ -4340,14 +4376,41 @@ function gpHandlePlay1Card(player)
             end
         #    ts_s(pickArray)
             card = pickArray[rand(1:length(pickArray))]
-        else
-            card = singles[rand(1:length(singles))]
+        elseif aiType[player] == bMax
+            println("--------------In BMAX, player",player)
+            max = -1.0
+            card = []
+            while length(singles) > 0
+                s = splice!(singles,rand(1:length(singles)))
+                s1 = s >> 2
+                cnt = getCardCnt(s1)
+                cArr = suitCards(s)
+
+                print("suitcards=") ; ts_s(cArr)
+                scnt = 0
+                for c in cArr
+                    c1 = c >> 2
+                   scnt += getCardCnt(c1)
+                end
+                if is_c(s)
+                    m = cnt/4 + scnt/6
+                else
+                    m = cnt/4 + scnt/4
+                end
+                if m > max
+                    max = m
+                    card = s
+                end
+                println((ts(s),m))
+            end
+            println((ts(card),max))
         end
     else
         card = []
     end
     return card
 end
+
 function gpHandleMatch2Card(pcard)
     card1 = chk1(pcard)
     card2 = chk2(pcard)
@@ -4694,6 +4757,7 @@ function on_key_down(g)
             else
                 dir = g.keyboard.LEFT ? 0 : g.keyboard.UP ? 1 : g.keyboard.RIGHT ? 2 : 3
                 global HistCnt = adjustCnt(HistCnt,length(HISTORY),dir)
+                println((length(HISTORY),HistCnt))
                 replayHistory(HistCnt,HISTORY[HistCnt])
 
                 println("(",(HistCnt-1)*4)
