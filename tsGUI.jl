@@ -3087,7 +3087,7 @@ function gamePlay1Iteration()
                 kpoints[nPlayer], suitCnt,c_points(chotP,chot1Special)))
             end
            
-            points[nPlayer] += suitCnt + c_points(chotP,chot1Special) 
+            points[nPlayer] += suitCnt + c_points(chotP,chot1Special)+ kpoints[nPlayer]
             if khui[nPlayer]
                 points[nPlayer] *= 2
             end
