@@ -1,4 +1,4 @@
-version = "0.61f"
+version = "0.61g"
 using GameZero
 using Sockets
 macOS = false
@@ -3078,18 +3078,20 @@ function gamePlay1Iteration()
                 println("GAME-OVER, player",
                 nPlayer, " win")
             end
-            points[nPlayer] += 10
-            if khui[nPlayer]
-                kpoints[nPlayer] *= 2
-            end
+            points[nPlayer] += 3
+            
             allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt =
             scanCards(all_hands[nPlayer],false,true)
             if allowPrint ==3
                 println("POINTS=",(khui[nPlayer],points[nPlayer],
                 kpoints[nPlayer], suitCnt,c_points(chotP,chot1Special)))
             end
-            points[nPlayer] += suitCnt + c_points(chotP,chot1Special)
-
+           
+            points[nPlayer] += suitCnt + c_points(chotP,chot1Special) 
+            if khui[nPlayer]
+                points[nPlayer] *= 2
+            end
+            points[nPlayer] += 10
             kpoints[nPlayer] += points[nPlayer]
             c_points(chotP,chot1Special)
             astr = Vector{String}(undef,4)
