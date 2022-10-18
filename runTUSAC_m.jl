@@ -28,7 +28,7 @@ if nw != 0
         global rmversion = readline(nw)
         if rmversion > myversion
 	    close(rf)
-            wf = open("tsGUI1.jl","w")
+            wf = open("tsGUI.jl","w")
             while true
 
                 aline = readline(nw)
