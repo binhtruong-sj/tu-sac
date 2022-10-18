@@ -1,4 +1,4 @@
-version = "0.61g"
+version = "0.61h"
 using GameZero
 using Sockets
 macOS = false
@@ -1629,7 +1629,9 @@ to_m(v) = v&0xf3 | 0xc
 
 is_xpm(v) = 0x1d > (v & 0x1C) > 0x13
 function suitCards(v) 
+    if allowPrint == 4
     println("in-suit-cards ",ts(v))
+    end
     if is_Tst(v)
         return [is_s(v) ? to_t(v) : to_s(v)]
     elseif is_xpm(v)
@@ -3062,6 +3064,9 @@ function gamePlay1Iteration()
             elseif length(r) == 3
                 if card_equal(r[1],r[2])
                     kpoints[nPlayer] += 3
+                    if is_T(r[1])
+                        points[nPlayer] += 3
+                    end
                     khui[nPlayer] = true
                     println("K=",(nPlayer,kpoints[nPlayer]))
                 else
@@ -3078,7 +3083,6 @@ function gamePlay1Iteration()
                 println("GAME-OVER, player",
                 nPlayer, " win")
             end
-            points[nPlayer] += 3
             
             allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt =
             scanCards(all_hands[nPlayer],false,true)
@@ -3087,13 +3091,12 @@ function gamePlay1Iteration()
                 kpoints[nPlayer], suitCnt,c_points(chotP,chot1Special)))
             end
            
-            points[nPlayer] += suitCnt + c_points(chotP,chot1Special)+ kpoints[nPlayer]
+            points[nPlayer] += 3 + suitCnt + c_points(chotP,chot1Special)+ kpoints[nPlayer]
             if khui[nPlayer]
                 points[nPlayer] *= 2
             end
             points[nPlayer] += 10
-            kpoints[nPlayer] += points[nPlayer]
-            c_points(chotP,chot1Special)
+            kpoints[nPlayer] = points[nPlayer]
             astr = Vector{String}(undef,4)
             for p in 1:4
                 astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p])
@@ -4303,12 +4306,14 @@ function gpHandlePlay1Card(player)
             end
         end
     end
+    if allowPrint == 4
     ts_s(singles)
+    end
     if length(singles) > 0
     #    ts_s(singles)
         if length(singles) == 1
             card = singles[1]
-        elseif aiType[player] == bGeneric || aiType[player] == bAI
+        elseif aiType[player] == bGeneric 
             card = singles[rand(1:length(singles))]
         elseif aiType[player] == bProbability 
             pickArray = []
@@ -4332,7 +4337,9 @@ function gpHandlePlay1Card(player)
         #    ts_s(pickArray)
             card = pickArray[rand(1:length(pickArray))]
         elseif aiType[player] == bMax
-            println("--------------In BMAX, player",player)
+            if allowPrint == 4
+                println("--------------In BMAX, player",player)
+            end
             max = -1.0
             card = []
             while length(singles) > 0
@@ -4340,8 +4347,9 @@ function gpHandlePlay1Card(player)
                 s1 = s >> 2
                 cnt = getCardCnt(s1)
                 cArr = suitCards(s)
-
+                if allowPrint == 4
                 print("suitcards=") ; ts_s(cArr)
+                end
                 scnt = 0
                 for c in cArr
                     c1 = c >> 2
@@ -4356,9 +4364,15 @@ function gpHandlePlay1Card(player)
                     max = m
                     card = s
                 end
+                if allowPrint == 4
                 println((ts(s),m))
+                end
             end
+            if allowPrint == 4
             println((ts(card),max))
+            end
+        else 
+            card = singles[rand(1:length(singles))]
         end
     else
         card = []
