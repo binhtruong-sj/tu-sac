@@ -7,7 +7,6 @@ function clientSetup(serverURL,port)
         ac = connect(serverURL,port)
         return ac
     catch
-        @warn "Server is not available"
         return 0
     end
 end
@@ -28,8 +27,10 @@ if nw != 0
         global rmversion = readline(nw)
         if rmversion > myversion
 	    close(rf)
+	    println("New update is available, downloading ...")
             wf = open("tsGUI.jl","w")
             while true
+
                 aline = readline(nw)
                 if aline == "#=Binh-end=#"
                     break
