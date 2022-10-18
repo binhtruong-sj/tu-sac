@@ -1,4 +1,5 @@
 cd $HOME
+rm -fr tu-sac-backup
 mv tu-sac tu-sac-backup
 git clone https://github.com/binhtruong-sj/tu-sac.git
 cd tu-sac
