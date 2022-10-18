@@ -42,6 +42,7 @@ baiThui = false
 points = zeros(Int8,4)
 kpoints = zeros(Int8,4)
 khui = falses(4)
+khapMatDau = zeros(Int8,4)
 pots = zeros(Int,4)
 histFile = false
 reloadFile = false
@@ -3682,6 +3683,7 @@ global GUI_ready = false
             points = zeros(Int8,4)
             kpoints = zeros(Int8,4)
             khui = falses(4)
+            khapMatDau = zeros(4)
             coldStart = false
             FaceDown = wantFaceDown
             ActiveCard = 0
@@ -4280,21 +4282,43 @@ function gpHandlePlay1Card(player)
     if length(chot1s) == 1
         push!(singles, chot1s[1])
     else
+        if khapMatDau[player] < 2 && (length(allPairs[2]) > 0 || length(allPairs[3]) > 0 ) 
+            found = false
+            for m1 in miss1s
+                ap = missPiece(m1[1],m1[2])
+                for ps in allPairs[2:3]
+                    for p in ps
+                        if card_equal(ap,p[1])
+                            khapMatDau[player] = 1
+                            found = true
+                            if !is_T(m1[1])
+                                push!(singles,m1[1])
+                            end
+                            if !is_T(m1[2])
+                                push!(singles,m1[2])
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+            if found == false
+                khapMatDau[player] = 2
+            end
+        end
         if length(singles) == 0
-            if length(missTs) > 0
-                mt = missTs[1]
+            for mt in missTs
                 for m in mt
                     push!(singles, m)
                 end
             end
+        end
+        if length(singles) == 0
             if length(miss1s) > 0
                 for m1 in miss1s
                     for m in m1
                         if !is_T(m)
                             push!(singles,m)
-                            if inTSuit(m)
-                                push!(singles,m)
-                            end
                         end
                     end
                 end
@@ -4307,7 +4331,8 @@ function gpHandlePlay1Card(player)
         end
     end
     if allowPrint == 4
-    ts_s(singles)
+        print("-------------------")
+        ts_s(singles)
     end
     if length(singles) > 0
     #    ts_s(singles)
@@ -4338,7 +4363,7 @@ function gpHandlePlay1Card(player)
             card = pickArray[rand(1:length(pickArray))]
         elseif aiType[player] == bMax
             if allowPrint == 4
-                println("--------------In BMAX, player",player)
+                println("In BMAX, player",player)
             end
             max = -1.0
             card = []
@@ -4365,7 +4390,7 @@ function gpHandlePlay1Card(player)
                     card = s
                 end
                 if allowPrint == 4
-                println((ts(s),m))
+                println("---->",(ts(s),m))
                 end
             end
             if allowPrint == 4
