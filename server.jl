@@ -1,4 +1,4 @@
-
+using Sockets
 function serverSetup(serverIP,port)
     nw = 0
     try
@@ -29,11 +29,10 @@ if nws != 0
         p = split(myversion,"=")
         if p[1] == "version "
             println(nw,myversion)
-            rmverstion = readline(nw)
+            rmversion = readline(nw)
             if rmversion < myversion
-                aline = myversion
+                global aline = myversion
                 while !eof(rf)
-                    global aline
                     println(nw,aline)
                     aline = readline(rf)
                 end

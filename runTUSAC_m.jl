@@ -25,8 +25,9 @@ if nw != 0
     p = split(myversion,"=")
     if p[1] == "version "
         println(nw,myversion)
-        rmverstion = readline(nw)
+        global rmversion = readline(nw)
         if rmversion > myversion
+	    close(rf)
             wf = open("tsGUI1.jl","w")
             while true
 
