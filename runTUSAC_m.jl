@@ -30,7 +30,6 @@ if nw != 0
 	    close(rf)
             wf = open("tsGUI.jl","w")
             while true
-
                 aline = readline(nw)
                 if aline == "#=Binh-end=#"
                     break

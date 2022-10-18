@@ -36,6 +36,7 @@ if nws != 0
                     println(nw,aline)
                     aline = readline(rf)
                 end
+                println(nw,aline)
                 println(nw,"#=Binh-end=#")
                 close(rf)
                 close(nw)
