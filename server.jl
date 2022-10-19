@@ -1,4 +1,5 @@
 using Sockets
+using Dates
 function serverSetup(serverIP,port)
     nw = 0
     try
@@ -18,7 +19,7 @@ serverURL = "baobinh.tplinkdns.com"
 port = 11031
 myIP = ip"192.168.0.65"
 nws = serverSetup(myIP,port)
-
+RCF = open("updateRec.txt","w")
 if nws != 0
   while true
         nw = acceptClient(nws)
@@ -38,6 +39,8 @@ if nws != 0
                 end
                 println(nw,aline)
                 println(nw,"#=Binh-end=#")
+                println(RCF,now())
+                println(RCF,rmversion)
                 close(rf)
                 close(nw)
                 println("Done with sending update")
