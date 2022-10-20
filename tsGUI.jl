@@ -1,4 +1,4 @@
-version = "0.61l"
+version = "0.61m"
 using GameZero
 using Sockets
 macOS = false
@@ -901,36 +901,39 @@ function config(fn)
             elseif rl[1] == "reloadFile"
                 reloadFile = true
                 testFile = string("tests/",rl[2])
-                if isfile(testFile)
-                    RF = open(testFile,"r")
-                elseif isfile(rl[2])
+                if isfile(rl[2])
                     RF = open(rl[2],"r")
+                elseif isfile(testFile)
+                    RF = open(testFile,"r")
                 else
-                    println(testFile," not exist")
+                    println(rl[2]," not exist")
                     exit()
                 end
                 RFindex = rl[3]
                 println(RFindex)
             elseif rl[1] == "testFile"
                 testFile = string("tests/",rl[2])
-                if isfile(testFile)
-                    RF = open(testFile,"r")
-                elseif isfile(rl[2])
+                if isfile(rl[2])
                     RF = open(rl[2],"r")
+                elseif isfile(testFile)
+                    RF = open(testFile,"r")
                 else
-                    println(testFile," not exist")
+                    println(rl[2]," not exist")
                     exit()
                 end
+               
                 testList = []
+                trialFound = false
                 while true
                     RFaline = readline(RF)
                     RFstates = split(RFaline," ")
                     if RFstates[1] != "#"
                         break
                     end
-                    if length(RFstates) > 1 && RFstates[2][1] == '('
+                    if !trialFound && length(RFstates) > 1 && RFstates[2][1] == '('
                         if trial
                             push!(testList,(RFstates[2],true))
+                            trialFound = true
                         else
                             push!(testList,(RFstates[2],RFstates[3]=="true"))
                         end
@@ -1018,7 +1021,7 @@ function getCardCnt(card)
     global cardCnt
     return cardCnt[card]
 end
-moveArray = zeros(UInt8,16,3)
+moveArray = zeros(Int8,16,3)
 
 if coldStart
     eRrestart = false
@@ -1547,13 +1550,16 @@ function ts(a)
     end
 end
 
-function ts_s(rt)
+function ts_s(rt, n = true)
     for r in rt
         print(ts(r), " ")
     end
-    println()
+    if n
+        println()
+    end
     return
 end
+
 const T = 0
 const V = 1 << 5
 const D = 2 << 5
@@ -2424,7 +2430,8 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     l3, w3, r3 = getl!(card, n3, r3)
     l4, w4, r4 = getl!(card, n4, r4)
     if allowPrint&0x8 != 0
-        println("W-wr result ",(l1, w1, r1 ),(l2, w2, r2),(l3, w3, r3),(l4, w4, r4))
+      #  println("W-wr result ",(l1, w1, ts_s(r1,false) ),(l2, w2, ts_s(r2,false)),(l3, w3, ts_s(r3,false)),(l4, w4, ts_s(r4,false)))
+        println("W-wr result ",(l1, w1, r1 ),(l2, w2,r2),(l3, w3,r3),(l4, w4,r4))
     end
     if is_T(card)
         l1 = l1 != 4 ? 0 : 4
@@ -2454,7 +2461,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
         l1 = 0
         l2 = 0
         l4 = 0
-    else
+    elseif w4
         l1 = 0
         l2 = 0
         l3 = 0
@@ -2751,7 +2758,6 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
                 if allowPrint&0x8 != 0
                     println("Game Over, player ", nPlayer, " win")
                 end
-              
                 gameOver(nPlayer)
             end
     else
@@ -3102,7 +3108,7 @@ function gamePlay1Iteration()
               
             end
             if histFile
-                print(HF,"# ",(astr))
+                println(HF,"# - - ",(astr))
             end
             GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
             GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
@@ -3179,7 +3185,7 @@ function SNAPSHOT(testnum=0)
                                 println("Failed : test #",testnum)
                                 println((astr))
                                 println(tstMoveArray[i])
-                            end
+≈                            end
                             if isTestFile && !trial
                             @assert astr == tstMoveArray[i]
                             end
