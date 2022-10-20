@@ -10,9 +10,12 @@
 # (49 false  player 1     c-match inefficient, missing case 
 # (4a false  player 1     c-match inefficient, missing case 
 # (4b false  player 1     c-match inefficient, missing case 
-# (50 false 3T
-# (51 false 3T case
-# (52 false 3T case
+# (50 false  3T
+# (51 false  3T case
+# (52 false  3T case
+# (56 false  3T case
+# (57 false  3T case
+# (58 false  3T case
 # #
 (00, false, 3, 0, 0)
 TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX sX
@@ -302,3 +305,53 @@ TT cX mX TT sX sD tT tT pD mV xV xX tX cV pV cT xD tD TT tT xD sX pX mT cX mV TV
 ("M", TV, 2, 6, 0)
 ("M", TV, 2, 6, 0)
 ("M", TV, 0, 6, 0)
+(56, false, 3, 0, 0)
+TT xT xT xT pT tV pV pV pV mV TD sD mD mD TX pX mX cT cD TT 
+sT tT tT xT mT sV sV mV TD xD xD pD xX xX xX pX mX cT cV cD 
+sT pT pT sV tV tV TD sD tD tD tD xD mD TX sX mX cT cV cX cX cX 
+sT mT mT TV TV xV mV sD sD xD pD pD mD TX tX sX sX sX cD cD 
+
+
+
+
+
+
+
+
+TV sT TT xV xX tX TV tT pV TT TX xV tV pT sV pX mX pX tD xV pD mT tX tX cT cV mV tT cV TD cX 
+("M", cX, 1, 5, 0)
+("M", cX, 1, 5, 0)
+("M", cX, 1, 5, 0)
+("M", cX, 0, 5, 0)
+(57, false, 3, 0x2d, 0, "")
+tV tD tD pD mD mD mD TX TX TX xX pX mX cV 
+TT sT sT xT pT mT tD tD mD TX xX pX mX 
+TT tT pT pT TV TV sV tV tV TD sD xX cT cT cV cX 
+sT tT TV TD TD sD pD pD cT cV cD cD cX 
+pV pV mT mT sV sV 
+mV mV mV mV sX sX sX 
+TT pX xX mX 
+xT xT xV xV xV xD xD 
+tT 
+tX xD 
+xV 
+tX 
+cX cD pV sX tX sT tV sV TD pV sD pD cV cX xT xD pT TV pX tT tX mT cD mX sD cT TT 
+("M", sT, 2, 6, 0)
+("M", tT, 2, 6, 0)
+("M", TT, 0, 6, 0)
+(58, false, 1, 0x1b, 0, "")
+TT tT TV sV xV xV pV mV sD xD mD TX xX pX pX mX cV 
+TT sT sT tT mV sD sD pD pD mX mX cD cD cD cX cX cX 
+TV TV TV sV sV pV pV TD tD TX tX cT cV cD 
+TT xT xT pV TD TD tD TX sX sX sX pX mX cT cV 
+pT pT pT 
+tX tX tX 
+tV tV tV tV xD xD 
+mT mT mD xD pD 
+mT 
+
+
+
+xV tT sD xX cX cT pD sT xT mV cT TD xX pT mV tT xT tD cV tD xX TX sV sT sX mD mT pX TT mD xV
+("M", xV, 0, 10, 0)
