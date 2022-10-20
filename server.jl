@@ -31,6 +31,7 @@ if nws != 0
         if p[1] == "version "
             println(nw,myversion)
             rmversion = readline(nw)
+            println(Dates.format(now(), "HH:MM"), (rmversion,myversion))
             if rmversion < myversion
                 global aline = myversion
                 while !eof(rf)
