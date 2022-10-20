@@ -1,3 +1,4 @@
+# (60 false  simple case of pairing
 # (00 true     -player1  chot not bodoi
 # (04 false 3 chots, 2 singles not match
 # (05 false chot saki
@@ -16,6 +17,7 @@
 # (56 false  3T case
 # (57 false  3T case
 # (58 false  3T case
+# (59 false  3T khui vs winner
 # #
 (00, false, 3, 0, 0)
 TT sT sT sT tT xT xT mT sV tV pV pV mV tD xD pD tX pX mX sX
@@ -355,3 +357,35 @@ mT
 
 xV tT sD xX cX cT pD sT xT mV cT TD xX pT mV tT xT tD cV tD xX TX sV sT sX mD mT pX TT mD xV
 ("M", xV, 0, 10, 0)
+(59, false, 4, 0x2b, 0, "")
+TT TT TT xT pT mT sD tD TX TX sX tX cD 
+TV TV TD TD TD sX cD cD cD cX 
+TV TV tV mV mV TX xX pX mX cX 
+xT xT TD sD sD TX sX sX 
+pD pD pX pX mD mD mD 
+mX mX cV cV cV mT mT sT sT sT 
+pV pV pV xD xD xD sV sV sV sV 
+xV pV mV tT tT tT tD tD cT cT cT cT 
+xV pD sT 
+pX pT tT tD tX 
+pT pD tX mX mT 
+tV xX cV 
+tV xT xD xX xX cX pT xV sD xV tX mV cX mD tV TT
+("M", TT, 0, 5, 0)
+(60, false, 3, 0x5f, 0, "")
+TT tT TV tV tV pD pD sX sX xX pX cT cV cX 
+TT tT tT tT pD mD sX sX xX xX cT cT cX 
+mT mT TV TV sV tV TD sD tD mD mD TX cV cV 
+TT TV sV mV mV TD sD tD xD xD cD 
+sT sT pV pV pT pT 
+xV xV xT xT sD TD tD 
+mX mX TX pT pT TX 
+mX mX sT sT tX tX pX pX pX 
+tX 
+pV sV 
+xT tX 
+
+xT xD sD mV xV xV cT TX pD pV cX tV cD tD mT mT cD TT cD cX cV xD mV TD sV mD xX 
+("M", xX, 2, 6, 0)
+("M", xX, 2, 6, 0)
+("M", xX, 0, 6, 0)
