@@ -1,4 +1,4 @@
-version = "0.61j"
+version = "0.61k"
 using GameZero
 using Sockets
 macOS = false
@@ -2873,7 +2873,6 @@ function gamePlay1Iteration()
         if glNeedaPlayCard
             checkHumanResponse(glPrevPlayer,glNeedaPlayCard)
             checkMaster(gpPlay1card,glPrevPlayer)
-
             if rReady[glPrevPlayer]
                 glNewCard = rQ[glPrevPlayer]
                 if length(glNewCard) == 0
@@ -2889,8 +2888,7 @@ function gamePlay1Iteration()
                 glIterationCnt -= 1
                 return
             end
-                All_hand_updateActor(glNewCard[1],!FaceDown)
-
+            All_hand_updateActor(glNewCard[1],!FaceDown)
         else
             nc = pop!(gameDeck, 1)
             nca = pop!(gameDeckArray)
@@ -4313,7 +4311,7 @@ function gpHandlePlay1Card(player)
             end
         end
     end
-    if allowPrint&4 != 0 != 0
+    if allowPrint&4 != 0
         print("--------$player------singles-----")
         ts_s(singles)
     end
@@ -4344,8 +4342,8 @@ function gpHandlePlay1Card(player)
             end
         #    ts_s(pickArray)
             card = pickArray[rand(1:length(pickArray))]
-        elseif aiType[player] == bMax
-            if allowPrint&4 != 0 != 0
+        elseif aiType[player] >= bMax
+            if allowPrint&4 != 0
                 println("In BMAX, player",player)
             end
             max = -1.0
@@ -4355,7 +4353,7 @@ function gpHandlePlay1Card(player)
                 s1 = s >> 2
                 cnt = getCardCnt(s1)
                 cArr = suitCards(s)
-                if allowPrint&4 != 0 != 0
+                if allowPrint&4 != 0
                 print("suitcards=") ; ts_s(cArr)
                 end
                 scnt = 0
@@ -4800,8 +4798,7 @@ function badPlay1(cards,player, hand,action,botCards,matchC)
         for ps in allPairs[1]
             if card_equal(ps[1],matchC[1])
                 for mb in miss1sbar
-                    if card_equal(ps[1],mb) &&
-                        !is_Tst(mb) &&
+                    if card_equal(ps[1],mb) && !is_Tst(mb)
                         println("saki case,, mb =", ts(mb))
                         return false
                     end
