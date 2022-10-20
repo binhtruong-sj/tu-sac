@@ -1,4 +1,4 @@
-version = "0.61k"
+version = "0.61l"
 using GameZero
 using Sockets
 macOS = false
@@ -1091,7 +1091,7 @@ function gameOver(n)
     if 0 < n < 5
         updateWinnerPic(n)
         if histFile
-            println(HF,(playerName)," Winner = ",playerName[n])
+            println(HF,"# Winner = ",playerName[n])
         end
     else
         sleep(.2)
@@ -2358,6 +2358,9 @@ nextPlayer(p) = p == 4 ? 1 : p + 1
 
 function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     function getl!(card, n, r)
+        if allowPrint&0x8 != 0
+            println("Getl ------ n=",n)
+        end
         l = length(r)
         if (l > 1) && !card_equal(r[1], r[2]) # not pairs
             l = 1
@@ -2421,9 +2424,10 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     l3, w3, r3 = getl!(card, n3, r3)
     l4, w4, r4 = getl!(card, n4, r4)
     if allowPrint&0x8 != 0
-        println((l1, w1, r1 ),(l2, w2, r2),(l3, w3, r3),(l4, w4, r4))
+        println("W-wr result ",(l1, w1, r1 ),(l2, w2, r2),(l3, w3, r3),(l4, w4, r4))
     end
     if is_T(card)
+        l1 = l1 != 4 ? 0 : 4
         l2 = l2 != 4 ? 0 : 4
         l3 = l3 != 4 ? 0 : 4
         l4 = l4 != 4 ? 0 : 4
@@ -2431,6 +2435,29 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
 
     if !play4 && (l2 == 1)
             l2 = 0
+    end
+    if w1 
+        w2 = false
+        w3 = false
+        w4 = false
+        l2 = 0
+        l3 = 0
+        l4 = 0
+    elseif w2
+        w3 = false
+        w4 = false
+        l1 = 0
+        l3 = 0
+        l4 = 0
+    elseif w3
+        w4 = false
+        l1 = 0
+        l2 = 0
+        l4 = 0
+    else
+        l1 = 0
+        l2 = 0
+        l3 = 0
     end
 
     if l1 == 4
@@ -2647,7 +2674,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
         return
     end
     if allowPrint&0x8 != 0
-        println("AT whoWin",(glNeedaPlayCard),(n1c,n2c,n3c,n4c,glNewCard),(t1Player,t2Player,t3Player,t4Player),
+        println("AT whoWin ",(n1c,n2c,n3c,n4c,glNewCard),(t1Player,t2Player,t3Player,t4Player),
         (PlayerList[t1Player],PlayerList[t2Player],
         PlayerList[t3Player],PlayerList[t4Player])
         )
@@ -3072,8 +3099,11 @@ function gamePlay1Iteration()
                 if allowPrint&2 != 0
                     println(astr[p])
                 end
+              
             end
-          
+            if histFile
+                print(HF,"# ",(astr))
+            end
             GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
             GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
             GUIname[2]  = TextActor(astr[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -4663,7 +4693,7 @@ function on_key_down(g)
             end
         elseif g.keyboard.A
             if mode_human == true
-                playerName[myPlayer] = string("Bot-",NAME)
+                playerName[myPlayer] = string("Bot-",NAME,aiType[myPlayer])
             else
                 playerName[myPlayer] = NAME
             end
