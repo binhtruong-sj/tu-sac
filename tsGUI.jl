@@ -1,4 +1,4 @@
-version = "0.61m"
+version = "0.61n"
 using GameZero
 using Sockets
 macOS = false
@@ -776,6 +776,7 @@ isServer() = mode == m_server
 n = PROGRAM_FILE
 n = chop(n,tail=3)
 fn = string(n,".cfg")
+println("File=",fn)
 mode_human = false
 mode = m_standalone
 serverURL = "baobinh.tpdlinkdns.com"
@@ -1929,14 +1930,21 @@ function scanCards(inHand, silence = false, psc = false)
     ahand = deepcopy(inHand)
     pairs = []
     allPairs = [[], [], []]
-    prevAcard = ahand[1]
     pairOf = 0
     rhand = []
     chot1 = []
     chot1Special = []
     chotP = [[],[],[]]
     all_chots =[]
+    miss1 = []
+    missT = []
+    miss1Card = []
+    single = []
     suitCnt = 0
+    if length(ahand) == 0
+        return allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt
+    end
+    prevAcard = ahand[1]
     if is_c(prevAcard)
         push!(all_chots,prevAcard)
     elseif is_T(prevAcard)
@@ -1990,10 +1998,7 @@ function scanCards(inHand, silence = false, psc = false)
         push!(rhand, prevAcard)
     end
     #rhand is the non-pair cards remaining after scan for pairs
-    miss1 = []
-    missT = []
-    miss1Card = []
-    single = []
+   
     ahand = rhand
     if length(ahand) > 0
         acard = ahand[1]
@@ -3065,6 +3070,9 @@ function gamePlay1Iteration()
             elseif length(r) == 3
                 if card_equal(r[1],r[2])
                     kpoints[nPlayer] += 3
+                    if histFile
+                    println(HF,"# p$nPlayer kpoint=",kpoints[nPlayer])
+                    end
                     if is_T(r[1])
                         points[nPlayer] += 3
                     end
@@ -3110,6 +3118,7 @@ function gamePlay1Iteration()
             if histFile
                 println(HF,"# - - ",(astr))
             end
+            if GUI
             GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
             GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
             GUIname[2]  = TextActor(astr[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -3118,6 +3127,7 @@ function gamePlay1Iteration()
             GUIname[3].pos = tableGridXY(10,1)
             GUIname[4]  = TextActor(astr[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
             GUIname[4].pos = tableGridXY(1,1)
+            end
         else
             addCards!(all_assets, 0, nPlayer, glNewCard)
             addCards!(all_assets, 0, nPlayer, r)
@@ -3127,6 +3137,9 @@ function gamePlay1Iteration()
             elseif length(r) == 3
                 if card_equal(r[1],r[2])
                     kpoints[nPlayer] += 3
+                    if histFile
+                        println(HF,"# p$nPlayer kpoint=",kpoints[nPlayer])
+                    end
                     khui[nPlayer] = true
                     println("K=",(nPlayer,kpoints[nPlayer]))
                 else
@@ -3558,7 +3571,8 @@ function gsStateMachine(gameActions)
                     randomShuffle()
                end
             else
-                autoHumanShuffle(rand(4:8))
+                randomShuffle()
+                #autoHumanShuffle(rand(4:8))
             end
            
             if mode != m_standalone && noGUI()
@@ -3608,7 +3622,7 @@ global GUI_ready = false
                             println("checking for Khui")
                             println(ps,length(ps))
                         end
-                            if length(ps) == 4
+                        if length(ps) == 4
                             removeCards!(all_hands,i,ps[1])
                             removeCards!(all_hands,i,ps[2])
                             removeCards!(all_hands,i,ps[3])
@@ -3620,31 +3634,38 @@ global GUI_ready = false
                             addCards!(all_assets,0,i,ps[3])
                             addCards!(all_assets,0,i,ps[4])
                             kpoints[i] += 8
+                            if histFile
+                                println(HF,"# p$i kpoints=",kpoints[i])
+                            end
                             khui[i] = true
-
-                            coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
-                            mi = playerMaptoGUI(i)
-                            coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
-                                             mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
-                                             mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
-                                             tableGridXY(5,10+coinsCnt*1)
-                            push!(coins,coinActor)
-                            coinsCnt += 1
+                            if GUI
+                                coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
+                                mi = playerMaptoGUI(i)
+                                coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
+                                                    mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                                                    mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                                                    tableGridXY(5,10+coinsCnt*1)
+                                push!(coins,coinActor)
+                                coinsCnt += 1
+                            end
                         elseif length(ps) == 3
                             kpoints[i] += 3
+                            if histFile
+                                println(HF,"# p$i kpoints=",kpoints[i])
+                            end
                             if is_T(ps[1])
                                 points[i] -= 3
                             end
-
-                            coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
-                           
-                            mi = playerMaptoGUI(i)
-                            coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
-                                             mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
-                                             mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
-                                             tableGridXY(5,10+coinsCnt*1)
-                            push!(coins,coinActor)
-                            coinsCnt += 1
+                            if GUI
+                                coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
+                                mi = playerMaptoGUI(i)
+                                coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
+                                                mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                                                mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                                                tableGridXY(5,10+coinsCnt*1)
+                                push!(coins,coinActor)
+                                coinsCnt += 1
+                            end
                         end
                     end
                 end
@@ -3672,6 +3693,7 @@ global GUI_ready = false
             RESET1()
             RESET2()
             RESET3()
+            
             points = zeros(Int8,4)
             kpoints = zeros(Int8,4)
             khui = falses(4)
@@ -3684,7 +3706,7 @@ global GUI_ready = false
             all_discards = []
             HISTORY = []
             if noGUI()
-                gsStateMachine(gsOrganize)
+           #     gsStateMachine(gsOrganize)
             end
             restartGame()
         else
