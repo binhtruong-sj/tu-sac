@@ -1,4 +1,4 @@
-version = "0.61o"
+version = "0.61p"
 using GameZero
 using Sockets
 macOS = false
@@ -3064,70 +3064,39 @@ function gamePlay1Iteration()
         elseif winner&0xFF == 0xFE
             addCards!(all_assets,0,nPlayer,glNewCard)
             addCards!(all_assets, 0, nPlayer, r)
-            if length(r)== 2 || is_T(glNewCard)
-                points[nPlayer] += 1
-                println("P=",(nPlayer,points[nPlayer]))
-            elseif length(r) == 3
-                if card_equal(r[1],r[2])
-                    kpoints[nPlayer] += 3
-                    if histFile
-                    println(HF,"# p$nPlayer kpoint=",kpoints[nPlayer])
-                    end
-                    if is_T(r[1])
-                        points[nPlayer] += 3
-                    end
-                    khui[nPlayer] = true
-                    println("K=",(nPlayer,kpoints[nPlayer]))
-                else
-                    points[nPlayer] += 2
+           #function handleWin(nPlayer)
+                global pots
+                if length(r)== 2 || is_T(glNewCard)
+                    points[nPlayer] += 1
                     println("P=",(nPlayer,points[nPlayer]))
+                elseif length(r) == 3
+                    if card_equal(r[1],r[2])
+                        kpoints[nPlayer] += 3
+                        if histFile
+                        println(HF,"# p$nPlayer kpoint=",kpoints[nPlayer])
+                        end
+                        if is_T(r[1])
+                            points[nPlayer] += 3
+                        end
+                        khui[nPlayer] = true
+                        println("K=",(nPlayer,kpoints[nPlayer]))
+                    else
+                        points[nPlayer] += 2
+                        println("P=",(nPlayer,points[nPlayer]))
+                    end
                 end
-            end
-            updateWinnerPic(nPlayer)
-            gameOver(nPlayer)
+                updateWinnerPic(nPlayer)
+                gameOver(nPlayer)
 
-            gameOverCnt = 1
-            openAllCard = true
-            if allowPrint&0x1 != 0
-                println("GAME-OVER, player",
-                nPlayer, " win")
-            end
-            
-            allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt =
-            scanCards(all_hands[nPlayer],false,true)
-            if allowPrint&2 != 0
-                println("POINTS=",(khui[nPlayer],points[nPlayer],
-                kpoints[nPlayer], suitCnt,c_points(chotP,chot1Special)))
-            end
-           
-            points[nPlayer] += 3 + suitCnt + c_points(chotP,chot1Special)+ kpoints[nPlayer]
-            if khui[nPlayer]
-                points[nPlayer] *= 2
-            end
-            points[nPlayer] += 10
-            kpoints[nPlayer] = points[nPlayer]
-            astr = Vector{String}(undef,4)
-            for p in 1:4
-                astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p])
-                pots[p] += kpoints[p]
-                if allowPrint&2 != 0
-                    println(astr[p])
+                gameOverCnt = 1
+                openAllCard = true
+                if allowPrint&0x1 != 0
+                    println("GAME-OVER, player",
+                    nPlayer, " win")
                 end
-              
-            end
-            if histFile
-                println(HF,"# - - ",(astr))
-            end
-            if GUI
-            GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
-            GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
-            GUIname[2]  = TextActor(astr[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
-            GUIname[2].pos = tableGridXY(18,1)
-            GUIname[3]  = TextActor(astr[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
-            GUIname[3].pos = tableGridXY(10,1)
-            GUIname[4]  = TextActor(astr[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
-            GUIname[4].pos = tableGridXY(1,1)
-            end
+                pointsCalc(nPlayer)
+
+            #end
         else
             addCards!(all_assets, 0, nPlayer, glNewCard)
             addCards!(all_assets, 0, nPlayer, r)
@@ -3154,6 +3123,44 @@ function gamePlay1Iteration()
     end
 end
 
+function pointsCalc(nPlayer)
+    global pots, kpoints, GUIname
+    allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt =
+    scanCards(all_hands[nPlayer],false,true)
+    if allowPrint&2 != 0
+        println("POINTS=",(khui[nPlayer],points[nPlayer],
+        kpoints[nPlayer], suitCnt,c_points(chotP,chot1Special)))
+    end
+
+    points[nPlayer] += 3 + suitCnt + c_points(chotP,chot1Special)+ kpoints[nPlayer]
+    if khui[nPlayer]
+        points[nPlayer] *= 2
+    end
+    points[nPlayer] += 10
+    kpoints[nPlayer] = points[nPlayer]
+    astr = Vector{String}(undef,4)
+
+    for p in 1:4
+        astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p])
+        if allowPrint&2 != 0
+            println(astr[p])
+        end
+        pots[p] += kpoints[p]
+    end
+    if histFile
+        println(HF,"# - - ",(astr))
+    end
+    if GUI
+    GUIname[1]  = TextActor(astr[1],"asapvar",font_size=fontSize,color=[0,0,0,0])
+    GUIname[1].pos = tableGridXY(10,GUILoc[1,2]-1)
+    GUIname[2]  = TextActor(astr[2],"asapvar",font_size=fontSize,color=[0,0,0,0])
+    GUIname[2].pos = tableGridXY(18,1)
+    GUIname[3]  = TextActor(astr[3],"asapvar",font_size=fontSize,color=[0,0,0,0])
+    GUIname[3].pos = tableGridXY(10,1)
+    GUIname[4]  = TextActor(astr[4],"asapvar",font_size=fontSize,color=[0,0,0,0])
+    GUIname[4].pos = tableGridXY(1,1)
+    end
+end
 
 global openAllCard = false
 function SNAPSHOT(testnum=0)
@@ -4546,19 +4553,20 @@ function hgamePlay(
         
     if gpAction == gpPlay1card
         ll = length(singles) + length(chot1s) + length(miss1s) + length(missTs)
-        if ll == 0 && glIterationCnt == 1
+        if ll == 0 && glIterationCnt == 1 
             gameOver(gpPlayer)
+            pointsCalc(gpPlayer)
         end
-        @assert ll > 0 "no more trash, iteration=$glIterationCnt"
+        @assert !(ll == 0  && glIterationCnt > 1) "no more trash, ll=$ll iteration=$glIterationCnt"
         coDoiPlayer = 0
         coDoiCards = []
         global boDoi = 0
         global bp1BoDoiCnt = 0
         cards = gpHandlePlay1Card(gpPlayer)
-       
-if allowPrint&0x1 != 0
-    println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
-end
+            
+        if allowPrint&0x1 != 0
+            println("--",(playerIsHuman(gpPlayer),humanIsGUI,GUI_ready,GUI_array))
+        end
     rReady[gpPlayer] = false
 
         #--------------------------------------HERE
