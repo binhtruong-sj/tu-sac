@@ -1,4 +1,4 @@
-version = "0.61n"
+version = "0.61o"
 using GameZero
 using Sockets
 macOS = false
@@ -3660,9 +3660,9 @@ global GUI_ready = false
                                 coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
                                 mi = playerMaptoGUI(i)
                                 coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
-                                                mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
-                                                mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
-                                                tableGridXY(5,10+coinsCnt*1)
+                                                 mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                                                 mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                                                 tableGridXY(5,10+coinsCnt*1)
                                 push!(coins,coinActor)
                                 coinsCnt += 1
                             end
@@ -3705,9 +3705,6 @@ global GUI_ready = false
             all_assets = []
             all_discards = []
             HISTORY = []
-            if noGUI()
-           #     gsStateMachine(gsOrganize)
-            end
             restartGame()
         else
             if length(gameDeckArray) >= gameDeckMinimum
@@ -4548,7 +4545,11 @@ function hgamePlay(
      
         
     if gpAction == gpPlay1card
-        @assert length(union(singles, chot1s, miss1s, missTs)) > 0
+        ll = length(singles) + length(chot1s) + length(miss1s) + length(missTs)
+        if ll == 0 && glIterationCnt == 1
+            gameOver(gpPlayer)
+        end
+        @assert ll > 0 "no more trash, iteration=$glIterationCnt"
         coDoiPlayer = 0
         coDoiCards = []
         global boDoi = 0
