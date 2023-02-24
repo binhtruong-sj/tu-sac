@@ -1,4 +1,4 @@
-version = "0.61q"
+version = "0.61r"
 using GameZero
 using Sockets
 macOS = false
@@ -25,7 +25,7 @@ cardScale = 80
 wantFaceDown = true
 noGUI_list = [true,true,true,true]
 PlayerList =[plBot1,plBot1,plBot1,plBot1]
-aiType = [rand(1:4),rand(1:4),rand(1:4),rand(1:4)]
+aiType = [4,4,4,4]
 #aiType = [3,3,3,3]
 GUIname = Vector{Any}(undef,4)
 numberOfSocketPlayer = 0
@@ -820,7 +820,7 @@ function config(fn)
     global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,testFile,
     mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,showLocation,
     gamew,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,
-    RFindex,isTestFile,RFstates,RFaline,testList, trial
+    RFindex,isTestFile,RFstates,RFaline,testList, trial, aiType, playerName
 
     global GUILoc
     if !isfile(fn)
@@ -857,7 +857,12 @@ function config(fn)
                 x = parse(Int,rl[3])
                 y = parse(Int,rl[4])
                 GUILoc[arrayIndex,1] += x
-                GUILoc[arrayIndex,2] += y
+                GUILoc[arrayIndex,2] += y 
+            elseif rl[1] == "aiType"
+                    aiType = [parse(Int,rl[2]),parse(Int,rl[3]),parse(Int,rl[4]),parse(Int,rl[5])]
+                    playerName = [string("Bbot",aiType[1]),string("Bbot",aiType[2]),
+                                  string("Bbot",aiType[3]),string("Bbot",aiType[4])]
+                    println("AITYPE=", aiType)
             elseif rl[1] == "server"
                 serverURL = string(rl[2])
                 serverPort = parse(Int,rl[3])
@@ -1012,15 +1017,15 @@ serverPort, gamew,macOS,
 numberOfSocketPlayer,myPlayer) =config("../.tusacrc")
 end
 
-cardCnt = zeros(UInt8,32)
-function updateCardCnt(card)
-    global cardCnt
+PlayedCardCnt = zeros(UInt8,32)
+function updateCntPlayedCard(card)
+    global PlayedCardCnt
     c = card >> 2
-    cardCnt[c] += 1
+    PlayedCardCnt[c] += 1
 end
-function getCardCnt(card)
-    global cardCnt
-    return cardCnt[card]
+function getCntPlayedCard(card)
+    global PlayedCardCnt
+    return PlayedCardCnt[card]
 end
 moveArray = zeros(Int8,16,3)
 
@@ -1098,7 +1103,7 @@ function gameOver(n)
             println(HF,"# Winner = ",playerName[n])
         end
     else
-        sleep(.2)
+        sleep(.5)
         if gameEnd == 0
             push!(gameDeck,ts(glNewCard))
         end
@@ -2250,7 +2255,7 @@ function addCards!(array,arrNo, n, cards)
     end
     m  = playerMaptoGUI(n)
     for c in cards
-        updateCardCnt(c)
+        updateCntPlayedCard(c)
 
         if histFile
             for i in 1:16
@@ -2805,6 +2810,7 @@ function gamePlay1Iteration()
                          ts_s(rQ[player])
                     end
                 else
+                    sleep(.3)
                     return false
                 end
             else
@@ -3518,7 +3524,7 @@ function gsStateMachine(gameActions)
     global playerA_hand,playerB_hand,playerC_hand,playerD_hand,RFaline, ActiveCard
     global playerA_discards,playerB_discards,playerC_discards,playerD_discards
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets,khapMatDau
-    global kpoints,khui,myPlayer,loadPlayer,isTestFile,tstMoveArray,cardCnt, points
+    global kpoints,khui,myPlayer,loadPlayer,isTestFile,tstMoveArray,PlayedCardCnt, points
    prevIter = 0
    
     #=
@@ -3745,6 +3751,8 @@ global GUI_ready = false
                         moveArray = zeros(Int,16,3)
                         socketSYNC()
                     end
+                else
+                    sleep(.5)
                 end
             else
                 openAllCard = true
@@ -4387,7 +4395,7 @@ function gpHandlePlay1Card(player)
             pickArray = []
             for s in singles
                 s1 = s >> 2
-                cnt = getCardCnt(s1)
+                cnt = getCntPlayedCard(s1)
                 if cnt == 3
                     return s
                 end
@@ -4413,7 +4421,7 @@ function gpHandlePlay1Card(player)
             while length(singles) > 0
                 s = splice!(singles,rand(1:length(singles)))
                 s1 = s >> 2
-                cnt = getCardCnt(s1)
+                cnt = getCntPlayedCard(s1)
                 cArr = suitCards(s)
                 if allowPrint&4 != 0
                 print("suitcards=") ; ts_s(cArr)
@@ -4421,7 +4429,7 @@ function gpHandlePlay1Card(player)
                 scnt = 0
                 for c in cArr
                     c1 = c >> 2
-                   scnt += getCardCnt(c1)
+                   scnt += getCntPlayedCard(c1)
                 end
                 if is_c(s)
                     m = cnt/4 + scnt/6
@@ -5262,7 +5270,7 @@ function draw(g)
 
     saveI = 0
     drawCnt += 1
-    if drawCnt > 40
+    if drawCnt > 4
         drawCnt = 0
     end
     if !((tusacState == tsGameLoop)||(tusacState == tsHistory))
@@ -5289,7 +5297,7 @@ function draw(g)
         
         if ActiveCard != 0
             global csx,csy = big_actors[ActiveCard].pos
-            if drawCnt >20
+            if drawCnt >0
                 draw(big_actors[ActiveCard])
             end
         end
