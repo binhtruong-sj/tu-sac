@@ -1,0 +1,8 @@
+Priority:
+ 1) Win
+ 2) pairs
+ 3) khui can not be 'dropped', even with win.  In the same token, khap (3 cards) can not be broken.
+ 4) no addition trash: a play can not be done and increase trash in hand: pair can not be broken and play as trash. 
+    x p p m, can not  use p p as a pair, since that would result in 1 additional trash.
+ 
+
