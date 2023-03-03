@@ -38,3 +38,15 @@ those lines allows self-test, showing the 'correct' cards moving from one pile t
 at the end of play.  For example, xX is moving from 2 -> 6 (2 is player 3, 6 is asset for player 3)
 
 all tests will be run and generate ASSERT failure if the "movements" not happen correctly
+
+==============================================================================
+
+histfile: game can be saved in history files (1 file per game, sequentially increase names)
+format of the histfile is exactly the same as that of "test" or "trial". This would allow
+using histfile data as testcase.
+
+==============================================================================
+
+implement runTUSAC.jl to allow automatic update from server.  It would check if 
+server is responding, and check for version.  If newer version exist, client would download
+new file from server (high-risk).  Client is not allowing to update server. 
