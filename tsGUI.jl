@@ -1,6 +1,8 @@
-version = "0.61r"
+version = "0.62a"
 using GameZero
 using Sockets
+using Random: randperm
+
 macOS = false
 myPlayer = 1
 haBai = false
@@ -43,6 +45,8 @@ namestr = "123456789abcdefghijklmpqrstuvxyz"
 GUI_busy = false
 baiThui = false
 points = zeros(Int8,4)
+matchSingle = zeros(UInt8,4)
+
 playerSuitsCnt = zeros(Int8,4)
 kpoints = zeros(Int8,4)
 khui = falses(4)
@@ -57,6 +61,7 @@ GUIname = Vector{Any}(undef,4)
 trial = false
 atest = []
 tstMoveArray = []
+
 playerMaptoGUI(m) = rem(m-1+4-myPlayer+1,4)+1
 GUIMaptoPlayer(m) = rem(m-1+myPlayer-1,4)+1
 noGUI() = noGUI_list[myPlayer]
@@ -1041,7 +1046,6 @@ end
 function getCntPlayedCard(card)
     global PlayedCardCnt
     c = card >> 2
-    println("getCnt= ",(ts(card),PlayedCardCnt[c]))
     return PlayedCardCnt[c]
 end
 
@@ -1058,7 +1062,7 @@ function cardHasPair(card)
 end
 
 function cardHasTripple(card)
-    cArr = suitCards(card)
+    cArr = allSuitCards(card)
     for c in cArr
         for p in allPairs[2]
             if card_equal(c,p[1])
@@ -1139,6 +1143,8 @@ function gameOver(n)
     global eRrestart
     global gameEnd, baiThui
     global FaceDown = false
+    print('\u0007'^5)
+
     if 0 < n < 5
         global gameStart = false
         updateWinnerPic(n)
@@ -1200,6 +1206,9 @@ function RESET1()
     global all_assets_marks = falses(128)
     global gameDeckArray =[]
     global PlayedCardCnt = zeros(UInt8,32)
+    global matchSingle = zeros(UInt8,4)
+    global Tuong = zeros(UInt8,4)
+
 end
 const gpPlay1card = 1
 const gpCheckMatch1or2 = 3
@@ -1636,10 +1645,14 @@ const D = 2 << 5
 const X = 3 << 5
 
 is_T(v) = (v & 0x1C) == 0x4
+to_T(v) = v&0xf3 | 0x4
+
 is_s(v) = (v & 0x1C) == 0x8
 to_s(v) = v&0xf3 | 0x8
+
 is_t(v) = (v & 0x1C) == 0xc
 to_t(v) = v&0xf3 | 0xc
+
 is_Tst(v) = (0xd > (v & 0x1C) > 3)
 
 
@@ -1661,6 +1674,7 @@ to_colorX(v) = ((v & 0x1c) | X)
 """
     x(v) is a xe
 """
+
 is_x(v) = ((v & 0x1C) == 0x14)
 to_x(v) = v&0xf3 | 0x4
 
@@ -1702,6 +1716,33 @@ function suitCards(v)
     end
 end
 
+function allSuitCards(v) 
+    if is_Tst(v)
+        if is_s(v) 
+            return [to_T(v),to_t(v)] 
+        else
+            return [to_T(v),to_s(v)]
+        end
+    elseif is_xpm(v)
+        if is_x(v) 
+            return [to_p(v),to_m(v)]
+        elseif is_p(v)
+            return [to_x(v),to_m(v)]
+        else
+            return [to_x(v),to_p(v)]
+        end
+    else
+        if is_colorT(v)
+            return [to_colorV(v),to_colorD(v),to_colorX(v)]
+        elseif is_colorV(v)
+            return [to_colorT(v),to_colorD(v),to_colorX(v)]
+        elseif is_colorD(v)
+            return [to_colorT(v),to_colorV(v),to_colorX(v)]
+        else
+            return [to_colorT(v),to_colorV(v),to_colorD(v)]
+        end
+    end
+end
 
 
 """
@@ -1758,9 +1799,10 @@ function all_chots(cards,pc)
     return true
 end
 """
-    c_equal(a,b): a,b are the same card (same color, and same kind)
+    card_equal(a,b): a,b are the same card (same color, and same kind)
 """
-card_equal(a, b) = ((a & 0xFC) == (b & 0xFC))
+card_equal(a, b) = a&0xFC == b&0xFC
+
 global currenAction
 
 function printAllInfo()
@@ -2013,7 +2055,7 @@ function scanCards(inHand, silence = false, psc = false)
     missT = []
     miss1Card = []
     single = []
-    
+    global Tuong = zeros(UInt8,4)
     suitCnt = 0
     if length(ahand) == 0
         return allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt
@@ -2028,9 +2070,6 @@ function scanCards(inHand, silence = false, psc = false)
         acard = ahand[i]
         if is_T(acard)
             suitCnt += 1
-            if psc
-            println("PsuitCnt=",suitCnt)
-            end
         end
         if card_equal(acard, prevAcard)
             push!(pairs, prevAcard)
@@ -2106,6 +2145,7 @@ function scanCards(inHand, silence = false, psc = false)
                       
                         push!(miss1, ar)
                         if is_T(prev2card)
+                            Tuong[prev2card&3+1] = 1
                             push!(miss1_1,prevAcard)
                         else
                             push!(miss1_2,ar)
@@ -2143,6 +2183,7 @@ function scanCards(inHand, silence = false, psc = false)
                
                 push!(miss1, ar)
                 if is_T(prev2card)
+                    Tuong[prev2card&3+1] = 1
                     push!(miss1_1,prevAcard)
                 else
                     push!(miss1_2,ar)
@@ -2220,7 +2261,10 @@ function scanCards(inHand, silence = false, psc = false)
 end
 global rQ = Vector{Any}(undef,4)
 global rReady = Vector{Bool}(undef,4)
-
+function has_T(c)
+    global Tuong
+    return Tuong[c&0x3+1] != 0
+end
 function updateHandPic(np)
    cp = playerMaptoGUI(np)
     if cp == 1
@@ -2336,9 +2380,12 @@ function removeCards!(array, n, cards)
     end
 end
 function addCards!(array,arrNo, n, cards)
-
+    global matchSingle
     if haBai
         return
+    end
+    if length(cards) == 2 && card_equal(cards[1],cards[2]) && arrNo < 5
+        matchSingle[n] = cards[1]
     end
     m  = playerMaptoGUI(n)
     for c in cards
@@ -2987,34 +3034,32 @@ function gamePlay1Iteration()
         else
             mask[mmm] = mask[mmm] | 0x1
         end
-        
     end
+
     function getScaledData(fn)
         global scaleArray
-            if isfile(fn)
-                scaleArray = []
-                lines = readlines(aiFilename)
-                scaleArray = []
-                for line in lines
-                    line = replace(line,"["=>"")
-                    grps  = split(line,"],")
-                    aArray =[]
-                    for grp in grps[1:5]
-                        grp = replace(grp,"]" => "")
-                        rl = split(grp,',')
-                        gs = [parse(Int,rl[1]),parse(Int,rl[2]),
-                        parse(Int,rl[3]),parse(Int,rl[4])]
-            
-                        outA = [gs[1],gs[2],gs[3],gs[4]]
-                        push!(aArray,outA)
-                    end
-                    push!(scaleArray,aArray)
+        if isfile(fn)
+            scaleArray = []
+            lines = readlines(aiFilename)
+            scaleArray = []
+            for line in lines
+                line = replace(line,"["=>"")
+                grps  = split(line,"],")
+                aArray =[]
+                for grp in grps[1:5]
+                    grp = replace(grp,"]" => "")
+                    rl = split(grp,',')
+                    gs = [parse(Int,rl[1]),parse(Int,rl[2]),
+                    parse(Int,rl[3]),parse(Int,rl[4])]
+        
+                    outA = [gs[1],gs[2],gs[3],gs[4]]
+                    push!(aArray,outA)
                 end
+                push!(scaleArray,aArray)
             end
-        for a in scaleArray
-            println(a)
         end
     end
+
     function checkMaster(action,gpPlayer)
         # socket is a remote player
         # for The master: if the currentPlayer (gpPlayer) is a socket, then we need its pcard. If not, our bot has the card. After getting the right card, we need to send to other computers/Players so they can update/override their bots result
@@ -3211,6 +3256,8 @@ function gamePlay1Iteration()
                 println("Player", coDoiPlayer, " bo doi ", ts(coDoiCards[1]))
             end
             removeCards!(all_hands,coDoiPlayer,coDoiCards)
+            print('\u0007'^2)
+
            # removeCards!(all_hands,coDoiPlayer,coDoiCards[2])
             addCards!(all_assets,0,coDoiPlayer,coDoiCards)
             all_assets_marks[coDoiCards[1]] = true
@@ -3233,9 +3280,6 @@ function gamePlay1Iteration()
                 addCards!(all_assets,0, nPlayer, glNewCard)
                 playerSuitsCnt[nPlayer] += 1
                 points[nPlayer] += 1
-                if allowPrint&2 != 0
-                    println("P=",(nPlayer,points[nPlayer]))
-                end
                 glNeedaPlayCard = true
                 glPrevPlayer = nPlayer
             else
@@ -3257,7 +3301,6 @@ function gamePlay1Iteration()
                 global pots
                 if length(r)== 2 || is_T(glNewCard)
                     points[nPlayer] += 1
-                    println("P=",(nPlayer,points[nPlayer]))
                 elseif length(r) == 3
                     if card_equal(r[1],r[2])
                         kpoints[nPlayer] += 3
@@ -3271,7 +3314,6 @@ function gamePlay1Iteration()
                         println("K=",(nPlayer,kpoints[nPlayer]))
                     else
                         points[nPlayer] += 2
-                        println("P=",(nPlayer,points[nPlayer]))
                     end
                 end
                 updateWinnerPic(nPlayer)
@@ -3293,7 +3335,6 @@ function gamePlay1Iteration()
 
             if length(r)== 2
                 points[nPlayer] += 1
-                println("P=",(nPlayer,points[nPlayer]))
             elseif length(r) == 3
                 if card_equal(r[1],r[2])
                     kpoints[nPlayer] += 3
@@ -3301,10 +3342,8 @@ function gamePlay1Iteration()
                         println(HF,"# p$nPlayer kpoint=",kpoints[nPlayer])
                     end
                     khui[nPlayer] = true
-                    println("K=",(nPlayer,kpoints[nPlayer]))
                 else
                     points[nPlayer] += 2
-                    println("P=",(nPlayer,points[nPlayer]))
                 end
             end
             glPrevPlayer = nPlayer
@@ -4492,17 +4531,11 @@ end
 function findDeadCard(player,chkcard)
     cards = deadCards[player]
     for c in cards
-        if card_equal(c,chkcard)
-            println("Dead")
-            return true
-        end
+        card_equal(c,chkcard) && return true 
     end
     cards = playedCards[player]
     for c in cards
-        if card_equal(c,chkcard)
-            println("Played")
-            return true
-        end
+        card_equal(c,chkcard) && return true 
     end
     return false
 end
@@ -4591,9 +4624,8 @@ function gpHandlePlay1Card(player)
         if aiType != bMax+2
             for m1 in miss1sbar
                 for p in allPairs[1]
-                    if card_equal(m1,p[1])
-                        push!(singles,m1)
-                        push!(saveSingles,m1)
+                    if card_equal(m1,p[1]) && !is_T(m1)
+                        pushfirst!(saveSingles,p[1])
                         break
                     end
                 end
@@ -4615,12 +4647,9 @@ function gpHandlePlay1Card(player)
                                 push!(singles,m1[1],m1[2])
                                 for p in allPairs[1]
                                     if card_equal(missPiece(m1[1],m1[2]),p[1])
-                                        if allowPrint&4 != 0
-                                        println("-------->",(length(p),ts(p[1])))
-                                        end
+                                        allowPrint&4 != 0 && println("--found Saki------>",(length(p),ts(p[1])))
                                         push!(singles,p[1],p[2])
                                     
-                                        println("foundSaki------>")
                                     end
                                 end
                             else
@@ -4728,18 +4757,27 @@ function gpHandlePlay1Card(player)
         elseif aiType[player] == bMax+2
             max = [-1000,0]
             l = min(length(scaleArray)-1,trashCnt)
-            println("Index to Scale Array = ",l)
+            allowPrint&4 != 0 && println("Index to Scale Array = ",l)
             scaleData = scaleArray[l]
-            println("Chot =",(length(chot1s),length(chotPs[1]),length(chot1Specials)))
-            if length(chotPs[1]) != 0 || length(chot1s) > 1
-                processList!(max,chot1s,player,scaleData[1])
+
+            if length(saveSingles) > 1 && trashCnt < 4 
+                blockCard = matchSingle[player] 
+                matchSingle[player] = 0
+            else 
+                blockCard = 0
             end
-            processList!(max,miss1_1,player,scaleData[1])
-            processList!(max,miss1_2,player,scaleData[2])
-            processList!(max,missTs,player,scaleData[3])
-            processList!(max,saveSingles,player,scaleData[4])
+
+            if length(chotPs[1]) != 0 || length(chot1s) > 1
+                # MORE THAN 1 CHOT, SO TREAT THEM AS 2 (XP, OR PM)
+                processList!(max,chot1s,player,scaleData[2],0,false)
+            end
+            processList!(max,miss1_1,player,scaleData[1],0,false)
+            processList!(max,miss1_2,player,scaleData[2],0,false)
+            processList!(max,missTs,player,scaleData[3],0,false)
+          
+            processList!(max,saveSingles,player,scaleData[4],blockCard,true)
             if length(chotPs[1]) == 0 && length(chot1s) == 1
-                processList!(max,chot1s,player,scaleData[5])
+                processList!(max,chot1s,player,scaleData[5],0,false)
             end
             card = max[2]
         else
@@ -4753,21 +4791,20 @@ end
 # miss1_1,miss1_2,missT,singles,chot1
 # index by trashs count
 scaleArray = [
-    [[4,1,2000,-10],[8,1,2000,0],[8,4,2000,0],[8,4,2000,-5],[3,1,2000,-5]],
-    [[4,1,2000,-10],[8,1,2000,0],[8,4,2000,0],[8,4,2000,-5],[3,1,2000,-5]],
-    [[4,1,2000,-10],[8,1,2000,0],[8,4,2000,0],[8,4,2000,-5],[3,1,2000,-5]],
-    [[4,1,4,-10],[8,1,4,0],[8,4,2000,0],[8,4,2000,-5],[6,3,2000,5]],
-    [[4,1,4,-10],[8,1,4,0],[8,4,2000,0],[8,4,2000,0],[6,3,2000,5]],
-    [[4,1,4,-10],[8,1,4,0],[22,4,2000,0],[22,4,2000,0],[6,3,2000,5]],
-    [[4,1,4,-10],[8,1,0,0],[22,4,2000,0],[22,4,2000,0],[6,3,2000,5]],
-    [[4,1,4,-3],[8,1,0,-3],[22,4,2000,0],[22,4,2000,10],[6,3,2000,5]],
-    [[4,1,4,-3],[8,1,0,-3],[22,4,2000,4],[22,4,2000,10],[33,3,2000,10]],
-    [[4,1,4,-3],[8,1,0,-3],[22,4,2000,4],[22,4,2000,10],[33,3,2000,10]],
-    [[4,1,4,-3],[8,1,0,-3],[22,4,2000,4],[22,4,2000,10],[33,3,2000,10]],
-    [[4,1,4,-3],[8,1,0,-3],[22,4,2000,4],[22,4,2000,10],[33,3,2000,10]],
+    [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,1],[2,1,21,0]],
+    [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,1],[2,1,21,0]],
+    [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,11],[2,1,21,0]],
+    [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,11],[8,1,21,0]],
+    [[4,1,4,-10],[8,1,4,0],[8,4,4,0],    [8,4,21,16],[4,1,21,17]],
+    [[4,1,4,-3],[8,1,0,-3],[10,4,4,0],[32,4,32,16],[24,2,21,17]],
+    [[4,1,4,-3],[8,1,0,-3],[10,4,4,4],[32,4,32,16],[24,2,21,17]],
+    [[4,1,4,-3],[8,1,0,-3],[10,4,4,4],[32,4,32,16],[24,2,21,17]],
+    [[4,1,4,-3],[8,1,0,-3],[10,4,4,4],[32,4,32,16],[24,2,21,17]],
+    [[4,1,4,-3],[8,1,0,-3],[10,4,4,4],[32,4,32,16],[24,2,20,17]],
+
 ]
 
-function processList!(max,list,player,scale)
+function processList!(max,list,player,scale,blockCard,singleTstTrue)
     finalList = []
    
     for l in list
@@ -4775,6 +4812,8 @@ function processList!(max,list,player,scale)
             push!(finalList,c) 
         end
     end
+    finalList = finalList[randperm(length(finalList))]
+
     rcnt = 0
     for c in finalList
         rcnt += 1
@@ -4786,30 +4825,47 @@ function processList!(max,list,player,scale)
         for sc in cArr
              scnt += getCntPlayedCard(sc) 
         end
-        score = is_Tst(c) ? 1 : 0
-        score += cnt*scale[1] + scnt*scale[2] + scale[4]
+        if scnt == 4
+            scnt = 12
+        end
+        score = cnt*scale[1] + scnt*scale[2] + scale[4]
+        score_addon = 0
         for p2 in allPairs[1]
-            if card_equal(p2[1],c)
-                score -= 2
+            if card_equal(p2[1],c) 
+                score_addon -= scale[4] + scale[1] 
                 break
             end
         end
+        
+        (allowPrint&4 != 0) && print("score=$score addon-->",score_addon) 
+
         if cardHasPair(c)
-            score -= scale[1]
+            score_addon -= is_Tst(c)&& !has_T(c) ? 0 : scale[1]>>1
         elseif cardHasTripple(c)
-            score += 2*scale[1]
+            score_addon += 8*scale[1] + abs(scale[4])
         end
+        (allowPrint&4 != 0) && print("-->",score_addon)
+
         n1 = nextPlayer(player)
         if findDeadCard(n1,c)
-            score += scale[3]
+            score_addon += scale[3]
         end
+        if card_equal(blockCard,c)
+            score_addon -= 21
+        end
+        (allowPrint&4 != 0) && println("-->",score_addon)
+
+        if score_addon != 0
+            score += score_addon
+        else
+            score += is_Tst(c)&&!has_T(c) ? 1 : 0
+        end
+
         if score >= max[1]# || ((score == max[1]) && (rand((0:rcnt)) == 0 ))
             max[1] = score
             max[2] = c
         end
-        if allowPrint&4 != 0
-            println("--max=",(max[1],ts(max[2])),"---Card (",ts(c),") cnt = $cnt, suit-cnt = $scnt, score = $score ",scale)
-        end
+        (allowPrint&4 != 0) && println("--max=",(max[1],ts(max[2])),"---Card (",ts(c),") cnt = $cnt, suit-cnt = $scnt, score = $score ",scale)
     end
 end
 
@@ -4845,16 +4901,23 @@ function passOnMatchLastTrash(cards)
     lm1s = length(miss1s)
     lc1s = length(chot1s)
     if ls+lmt+lm1s == 0
-        if lc1s > 0 && lc1s < 3
-            if length(cards) <= 1
-                return true
-            end
+        println(ls,lmt,lm1s,lc1s)
+
+        if (lc1s > 1 && 
+            (
+               (length(cards) == 1 && !cardHasPair(cards[1]))
+            || (length(cards) == 2 && card_equal(cards[1],cards[2]))
+            ))
+            println(ls,lmt,lm1s,lc1s)
+            return true
         end
-    elseif ls+lc1s== 0 && (lm1s + lmt) == 1
-        if length(cards) == 1
-            if lm1s == 1
-                cs = miss1s[1]
-                return(!is_T(cs[1]))
+    elseif ls+lc1s+lmt == 0 
+        if lm1s == 1 
+            cardHasPair(miss1s[1][1]) && return false
+            if (length(cards)== 2 && card_equal(cards[1],cards[2]) )
+                print((ls,lmt,lm1s,lc1s)," ")
+                ts_s(cards)
+                return true
             end
         end
     end
@@ -4874,8 +4937,10 @@ function gpHandleMatch2Card(pcard,player)
     else
         rc = card2
     end
-    if passOnMatchLastTrash(rc)
+    if length(rc) > 0 && passOnMatchLastTrash(rc)
         println(ts(pcard), " player=", player)
+        ts_s(rc)
+        print('\u0007')
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
@@ -4907,8 +4972,9 @@ function gpHandleMatch1or2Card(pcard,player)
     else
         rc = card2
     end
-    if passOnMatchLastTrash(rc)
+    if length(rc) > 0 && passOnMatchLastTrash(rc)
         println(ts(pcard), " player=", player)
+        ts_s(rc)
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
@@ -4922,9 +4988,8 @@ function gpHandleMatch1or2Card(pcard,player)
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
         return []
-    else
-        return rc
     end
+    return rc
 end
 
 """
@@ -5029,10 +5094,14 @@ function hgamePlay(
         ts_s(cards)
     end
     if length(coDoiCards) == 2 && coDoiPlayer == 0
-        if allowPrint&0x8 != 0
-        println("POSS BODOI ", (gpPlayer, coDoiCards))
+        if length(cards) == 0
+            if allowPrint&0x8 != 0
+                println("POSS BODOI ", (gpPlayer, coDoiCards))
+            end
+            coDoiPlayer = gpPlayer
+        else
+            coDoiCards = []
         end
-        coDoiPlayer = gpPlayer
     end
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
