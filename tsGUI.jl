@@ -1,4 +1,4 @@
-version = "0.62b"
+version = "0.62c"
 using GameZero
 using Sockets
 using Random: randperm
@@ -4796,8 +4796,8 @@ end
 # miss1_1,miss1_2,missT,singles,chot1
 # index by trashs count
 scaleArray = [
-    [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,1],[2,1,21,0]],
-    [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,1],[2,1,21,0]],
+    [[2,1,21,1],[2,1,21,-8],[8,4,21,-2],[8,4,21,1],[6,6,21,0]],
+    [[4,1,21,1],[8,1,21,-8],[8,4,21,-2],[8,4,21,1],[2,1,21,0]],
     [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,11],[2,1,21,0]],
     [[4,1,21,-10],[8,1,21,-8],[8,4,21,0],[8,4,21,11],[8,1,21,0]],
     [[4,1,4,-10],[8,1,4,0],[8,4,4,0],    [8,4,21,16],[4,1,21,17]],
@@ -4806,7 +4806,6 @@ scaleArray = [
     [[4,1,4,-3],[8,1,0,-3],[10,4,4,4],[32,4,32,16],[24,2,21,17]],
     [[4,1,4,-3],[8,1,0,-3],[10,4,4,4],[32,4,32,16],[24,2,21,17]],
     [[4,1,4,-3],[8,1,0,-3],[10,4,4,4],[32,4,32,16],[24,2,20,17]],
-
 ]
 
 function processList!(max,list,player,scale,blockCard,singleTstTrue)
@@ -4872,7 +4871,11 @@ function processList!(max,list,player,scale,blockCard,singleTstTrue)
             
             max[1][1] = score
             max[1][2] = c
-
+        else
+            if score >= max[2][1]
+                max[2][1] = score
+                max[2][2] = c
+            end
         end
         (allowPrint&4 != 0) && println("--max=",(max[1][1],ts(max[1][2])),"---Card (",ts(c),") cnt = $cnt, suit-cnt = $scnt, score = $score ",scale)
     end
@@ -4910,37 +4913,40 @@ function passOnMatchLastTrash(pcard,cards)
     lmt = length(missTs)
     lm1s = length(miss1s)
     lc1s = length(chot1s)
-    
-    print("PassOnLSTTRASH  @@@@@ ",(ls,lmt,lm1s,lc1s))
-    ts_s(singles,"-",false)
-    ts_s(missTs,"-",false)
-    ts_s(miss1s,"-",false)
-    ts_s(chot1s,"-",false)
-    if inStrictSuit(pcard,cards[1])
-        print(" pcard,rc=",ts(pcard))
-        ts_s(cards," ",true)
+    if allowPrint&0x4 != 0
+        print("PassOnLSTTRASH  @@@@@ ",(ls,lmt,lm1s,lc1s))
+        ts_s(singles,"-",false)
+        ts_s(missTs,"-",false)
+        ts_s(miss1s,"-",false)
+        ts_s(chot1s,"-",true)
+    end
+    if inStrictSuit(pcard,cards[1]) && !(lc1s > 0 && is_c(pcard))
+        if allowPrint&0x4 != 0
+            print(" pcard,rc=",ts(pcard))
+            ts_s(cards," ",true)
+        end
         return false
-    else
-        println()
     end
     if ls+lmt+lm1s == 0
+        allowPrint&0x4 != 0 &&
         println("PassOn lc1s  @@@ ",(ls,lmt,lm1s,lc1s))
         if (lc1s > 1 && 
             (
                (length(cards) == 1 && !cardHasPair(cards[1]))
             || (length(cards) == 2 && card_equal(cards[1],cards[2]))
             ))
-            println(ls,lmt,lm1s,lc1s)
+            allowPrint&0x4 != 0 && println(ls,lmt,lm1s,lc1s)
             return true
         end
     elseif ls+lc1s+lmt == 0 
-        println("PassOn lm1s  @@@ ",(ls,lmt,lm1s,lc1s))
-
+        allowPrint&0x4 != 0 && println("PassOn lm1s  @@@ ",(ls,lmt,lm1s,lc1s))
         if lm1s == 1 
             cardHasPair(miss1s[1][1]) && return false
             if (length(cards)== 2 && card_equal(cards[1],cards[2]) )
-                print((ls,lmt,lm1s,lc1s)," ")
-                ts_s(cards)
+                if allowPrint&0x4 != 0 
+                    print((ls,lmt,lm1s,lc1s)," ") 
+                    ts_s(cards)
+                end
                 return true
             end
         end
@@ -4962,21 +4968,23 @@ function gpHandleMatch2Card(pcard,player)
         rc = card2
     end
     if length(rc) > 0 && passOnMatchLastTrash(pcard,rc)
-        println(ts(pcard), " player=", player)
-        ts_s(rc)
-        print('\u0007')
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+        if allowPrint&0x4 != 0 
+            println(ts(pcard), " player=", player)
+            ts_s(rc)
+            print('\u0007')
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+        end
         return []
     else
         return rc
@@ -4997,20 +5005,22 @@ function gpHandleMatch1or2Card(pcard,player)
         rc = card2
     end
     if length(rc) > 0 && passOnMatchLastTrash(pcard,rc)
-        println(ts(pcard), " player=", player)
-        ts_s(rc)
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
-        println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+        if allowPrint&0x4 != 0 
+            println(ts(pcard), " player=", player)
+            ts_s(rc)
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+            println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
+        end
         return []
     end
     return rc
