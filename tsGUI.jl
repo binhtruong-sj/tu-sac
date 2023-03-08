@@ -1,4 +1,4 @@
-version = "0.62a"
+version = "0.62b"
 using GameZero
 using Sockets
 using Random: randperm
@@ -1143,7 +1143,7 @@ function gameOver(n)
     global eRrestart
     global gameEnd, baiThui
     global FaceDown = false
-    print('\u0007'^5)
+    print('\u0007')
 
     if 0 < n < 5
         global gameStart = false
@@ -1616,10 +1616,16 @@ function ts(a)
     end
 end
 
-function ts_s(rt, n = true)
-    for r in rt
-        print(ts(r), " ")
+function ts_s(rt, sp = "", n = true)
+    for rq in rt
+        print(" ",ts(rq))
+        if length(rq) > 1
+            for r in rq[2:end]
+                print("+",ts(r))
+            end
+        end
     end
+    print(sp)
     if n
         println()
     end
@@ -1749,6 +1755,10 @@ end
     inSuit(a,b): check if a,b is in the same sequence cards (Tst) or (xpm)
 """
 inSuit(a, b) = (a & 0xc != 0) && (b & 0xc != 0) && (a & 0xF0 == b & 0xF0)
+"""
+    inTrictSuit(a,b): check if a,b is in the same sequence cards (Tst) or (xpm), but not the same card
+"""
+inStrictSuit(a, b) = (a & 0xc != 0) && (b & 0xc != 0) && (a & 0xF0 == b & 0xF0) && !(a & 0xFC == b & 0xFC)
 """
     inTSuit(a)
      a is either si or tuong
@@ -2800,10 +2810,6 @@ end
 
 function trackPlayedCards(player,card,deck)
     global prevCard, prevN1, prevDeck
-    if allowPrint&0x4 != 0
-        println("track=-",(ts(card[1]),ts(prevCard)),"prev_player, player =",(prevN1,player,inSuit(prevCard,card[1])))
-        ts_s(card)
-    end
     if card_equal(card[1],prevCard) || 
         (length(card)> 1 &&
         ((inSuit(prevCard,card[1]) && inSuit(prevCard,card[2])) ||
@@ -2820,9 +2826,6 @@ function trackPlayedCards(player,card,deck)
             popchk!(deadCards[n2])
         end
     else
-        if allowPrint&0x4 != 0
-            println("Track-push")
-        end
         c = card[1]
         if deck == false
             push!(playedCards[player],c)
@@ -4755,7 +4758,6 @@ function gpHandlePlay1Card(player)
             end
             card = findWorstCard(singles,player)
         elseif aiType[player] == bMax+2
-            max = [-1000,0]
             l = min(length(scaleArray)-1,trashCnt)
             allowPrint&4 != 0 && println("Index to Scale Array = ",l)
             scaleData = scaleArray[l]
@@ -4766,7 +4768,7 @@ function gpHandlePlay1Card(player)
             else 
                 blockCard = 0
             end
-
+            max = [[-1000,10],[-1000,10]]
             if length(chotPs[1]) != 0 || length(chot1s) > 1
                 # MORE THAN 1 CHOT, SO TREAT THEM AS 2 (XP, OR PM)
                 processList!(max,chot1s,player,scaleData[2],0,false)
@@ -4779,7 +4781,10 @@ function gpHandlePlay1Card(player)
             if length(chotPs[1]) == 0 && length(chot1s) == 1
                 processList!(max,chot1s,player,scaleData[5],0,false)
             end
-            card = max[2]
+            allowPrint&4 != 0 && println("Max-Array = ", (max[1][1],ts(max[1][2]) ),(max[2][1],ts(max[2][2])))
+
+
+            card = max[1][2]
         else
             card = singles[rand(1:length(singles))]
         end
@@ -4832,7 +4837,7 @@ function processList!(max,list,player,scale,blockCard,singleTstTrue)
         score_addon = 0
         for p2 in allPairs[1]
             if card_equal(p2[1],c) 
-                score_addon -= scale[4] + scale[1] 
+                score_addon -= scale[4] + 2*scale[1] 
                 break
             end
         end
@@ -4861,11 +4866,15 @@ function processList!(max,list,player,scale,blockCard,singleTstTrue)
             score += is_Tst(c)&&!has_T(c) ? 1 : 0
         end
 
-        if score >= max[1]# || ((score == max[1]) && (rand((0:rcnt)) == 0 ))
-            max[1] = score
-            max[2] = c
+        if score >= max[1][1]# || ((score == max[1]) && (rand((0:rcnt)) == 0 ))
+            max[2][1] = max[1][1]
+            max[2][2] = max[1][2]
+            
+            max[1][1] = score
+            max[1][2] = c
+
         end
-        (allowPrint&4 != 0) && println("--max=",(max[1],ts(max[2])),"---Card (",ts(c),") cnt = $cnt, suit-cnt = $scnt, score = $score ",scale)
+        (allowPrint&4 != 0) && println("--max=",(max[1][1],ts(max[1][2])),"---Card (",ts(c),") cnt = $cnt, suit-cnt = $scnt, score = $score ",scale)
     end
 end
 
@@ -4895,14 +4904,27 @@ function list(s1,s2,p1,p2,p3)
     end
     return r
 end
-function passOnMatchLastTrash(cards)
+function passOnMatchLastTrash(pcard,cards)
+   
     ls = length(singles)
     lmt = length(missTs)
     lm1s = length(miss1s)
     lc1s = length(chot1s)
+    
+    print("PassOnLSTTRASH  @@@@@ ",(ls,lmt,lm1s,lc1s))
+    ts_s(singles,"-",false)
+    ts_s(missTs,"-",false)
+    ts_s(miss1s,"-",false)
+    ts_s(chot1s,"-",false)
+    if inStrictSuit(pcard,cards[1])
+        print(" pcard,rc=",ts(pcard))
+        ts_s(cards," ",true)
+        return false
+    else
+        println()
+    end
     if ls+lmt+lm1s == 0
-        println(ls,lmt,lm1s,lc1s)
-
+        println("PassOn lc1s  @@@ ",(ls,lmt,lm1s,lc1s))
         if (lc1s > 1 && 
             (
                (length(cards) == 1 && !cardHasPair(cards[1]))
@@ -4912,6 +4934,8 @@ function passOnMatchLastTrash(cards)
             return true
         end
     elseif ls+lc1s+lmt == 0 
+        println("PassOn lm1s  @@@ ",(ls,lmt,lm1s,lc1s))
+
         if lm1s == 1 
             cardHasPair(miss1s[1][1]) && return false
             if (length(cards)== 2 && card_equal(cards[1],cards[2]) )
@@ -4937,7 +4961,7 @@ function gpHandleMatch2Card(pcard,player)
     else
         rc = card2
     end
-    if length(rc) > 0 && passOnMatchLastTrash(rc)
+    if length(rc) > 0 && passOnMatchLastTrash(pcard,rc)
         println(ts(pcard), " player=", player)
         ts_s(rc)
         print('\u0007')
@@ -4972,7 +4996,7 @@ function gpHandleMatch1or2Card(pcard,player)
     else
         rc = card2
     end
-    if length(rc) > 0 && passOnMatchLastTrash(rc)
+    if length(rc) > 0 && passOnMatchLastTrash(pcard,rc)
         println(ts(pcard), " player=", player)
         ts_s(rc)
         println("@@@@@@@@@@@@@@@@@@@@@@  PASS  @@@@@@@@@@@@@@@@@@@@@@@@@@")
@@ -5094,14 +5118,10 @@ function hgamePlay(
         ts_s(cards)
     end
     if length(coDoiCards) == 2 && coDoiPlayer == 0
-        if length(cards) == 0
             if allowPrint&0x8 != 0
                 println("POSS BODOI ", (gpPlayer, coDoiCards))
             end
             coDoiPlayer = gpPlayer
-        else
-            coDoiCards = []
-        end
     end
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
@@ -5559,7 +5579,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                             if length(p) == 2
                                 if !foundSaki(pcard,miss1sbar,chot1Specials) && !isMoreTrash(cards,hand)
                                     if allowPrint&0x8 != 0
-                                        println("BO DOI")
+                                        println(("BO DOI",boDoi))
                                     end
                                     global boDoi += 1
                                     if boDoi > 1
@@ -5793,6 +5813,9 @@ function draw(g)
             end
         end
     elseif (tusacState == tsGameLoop)||(tusacState == tsHistory)
+        if(tusacState == tsHistory)
+            sleep(.2)
+        end
         saveI = saveI + drawAhand(TuSacCards.getDeckArray(gameDeck))
         for i in 1:4
             saveI = saveI + drawAhand(all_hands[i])
