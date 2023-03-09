@@ -4786,8 +4786,17 @@ function gpHandlePlay1Card(player)
 
             card = max[1][2]
         else
-            card = singles[rand(1:length(singles))]
+            max = [[-1000,10],[-1000,10]]
+            processM1Card(max,miss1_1,player)
+            processM2Card(max,miss1_2,player)
+            processM2Card(max,missTs,player)
+            processSCard(max,saveSingles,player)
+            processCCard(max,chot1s,player)
+            allowPrint&4 != 0 && println("Max-Array = ", (max[1][1],ts(max[1][2]) ),(max[2][1],ts(max[2][2])))
+            card = max[1][2]
         end
+    elseif aiType[player] == bMax+3
+        
     else
         card = []
     end
@@ -4879,6 +4888,35 @@ function processList!(max,list,player,scale,blockCard,singleTstTrue)
         end
         (allowPrint&4 != 0) && println("--max=",(max[1][1],ts(max[1][2])),"---Card (",ts(c),") cnt = $cnt, suit-cnt = $scnt, score = $score ",scale)
     end
+end
+
+#=
+    For every card, we need to evaluate from 2 perspectives:
+        1) out-going, minimize the probability of being taken by others
+        2) keepng cards that has higher probability of being received
+
+        for every entry, calculate the probability of get rid of it and not be used
+            the oppposite is the probability of getting a card to complete a suit
+
+=#
+function processSCard(max,list,player)
+  
+end
+
+function processM1Card(max,list,player)
+  
+end
+
+function processM2Card(max,list,player)
+  
+end
+
+function processCCard(max,list,player)
+  
+end
+
+function randomSampling(c,list)
+
 end
 
 function list(s1,s2,p1,p2,p3)
