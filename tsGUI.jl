@@ -1,4 +1,4 @@
-version = "0.62c"
+version = "0.62d"
 using GameZero
 using Sockets
 using Random: randperm
@@ -4771,15 +4771,15 @@ function gpHandlePlay1Card(player)
             max = [[-1000,10],[-1000,10]]
             if length(chotPs[1]) != 0 || length(chot1s) > 1
                 # MORE THAN 1 CHOT, SO TREAT THEM AS 2 (XP, OR PM)
-                processList!(max,chot1s,player,scaleData[2],0,false)
+                processList!(max,chot1s,player,scaleData[2],0,scaleData[4])
             end
-            processList!(max,miss1_1,player,scaleData[1],0,false)
-            processList!(max,miss1_2,player,scaleData[2],0,false)
-            processList!(max,missTs,player,scaleData[3],0,false)
+            processList!(max,miss1_1,player,scaleData[1],0,scaleData[4])
+            processList!(max,miss1_2,player,scaleData[2],0,scaleData[4])
+            processList!(max,missTs,player,scaleData[3],0,scaleData[4])
           
-            processList!(max,saveSingles,player,scaleData[4],blockCard,true)
+            processList!(max,saveSingles,player,scaleData[4],blockCard,scaleData[4])
             if length(chotPs[1]) == 0 && length(chot1s) == 1
-                processList!(max,chot1s,player,scaleData[5],0,false)
+                processList!(max,chot1s,player,scaleData[5],0,scaleData[4])
             end
             allowPrint&4 != 0 && println("Max-Array = ", (max[1][1],ts(max[1][2]) ),(max[2][1],ts(max[2][2])))
 
@@ -4805,90 +4805,101 @@ end
 # miss1_1,miss1_2,missT,singles,chot1
 # index by trashs count
 scaleArray = [
-    [[2,1,21,1],[2,1,21,-8],[8,1,21,-2],[8,1,21,1],[6,1,21,0]],
-    [[4,1,21,1],[8,1,21,-8],[8,1,21,-2],[8,1,21,1],[2,1,21,0]],
-    [[4,1,21,-10],[8,1,21,-8],[8,1,21,0],[8,1,21,11],[2,1,21,0]],
-    [[4,1,21,-10],[8,1,21,-8],[8,1,21,0],[8,1,21,11],[8,1,21,0]],
-    [[4,1,4,-10],[8,1,4,0],[8,1,4,0],    [8,1,21,16],[4,1,21,17]],
-    [[4,1,4,-3],[8,1,0,-3],[10,1,4,0],[32,1,32,16],[24,1,21,17]],
-    [[4,1,4,-3],[8,1,0,-3],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
-    [[4,1,4,-3],[8,1,0,-3],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
-    [[4,1,4,-3],[8,1,0,-3],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
-    [[4,1,4,-3],[8,1,0,-3],[10,1,4,4],[32,1,32,16],[24,1,20,17]],
+    [[1,1,21,-6],[2,1,21,-8],[8,1,21,-2],[8,1,21,1],[6,1,21,0]],
+    [[1,1,21,-6],[8,1,21,-8],[8,1,21,-2],[8,1,21,1],[2,1,21,0]],
+    [[1,1,21,-6],[8,1,21,-8],[8,1,21,0],[8,1,21,11],[2,1,21,0]],
+    [[1,1,21,-6],[8,1,21,-8],[8,1,21,0],[8,1,21,11],[8,1,21,0]],
+    [[1,1,4,0],[8,1,4,0],[8,1,4,0],    [8,1,21,16],[4,1,21,17]],
+    [[1,1,4,-6],[8,1,0,-8],[10,1,4,0],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,0,-8],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,0,-8],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,0,-8],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,0,-8],[10,1,4,4],[32,1,32,16],[24,1,20,17]],
 ]
 
-function processList!(max,list,player,scale,blockCard,singleTstTrue)
+function processList!(max,list,player,sc,blockCard,sc1)
     finalList = []
    
     for l in list
-        for c in l 
-            push!(finalList,c) 
-        end
+        push!(finalList,l) 
     end
     finalList = finalList[randperm(length(finalList))]
 
     rcnt = 0
-    for c in finalList
-        rcnt += 1
-        cnt = getCntPlayedCard(c)
-        
-
-        cArr = suitCards(c)
-        scnt = 0
-        for sc in cArr
-             scnt += getCntPlayedCard(sc) 
-        end
-        if scnt == 4
-            scnt = 12
-        elseif scnt < 3
-            scnt = 0
-        end
-        score = cnt*scale[1] + scnt*scale[2] + scale[4]
-        score_addon = 0
-        for p2 in allPairs[1]
-            if card_equal(p2[1],c) 
-                score_addon -= scale[4] + 2*scale[1] 
-                break
+    for cs in finalList
+        scale = sc
+        if length(cs) > 1
+            mc = missPiece(cs[1],cs[2])
+            dead = getCntPlayedCard(mc) > 2
+            if dead 
+                scale = sc1
             end
         end
-        
-        (allowPrint&4 != 0) && print("score=$score addon-->",score_addon) 
-
-        if cardHasPair(c)
-            score_addon -= is_Tst(c)&& !has_T(c) ? 0 : scale[1]>>1
-        elseif cardHasTripple(c)
-            score_addon += 8*scale[1] + abs(scale[4])
-        end
-        (allowPrint&4 != 0) && print("-->",score_addon)
-
-        n1 = nextPlayer(player)
-        if findDeadCard(n1,c)
-            score_addon += scale[3]
-        end
-        if card_equal(blockCard,c)
-            score_addon -= 21
-        end
-        (allowPrint&4 != 0) && println("-->",score_addon)
-
-        if score_addon != 0
-            score += score_addon
-        else
-            score += is_Tst(c)&&!has_T(c) ? 1 : 0
-        end
-
-        if score >= max[1][1]# || ((score == max[1]) && (rand((0:rcnt)) == 0 ))
-            max[2][1] = max[1][1]
-            max[2][2] = max[1][2]
+        for c in cs
+            rcnt += 1
+            cnt = getCntPlayedCard(c)
             
-            max[1][1] = score
-            max[1][2] = c
-        else
-            if score >= max[2][1]
-                max[2][1] = score
-                max[2][2] = c
+
+            cArr = suitCards(c)
+            scnt = 0
+            for sc in cArr
+                scnt += getCntPlayedCard(sc) 
             end
+            if scnt == 4
+                scnt = 12
+            elseif scnt < 3
+                scnt = 0
+            end
+            score = cnt*scale[1] + scnt*scale[2] + scale[4]
+            score_addon = 0
+            for p2 in allPairs[1]
+                if card_equal(p2[1],c) 
+                    score_addon -= scale[2] 
+                    break
+                end
+            end
+            
+            (allowPrint&4 != 0) && print("score=$score addon-->",score_addon) 
+
+            if cardHasPair(c)
+                score_addon += is_Tst(c)&& !has_T(c) ? 0 : -2
+            elseif cardHasTripple(c)
+                score_addon += abs(scale[4])
+                if is_c(c)
+                    score_addon = score_addon >> 2
+                end
+            end
+            (allowPrint&4 != 0) && print("-->",score_addon)
+
+            n1 = nextPlayer(player)
+            if findDeadCard(n1,c)
+                score_addon += scale[3]
+            end
+            if card_equal(blockCard,c)
+                score_addon -= 21
+            end
+            (allowPrint&4 != 0) && println("-->",score_addon)
+
+            if score_addon != 0
+                score += score_addon
+            else
+                score += is_Tst(c)&&!has_T(c) ? 1 : 0
+            end
+
+            if score >= max[1][1]# || ((score == max[1]) && (rand((0:rcnt)) == 0 ))
+                max[2][1] = max[1][1]
+                max[2][2] = max[1][2]
+                
+                max[1][1] = score
+                max[1][2] = c
+            else
+                if score >= max[2][1]
+                    max[2][1] = score
+                    max[2][2] = c
+                end
+            end
+            (allowPrint&4 != 0) && println("max=",(max[1][1],ts(max[1][2])),"Card(",ts(c),") , score = $score ,cnt = $cnt, suitcnt = $scnt",scale)
         end
-        (allowPrint&4 != 0) && println("--max=",(max[1][1],ts(max[1][2])),"---Card (",ts(c),") cnt = $cnt, suit-cnt = $scnt, score = $score ",scale)
     end 
 end
 
@@ -5321,7 +5332,7 @@ function on_key_down(g)
             nameSynced = false
         end
         
-        if tusacState == tsSdealCards && g.keyboard.return
+        if tusacState == tsSdealCards && g.keyboard.enter
             doCardDeal()
             gsStateMachine(gsOrganize)
         elseif tusacState == tsSdealCards
@@ -5362,7 +5373,7 @@ function on_key_down(g)
                 setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2], 14, FaceDown)
             end
         elseif tusacState == tsHistory
-            if g.keyboard.return || g.keyboard.M
+            if g.keyboard.enter || g.keyboard.M
                 println("Exiting History mode @",HistCnt)
                 resize!(HISTORY,HistCnt)
                 l = length(HISTORY)
