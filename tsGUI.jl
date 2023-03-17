@@ -1,4 +1,4 @@
-version = "0.62e"
+version = "0.62f"
 using GameZero
 using Sockets
 using Random: randperm
@@ -30,7 +30,7 @@ cardScale = 80
 wantFaceDown = true
 noGUI_list = [true,true,true,true]
 PlayerList =[plBot1,plBot1,plBot1,plBot1]
-aiTrait = [10,10,10,10]
+aiTrait = [11,10,11,10]
 aiType = [5,5,5,5]
 #aiType = [3,3,3,3]
 GUIname = Vector{Any}(undef,4)
