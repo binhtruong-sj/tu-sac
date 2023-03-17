@@ -1,5 +1,6 @@
 using GameZero
 using Sockets
+checkServer = false
 
 function clientSetup(serverURL,port)
     println((serverURL,port))
@@ -11,35 +12,36 @@ function clientSetup(serverURL,port)
     end
 end
 
+if checkServer
+    serverURL = "baobinh.tplinkdns.com"
+    port = 11031
+    myIP = ip"192.168.0.65"
 
-serverURL = "baobinh.tplinkdns.com"
-port = 11031
-myIP = ip"192.168.0.65"
+    nw = clientSetup(serverURL,port)
+    if nw != 0
+        rf = open("tsGUI.jl","r")
+        myversion = readline(rf)
 
-nw = clientSetup(serverURL,port)
-if nw != 0
-    rf = open("tsGUI.jl","r")
-    myversion = readline(rf)
+        p = split(myversion,"=")
+        if p[1] == "version "
+            println(nw,myversion)
+            global rmversion = readline(nw)
+            if rmversion > myversion
+            close(rf)
+            println("New update is available, downloading ...")
+                wf = open("tsGUI.jl","w")
+                while true
 
-    p = split(myversion,"=")
-    if p[1] == "version "
-        println(nw,myversion)
-        global rmversion = readline(nw)
-        if rmversion > myversion
-	    close(rf)
-	    println("New update is available, downloading ...")
-            wf = open("tsGUI.jl","w")
-            while true
-
-                aline = readline(nw)
-                if aline == "#=Binh-end=#"
-                    break
+                    aline = readline(nw)
+                    if aline == "#=Binh-end=#"
+                        break
+                    end
+                    println(wf,aline)
                 end
-                println(wf,aline)
+                close(wf)
+                close(nw)
+                println(" done")
             end
-            close(wf)
-            close(nw)
-            println(" done")
         end
     end
 end
