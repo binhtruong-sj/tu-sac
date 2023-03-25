@@ -5611,7 +5611,7 @@ function gpHandleMatch2Card(pcard,player)
         end
     end
    
-    if !(win || pass) && defensive(player,rc)
+    if !(win || pass) && length(rc) > 0 && defensive(player,rc)
         rc = []
     end
     if length(rc) > 0
@@ -5669,7 +5669,7 @@ function gpHandleMatch1or2Card(pcard,player)
             rc = []
         end
     end
-    if !(win || pass) && defensive(player,rc)
+    if !(win || pass) && length(rc) > 0 && defensive(player,rc)
         rc = []
     end
     if length(rc) > 0
