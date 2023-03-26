@@ -1,4 +1,4 @@
-version = "0.62f"
+version = "0.62g"
 using GameZero
 using Sockets
 using Random: randperm
@@ -31,7 +31,7 @@ function setPlayerName(root,trait)
     return n
 end
 elevateDead = 0
-pointTrig = 11
+pointTrig = 6
 defensiveFlag = true
 boDoiCard = 0
 oneTime = true
@@ -1266,6 +1266,7 @@ function RESET1()
     global HISTORY = []
     global waitForHuman = false
     global handPic
+    global baiThuiPic
     global pBseat = []
     global points = zeros(Int8,4)
 
@@ -2502,14 +2503,27 @@ function updateWinnerPic(np)
     end
     winnerPic.pos = tableGridXY(gx, gy)
 end
+
+function updateBaiThuiPic(np)
+    if noGUI()
+        return
+    end
+    println("Bai-thuipic ",np)
+    if np == 0
+        gx,gy = 20,20
+    else
+        gx,gy = 10, 10
+    end
+    baiThuiPic.pos = tableGridXY(gx, gy)
+end
+
 function removeCards!(array, n, cards)
     if haBai
         return
     end
-        
     m = n == 0 ? 0 : playerMaptoGUI(n)
   #  if length(cards) != 4 && length(cards) > 0
-   #     trackPlayedCards(n,cards,false)
+  #     trackPlayedCards(n,cards,false)
   #  end
     for c in cards
         if histFile
@@ -4168,6 +4182,7 @@ function gsStateMachine(gameActions)
                         global handPic = Actor("hand.jpeg")
                         global winnerPic = Actor("winner2.png")
                     end
+                    global baiThuiPic = Actor("bomb.jpeg")
                     global errorPic = TextActor("?!?","asapvar",font_size=fontSize*4,colorant="white")
                     bodoiStr = "Bo-Doi"
                     boDoiPic[1]  = TextActor(bodoiStr,"asapvar",font_size=fontSize,color=[0,0,0,0])
@@ -4178,6 +4193,7 @@ function gsStateMachine(gameActions)
                 updateHandPic(prevWinner)
                 updateWinnerPic(0)
                 updateErrorPic(0)
+                updateBaiThuiPic(0)
                 for i in 1:4
                     updateboDoiPic(i,false)
                 end
@@ -4334,6 +4350,7 @@ global GUI_ready = false
                             atest = popfirst!(testList)
                             println("=========TEST===> ",atest)
                             readRFNsearch!(RF,atest[1])
+                            glIterationCnt = parse(Int,SubString(atest[1],2)) << 2
                             mode_human = atest[2]
                             gameDeck = TuSacCards.ordered_deck()
                             a,tstMoveArray,RFaline = readRFDeck(RF,gameDeck)
@@ -4375,6 +4392,7 @@ global GUI_ready = false
             else
                 openAllCard = true
                 println("Bai Thui: DECK=",(gameDeckArray,gameDeck))
+                updateBaiThuiPic(1)
                 gameOver(5)
                 glIterationCnt += 50
             end
@@ -4922,15 +4940,23 @@ function chk2(playCard;win=false)
     end
     return []
 end
-function findDeadCard(player,chkcard)
-    for c in union(deadCards[player],all_assets[player], 
-                   all_discards[player],all_discards[prevPlayer(player)])
+function findDeadCard(player,chkcard,mode=0)
+    if mode == dc_target
+        ar = union(deadCards[player],all_assets[player], 
+        all_discards[player],all_discards[prevPlayer(player)])
+    else
+        ar = union(deadCards[player],
+        all_discards[player],all_discards[prevPlayer(player)])
+    end
+    for c in ar
         if card_equal(c,chkcard) 
             return true 
         end
     end
     return false
 end
+const dc_next =1
+const dc_target = 0
 function findWorstCard(Singles,player; findDead = false)
     singles = copy(Singles)
     max = -1.0
@@ -4953,7 +4979,7 @@ function findWorstCard(Singles,player; findDead = false)
             m = cnt/4 + scnt/4
         end
         n1 = nextPlayer(player)
-        if findDead && findDeadCard(n1,s)
+        if findDead && findDeadCard(n1,s,dc_next)
             m = 100
         end
         if m > max
@@ -5076,7 +5102,7 @@ function gpHandlePlay1Card(player)
     pairsCnt = length(allPairs[1])+length(allPairs[2])+length(allPairs[3])
 
     if okToPrint(4)
-        println("===================================================")
+        println("$player=$glIterationCnt==================================================")
         print("---Player:",player)
         print("  ---aiType:",aiType[player])
         print("  ---suitCnt:",playerSuitsCnt)
@@ -5102,7 +5128,7 @@ function gpHandlePlay1Card(player)
         ts_ss(chotPs)
         print(" -- c-need=")
         ts_s(c_need)
-        println("===================================================")
+        println("$player==$glIterationCnt=================================================")
         n1 = nextPlayer(player)
         print("Dead:")
         ts_s(deadCards[n1])
@@ -5206,11 +5232,9 @@ function find(card,list)
     for c in list
         print((ts(card),ts(c)),"+")
         if card_equal(c,card)
-            println("=")
             return true
         end
     end
-    println(".")
     return false
 end
 elevateDead= [0,0,0,0]
@@ -5277,7 +5301,7 @@ function processList!(max,list,player,sc,blockCard,sc1)
             okToPrint(4) && print("-->",score_addon)
 
             n1 = nextPlayer(player)
-            if find(c,nDead[player])|| findDeadCard(n1,c) 
+            if find(c,nDead[player])|| findDeadCard(n1,c,dc_next) 
                 score_addon += elevateDead[player] > 0 ? scale[3]<<6 : scale[3]
             end
            
@@ -5361,12 +5385,12 @@ function list(s1,s2,p1,p2,p3)
     end
     return r
 end
-function deadCardsExist(player,list = false)
+function deadCardsExist(player,mode=dc_target,list = false)
     cnt = 0
     trashCnt = length(singles)+length(missTs)+length(miss1s)+length(chot1s)
     lst = []
     for a in union(singles,chot1s)
-            if !is_T(a) &&findDeadCard(player,a) 
+            if !is_T(a) &&findDeadCard(player,a,mode) 
                 push!(lst,a)
                 cnt += 1
             end
@@ -5374,7 +5398,7 @@ function deadCardsExist(player,list = false)
     for arr in (missTs,miss1s)
         for ar in arr
             for a in ar
-                if !is_T(a) && findDeadCard(player,a) 
+                if !is_T(a) && findDeadCard(player,a,mode) 
                     push!(lst,a)
                     cnt += 1
                 end
@@ -5420,7 +5444,7 @@ function defensive(player,rc)
 
       
         nDead[player] =[]
-        println("DDD=",(player,r1,r2),( 2*points+kpoints),pointTrig)
+        println("DDD($player)=",(ts(rc)),(r1,r2),( 2*points+kpoints),pointTrig)
     
         if (r1 == player && r2 == 0) || (r1+r2)==0
             elevateDead[player] = 0
@@ -5430,17 +5454,16 @@ function defensive(player,rc)
         
         if r2 == 0
             n1 = nextPlayer(player)
-            cnt,la = deadCardsExist(n1,true)
         else
-            cnt = 0
-            la = []
+            n1 = r2
         end
-        
+        cnt,la = deadCardsExist(n1,dc_next,true)
+
         n2 = t
-        cnt1,lb = deadCardsExist(n2,true)
+        cnt1,lb = deadCardsExist(n2,dc_target,true)
 
         cnt += cnt1
-        if cnt == 0 && r2 == 0
+        if cnt == 0  && r1 != player && r2 != player
             println("*********************************")
             println("*          PASSED               *")
             println("*********************************")
@@ -5455,7 +5478,7 @@ function defensive(player,rc)
             println("*********************************")
             println("*          CNT = $cnt $cnt1             *")
             println("*********************************")
-            println("player,r1,r2",(player,r1,r2),tss(nDead[player]))
+            println("player,r1,r2",(player,r1,r2,n1,n2),tss(nDead[player]))
         
             for c in nDead[player]
                 for r in rc
@@ -5528,7 +5551,7 @@ function passOnMatchLastTrash(pcard,cards)
                 okToPrint(0x44) && println("mp,p1,p2=",(mpCnt,p1Cnt,p2Cnt))
                 if  mpCnt < p1Cnt && mpCnt < p2Cnt
                     okToPrint(0x44) && println("passed! mp,p1,p2=",(mpCnt,p1Cnt,p2Cnt))
-                    return true #true
+                    return true,win
                 else 
                     if card_equal(mp,pcard)
                         win = true
@@ -5578,8 +5601,8 @@ function gpHandleMatch2Card(pcard,player)
     end
     win = pass = false
 
-    if  maxAssets() > 6 && length(rc) == 2 && (aiTrait[player] & 0x1 ) > 0 &&
-         !turnOffBoDoi 
+    if  maxAssets() > 6 && length(rc) == 2 && (aiTrait[player] 
+        & 0x1 ) > 0 && !turnOffBoDoi 
          pass,win = passOnMatchLastTrash(pcard,rc)
         if pass
             if okToPrint(0x4)
@@ -5617,7 +5640,6 @@ function gpHandleMatch2Card(pcard,player)
     if length(rc) > 0
         coDoiCards = []
     end
-    okToPrint(0x4) && println("rc=",tss(rc))
     return rc
 
 end
@@ -5675,8 +5697,6 @@ function gpHandleMatch1or2Card(pcard,player)
     if length(rc) > 0
         coDoiCards = []
     end
-    okToPrint(0x4) && println("rc=",tss(rc))
-
     return rc
 end
 
@@ -5740,7 +5760,7 @@ function hgamePlay(
     rQ[gpPlayer] = []
     if okToPrint(0x8)
         print(
-            "======================player",
+            "$glPrevPlayer==$glIterationCnt====================player",
             gpPlayer,
             " Action=",
             actionStr(gpAction))
@@ -5922,6 +5942,7 @@ function restartGameAt(loc)
 
     if GUI
         updateWinnerPic(0)
+        updateBaiThuiPic(0)
         for i in 1:4
             updateboDoiPic(i,false)
         end
@@ -6521,6 +6542,8 @@ function draw(g)
         draw(handPic)
         draw(winnerPic)
         draw(errorPic)
+        draw(baiThuiPic)
+
         if length(coins) > 0
             for c in coins
                 draw(c)
