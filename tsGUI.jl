@@ -1,4 +1,4 @@
-version = "0.62h"
+version = "0.62j"
 using GameZero
 using Sockets
 using Random: randperm
@@ -3475,16 +3475,18 @@ function gamePlay1Iteration()
      
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
         if okToPrint(0x8)
-            println("coDoiPlayer,coDoicards,winner,r,length", (coDoiPlayer,coDoiCards,winner,r,length(r)))
+            println("nPlayer,coDoiPlayer,coDoicards,winner,r,length", (nPlayer,coDoiPlayer,ts(coDoiCards),winner,ts(r),length(r)))
         end
-        Doi = (length(r) == 2 && coDoiPlayer >0) ? card_equal(coDoiCards[1],r[1]) && card_equal(coDoiCards[2],r[2]) : false
+        Doi = length(r) == 2 && card_equal(r[1],r[2])
+        # (length(r) == 2 && coDoiPlayer >0) ? card_equal(coDoiCards[1],r[1]) && card_equal(coDoiCards[2],r[2]) : false
 
         if glNeedaPlayCard
             removeCards!(all_hands, glPrevPlayer, glNewCard)
             All_hand_updateActor(glNewCard[1],!FaceDown)
         end
-
-        if coDoiPlayer > 0 && length(coDoiCards) > 0 && !Doi && !suit(r,glNewCard) && !isMoreTrash(coDoiCards,all_hands[coDoiPlayer])
+        if (coDoiPlayer > 0 && coDoiPlayer != nPlayer) ||
+            (coDoiPlayer > 0 && length(coDoiCards) > 0 && !Doi && 
+            !suit(r,glNewCard) && !isMoreTrash(coDoiCards,all_hands[coDoiPlayer]))
             if okToPrint(0xc)
                 println("Player", coDoiPlayer, " bo doi ", ts(coDoiCards))
             end
