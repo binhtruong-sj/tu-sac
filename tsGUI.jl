@@ -1,4 +1,4 @@
-version = "0.62j"
+version = "0.62k"
 using GameZero
 using Sockets
 using Random: randperm
@@ -48,7 +48,7 @@ cardScale = 80
 wantFaceDown = true
 noGUI_list = [true,true,true,true]
 PlayerList =[plBot1,plBot1,plBot1,plBot1]
-aiTrait = [11,10,11,10]
+aiTrait = [22,20,22,20]
 aiType = [5,5,5,5]
 #aiType = [3,3,3,3]
 GUIname = Vector{Any}(undef,4)
@@ -942,7 +942,7 @@ function config(fn)
             elseif keyword == "aitrait"
                     aiTrait = [parse(Int,rl[2]),parse(Int,rl[3]),parse(Int,rl[4]),parse(Int,rl[5])]
                     for i in 1:4
-                        aiType[i] = aiTrait[i] >> 1
+                        aiType[i] = aiTrait[i] >> 2
                     end
                     
                     println("AITYPE=", (aiTrait,aiType))
@@ -2479,7 +2479,6 @@ function updateBaiThuiPic(np)
     if noGUI()
         return
     end
-    println("Bai-thuipic ",np)
     if np == 0
         gx,gy = 20,20
     else
@@ -3655,10 +3654,12 @@ function pointsCalc(winner)
                 replayHistory(l2,HISTORY[l2],1,0x2)
                # restartGameAt(l1)
             end
+            if reduceFile || histFile
             println("echo \"# ($l1\" > .a; cat $hfName >> .a; mv .a gtt.txt",echoOption)
             println("cp $hfName  gtt.txt",echoOption)
             println((reduceFile,histFile))
             readline()
+            end
         end
     elseif stopOn == "bodoi" && ((restartedGameOnStop)||
         (maximum(boDoiPlayers) > 0 &&
@@ -3681,7 +3682,7 @@ function pointsCalc(winner)
             restartedGameonStop = true
             global boDoiPlayers = zeros(UInt8,4)
             global turnOffBoDoi = true
-            if reduceFile
+            if reduceFile 
                 l2 = ( glIterationCnt >> 2 ) 
                 replayHistory(1,HISTORY[1],  1,0x1,l1)
                 replayHistory(l1,HISTORY[l1],1,0x4)
@@ -4346,7 +4347,7 @@ global GUI_ready = false
                                 end
                                 println("aiTrait = ", aiTrait)
 
-                                global aiType = aiTrait/2
+                                global aiType = aiTrait >> 2
                                 global playerName = setPlayerName(playerRootName,aiTrait)
                                 setGUIname(playerName)
                             end
@@ -5425,11 +5426,10 @@ function defensive(player,rc)
 
         global defensiveTrigger
         if defensiveTrigger[1] == 0 && r1 > 0
-            println("TTT-trigger ",glIterationCnt)
             defensiveTrigger = [glIterationCnt >> 2, r1,r2]
         end
         nDead[player] =[]
-        println("DDD($player)=",(ts(rc)),(r1,r2),( 2*points+kpoints,pointTrig),defensiveTrigger)
+        okToPrint(0x20) && println("DDD($player)=",(ts(rc)),(r1,r2),( 2*points+kpoints,pointTrig),defensiveTrigger)
     
         if (r1 == player && r2 == 0) || (r1+r2)==0
             elevateDead[player] = 0
@@ -5449,9 +5449,11 @@ function defensive(player,rc)
 
         cnt += cnt1
         if cnt == 0  && r1 != player && r2 != player
+            if okToPrint(0x20)
             println("*********************************")
             println("*          PASSED               *")
             println("*********************************")
+            end
             return true
         else
             for c in la
@@ -5460,17 +5462,21 @@ function defensive(player,rc)
             for c in lb
                 push!(nDead[player],c)
             end
+            if okToPrint(0x20)
+
             println("*********************************")
             println("*          CNT = $cnt $cnt1             *")
             println("*********************************")
             println("player,r1,r2",(player,r1,r2,n1,n2),tss(nDead[player]))
-        
+            end
             for c in nDead[player]
                 for r in rc
                     if card_equal(r,c)
+                        if okToPrint(0x20)
                         println("*********************************")
                         println("*          PASSED               *")
                         println("*********************************")
+                        end
                         return true
                     end
                 end
@@ -5487,7 +5493,7 @@ end
 2: pass
 1: may-be, if not defensive, the true
 """
-function passOnMatchLastTrash(pcard,cards)
+function passOnMatchLastTrash(pcard,cards,flag)
     if length(cards) == 0
         return 2,false,false
     end
@@ -5509,16 +5515,19 @@ function passOnMatchLastTrash(pcard,cards)
                         if lc1s ==1
                             return 0,true,true
                         else
-                            return 2,false,true
+                            n = flag ? 2 : 0
+                            return n,false,true
                         end
                     else
                         #lmt or lm1s
                         #after this no trash
-                        return 1,false,true
+                        n = flag ? 1 : 0
+                        return n,false,true
                     end
                 end
             else 
-                return 1,false,true
+                n = flag ? 1 : 0
+                return n,false,true
             end
         end
     else
@@ -5541,17 +5550,18 @@ function gpHandleMatch2Card(pcard,player)
     if okToPrint(0x8)
         println("Played(1)-",ts(card1)," Played(2)-",ts(card2))
     end
-    pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc)
-
+    boDoiFlag = (aiTrait[player] & 0x1 ) != 0
+    pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc,boDoiFlag)
+    mydefensiveFlag = defensiveFlag && ((aiTrait[player] & 0x2) != 0)
     if win 
         return rc
     elseif pass > 2
         rc = []
     else
-        if !defensiveFlag && pass >0
+        if !mydefensiveFlag && pass >0
             rc = []
         end
-        if length(rc) > 0 && defensive(player,rc)
+        if length(rc) > 0 && mydefensiveFlag &&defensive(player,rc)
             rc = []
         end
  
@@ -5582,7 +5592,9 @@ function gpHandleMatch1or2Card(pcard,player)
     if okToPrint(0x8)
         println("Played(1)-",ts(card1)," Played(2)-",ts(card2))
     end
-    pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc)
+    boDoiFlag = (aiTrait[player] & 0x1) != 0
+
+    pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc,boDoiFlag)
 
     if win 
         return rc
