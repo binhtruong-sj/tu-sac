@@ -1,4 +1,4 @@
-version = "0.62n"
+version = "0.62p"
 using GameZero
 using Sockets
 using Random: randperm
@@ -96,7 +96,7 @@ prevCard = 0x10
 prevN1 = 0
 noSingle = [false,false,false,false]
 okToPrint(a) = allowPrint&a != 0
-cmpPoints(playerSuitsCnt, khui,kpoints) = playerSuitsCnt.*khui+kpoints
+cmpPoints(playerSuitsCnt, khui,kpoints) = playerSuitsCnt.*khui+kpoints.*khui
 pointTrig = cmpPoints(2,1,6)
 println("Default Trigger-score = ",pointTrig)
 module nwAPI
@@ -1230,7 +1230,7 @@ function gameOver(n)
         global gameStart = false
         updateWinnerPic(n)
         if histFile
-            println(HF,"# Winner = ",playerName[n])
+            println(HF,"#, Winner = ",playerName[n])
         end
     else
         GUI && sleep(.5)
@@ -1598,7 +1598,7 @@ function readRFDeck(RF,gameDeck)
     a = [P0_hand,P1_hand,P2_hand,P3_hand,P0_assets,P1_assets,P2_assets,P3_assets,P0_discards,P1_discards,P2_discards,P3_discards,gameDeck]
     return a,tstMoveArray,RFaline
 end
-cond(R) =  R == "(\"M\"" || R == "#" || R == "D" || R == "S" || R == "K" 
+cond(R) = SubString(R,1,1) == "#" || R == "(\"M\"" || R == "#" || R == "D" || R == "S" || R == "K" 
 function readRFNsearch!(RF,index)
     global RFstates, RF, RFaline
     println(RFaline)
@@ -1612,7 +1612,8 @@ function readRFNsearch!(RF,index)
                     break
                 end
             end
-        elseif RFstates[1] != "#"
+        elseif SubString(RFstates[1],1,1) != "#"
+            println("CMP=",(RFstates[1],index))
             if RFstates[1] == index
                 println("Found index ",RFaline)
                 break
@@ -1937,6 +1938,9 @@ end
     card_equal(a,b): a,b are the same card (same color, and same kind)
 """
 card_equal(a, b) = a&0xFC == b&0xFC
+
+isPair(r) = length(r) == 2 ? card_equal(r[1],r[2]) : false
+isTripple(r) = length(r) == 3 ? card_equal(r[1],r[2]) : false
 
 global currenAction
 
@@ -3336,7 +3340,8 @@ function gamePlay1Iteration()
     end
     if(rem(glIterationCnt,4) ==0)
         glIterationCnt += 1
-        okToPrint(0x40) && println(cmpPoints(playerSuitsCnt, khui, kpoints)," ",pointTrig)
+        l = glIterationCnt >> 2 
+        okToPrint(0x40) && println("I:",l," ",cmpPoints(playerSuitsCnt, khui, kpoints)," ",pointTrig)
         
         if okToPrint(0x8)
             println(
@@ -3597,7 +3602,7 @@ function gamePlay1Iteration()
                 if card_equal(r[1],r[2])
                     kpoints[nPlayer] += 3
                     if histFile
-                        println(HF,"# p$nPlayer kpoint=",kpoints[nPlayer])
+                        println(HF,"#, p$nPlayer kpoint=",kpoints[nPlayer])
                     end
                     khui[nPlayer] = 2
                 else
@@ -3642,7 +3647,7 @@ function pointsCalc(winner)
     end
     println("DefensiveTrigger=",defensiveTrigger)
     if histFile
-        println(HF,"# - - ",(astr))
+        println(HF,"#, - - ",(astr))
     end
     global restartedGameOnStop
     if stopOn == "defensive"
@@ -4990,7 +4995,9 @@ function gpHandlePlay1Card(player)
 
     if highValue[player] != 0
         println("decided previously: rc=",ts(highValue[player]))
-        return highValue[player]
+        rc = highValue[player] 
+        highValue[player] = 0
+        return rc
     end
     saveSingles = copy(singles)
     if okToPrint(4)
@@ -5506,7 +5513,9 @@ function defensive(pc,player,rc)
     global oneTime,elevateDead,nDead
         global highValue
         highValue[player] = 0
-        if (length(rc) == 3 && card_equal(rc[1],rc[2])) ||
+        rcisPair = isPair(rc)
+
+        if isTripple(rc) ||
             ( cFlag && length(rc) == 2 && !card_equal(rc[1],rc[2])) 
             return false
         end
@@ -5525,6 +5534,9 @@ function defensive(pc,player,rc)
             return false
         end
         elevateDead[player] = t = r1
+        if prevPlayer(player) == t && rcisPair
+            return false
+        end
       #  if true || getCardFromDeck
         if t > 0 && findDeadCard(t,pc,dc_target)  == false
             ci = cardInfo(pc,player)
@@ -5854,8 +5866,6 @@ function hgamePlay(
             coDoiCards = []
         end
     end
-    println(ts(coDoiCards)," ",coDoiPlayer)
-
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
         rReady[gpPlayer] = true
