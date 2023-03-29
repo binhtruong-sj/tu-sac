@@ -1,4 +1,4 @@
-version = "0.62m"
+version = "0.62n"
 using GameZero
 using Sockets
 using Random: randperm
@@ -3112,7 +3112,7 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
         return
     end
     if okToPrint(0x8)
-        println("AT whoWin ",(n1c,n2c,n3c,n4c,glNewCard),(t1Player,t2Player,t3Player,t4Player),
+        println("AT whoWin ",((ts(n1c),ts(n2c),ts(n3c),ts(n4c)),glNewCard),(t1Player,t2Player,t3Player,t4Player),
         (PlayerList[t1Player],PlayerList[t2Player],
         PlayerList[t3Player],PlayerList[t4Player])
         )
@@ -3336,8 +3336,8 @@ function gamePlay1Iteration()
     end
     if(rem(glIterationCnt,4) ==0)
         glIterationCnt += 1
-        okToPrint(0x40) && println(cmpPoints(playerSuitsCnt, khui, kpoints)
-        )
+        okToPrint(0x40) && println(cmpPoints(playerSuitsCnt, khui, kpoints)," ",pointTrig)
+        
         if okToPrint(0x8)
             println(
                 "^+++"," dfT=",defensiveTrigger," ++++++++++++++++++++++",
@@ -3478,7 +3478,6 @@ function gamePlay1Iteration()
             return
         end
         FaceDown = !isGameOver()
-     
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
         if okToPrint(0x8)
             println("nPlayer,coDoiPlayer,coDoicards,winner,r,length", (nPlayer,coDoiPlayer,ts(coDoiCards),winner,ts(r),length(r)))
@@ -5842,15 +5841,21 @@ function hgamePlay(
         if length(cards) == 3
             print("--------->>>>")
         end
-        print(cards," --  ")
-        ts_s(cards)
+        println("rc=",cards," --  ", ts(cards))
+        println(ts(coDoiCards)," ",coDoiPlayer)
     end
-    if length(coDoiCards) == 2 && coDoiPlayer == 0# && length(cards) == 0
+    if length(coDoiCards) == 2 && coDoiPlayer == 0 
+         if( length(cards) != 2 || !card_equal(cards[1],cards[2]))
             if okToPrint(0x8)
                 println("POSS BODOI ", (gpPlayer, ts(coDoiCards)),ts(cards))
             end
             coDoiPlayer = gpPlayer
+        else
+            coDoiCards = []
+        end
     end
+    println(ts(coDoiCards)," ",coDoiPlayer)
+
     if !playerIsHuman(gpPlayer)
         rQ[gpPlayer]=cards
         rReady[gpPlayer] = true
