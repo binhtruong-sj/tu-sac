@@ -1,4 +1,4 @@
-version = "0.62p"
+version = "0.62q"
 using GameZero
 using Sockets
 using Random: randperm
@@ -23,7 +23,7 @@ const bProbability = 2
 const bMax = 3
 const bAI = 4
 
-function setPlayerName(root,trait) 
+function setPlayerName(root,trait)
     n = ["","","",""]
     for i in 1:4
         n[i] = string(root[i],trait[i])
@@ -32,7 +32,10 @@ function setPlayerName(root,trait)
 end
 cFlag = true
 gameTrashCnt = gameTrashCntLatest = zeros(Int8,4)
+gameEnd = 1
+openAllCard = false
 
+FaceDown = false
 match = 0
 emBaiLimit = zeros(Int8,4)
 gameWin = [0,0,0,0]
@@ -40,7 +43,8 @@ elevateDead = 0
 defensiveFlag = true
 boDoiCard = 0
 oneTime = true
-emBaiTrigger = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
+emBaiTrigger = [[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0]]
+capturedCPoints = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
 reduceFile = false
 bodoiInspect = false
 upgradeAllowPrint = 0
@@ -133,7 +137,7 @@ module nwAPI
         allowPrint = 1
     end
     function nw_sendToMaster(id,connection,arr)
-        
+
     l = length(arr)
     if okToPrint(0x1)
         println(id,"  nwAPI Send to Master DATA=",(arr,l))
@@ -193,7 +197,7 @@ module nwAPI
         if okToPrint(0x1)
         println(" nwAPI received from Player ", id )
         end
-    
+
         while true
             arr = read(connection,bytecnt)
             if length(arr) != bytecnt
@@ -225,7 +229,7 @@ module nwAPI
         if okToPrint(0x1)
         println("nwAPISend to Player ",id,"  DATA=",(arr,l))
         end
-        
+
         if l != 112
             s_arr = Vector{UInt8}(undef,8)
             s_arr[1] = l
@@ -236,13 +240,13 @@ module nwAPI
             println("Data = ",s_arr)
             end
         else
-        
+
             s_arr = Vector{UInt8}(undef,l)
             for (i,a) in enumerate(arr)
                 s_arr[i] = a
             end
         end
-        
+
         write(connection,s_arr)
     end
     function nw_getR(nw)
@@ -680,7 +684,7 @@ module TuSacCards
         grank = "Tstcxpm"
         gcolor = "TVDX"
         tohand = []
-   
+
         aStrToVal(s) =
         (UInt8(find1(s[1], grank)) << 2) | (UInt8(find1(s[2], gcolor) - 1) << 5)
         str = split(aline, ' ')
@@ -696,7 +700,7 @@ module TuSacCards
                     break
                 end
             end
-           
+
         end
         return tohand
     end
@@ -877,7 +881,7 @@ GUILoc[12,1],GUILoc[12,2],GUILoc[12,3] = 2,16,5
 GUILoc[13,1],GUILoc[13,2],GUILoc[13,3] = 9,8,10
 gamew = 0
 function correctFileName(name)
-    name1 = string(name,".txt") 
+    name1 = string(name,".txt")
     tname = [string("tests/",name),string("tests/",name1),name,name1,]
     for n in tname
         isfile(n) && return true,n
@@ -914,12 +918,12 @@ function config(fn)
             elseif lcCmp(keyword,"upgradeAllowprint")
                 upgradeAllowPrint = parse(Int,rl[2])
             elseif lcCmp(keyword,"aiTune")
-                aiFilename = rl[2]  
+                aiFilename = rl[2]
             elseif lcCmp(keyword,"defensiveFlag")
                 defensiveFlag = rl[2] == "true"
             elseif lcCmp(keyword,"stopOn")
                 stopOn = rl[2]
-                println(stopOn)     
+                println(stopOn)
             elseif lcCmp(keyword,"BoDoiInspect")
                 bodoiInspect = rl[2] == "true"
             elseif lcCmp(keyword,"emBai")
@@ -933,9 +937,9 @@ function config(fn)
             elseif lcCmp(keyword,"mode")
                 mode = rl[2] == "client" ? m_client : rl[2] == "server" ? m_server : m_standalone
             elseif lcCmp(keyword,"human")
-                mode_human = rl[2] == "true" 
+                mode_human = rl[2] == "true"
             elseif lcCmp(keyword,"cFlag")
-                    mode_human = rl[2] == "true" 
+                    mode_human = rl[2] == "true"
             elseif lcCmp(keyword,"trial")
                     trial = rl[2] == "true"
             elseif lcCmp(keyword,"showLocation")
@@ -949,13 +953,13 @@ function config(fn)
                 x = parse(Int,rl[3])
                 y = parse(Int,rl[4])
                 GUILoc[arrayIndex,1] += x
-                GUILoc[arrayIndex,2] += y 
+                GUILoc[arrayIndex,2] += y
             elseif lcCmp(keyword,"aiTrait")
                     aiTrait = [parse(Int,rl[2]),parse(Int,rl[3]),parse(Int,rl[4]),parse(Int,rl[5])]
                     for i in 1:4
                         aiType[i] = aiTrait[i] .>> 2
                     end
-                    
+
                     println("AITYPE=", (aiTrait,aiType))
                     playerName = setPlayerName(playerRootName,aiTrait)
             elseif lcCmp(keyword,"server")
@@ -989,15 +993,15 @@ function config(fn)
                 println(rl[2]," = ",myPlayer)
                 end
             elseif lcCmp(keyword,"macOS")
-                macOS = rl[2] == "true"   
-          
+                macOS = rl[2] == "true"
+
             elseif lcCmp(keyword,"reduceFile")
                 reduceFile = true
             elseif lcCmp(keyword,"histFile")
                 histFile = true
                 histFILENAME = rl[2]
                 global hfName = nextFileName(histFILENAME,chFilenameStr)
-           
+
             elseif lcCmp(keyword,"reloadFile")
                 reloadFile = true
                 iname = rl[2]
@@ -1059,8 +1063,9 @@ function config(fn)
     if mode == m_standalone && mode_human
         PlayerList[myPlayer] = plHuman
     end
-    if length(stopOn) == 0 && !GUI
-        histFile = false
+    if length(stopOn) == 0 && !GUI && histFile
+            println("Are you sure to save to histFile, ctrl-c to cancel")
+            readline()
     end
     if reduceFile
         histFile = false
@@ -1097,7 +1102,7 @@ function nextFileName(fn,filenameStr)
                 found = true
                 break
             end
-        
+
         end
         if found
             rfilename = nfn
@@ -1105,10 +1110,10 @@ function nextFileName(fn,filenameStr)
             rfilename = string(fn[1:n-1],1,fn[n+1:end])
         end
     end
-  
+
     return rfilename
 end
-    
+
 prevWinner = 1
 
 
@@ -1215,7 +1220,7 @@ else
     WIDTH = div(gameW * 16, 9)
     realHEIGHT = div(HEIGHT, 1)
     realWIDTH = div(WIDTH, 1)
-    
+
 end
 boDoi = 0
 bp1BoDoiCnt = 0
@@ -1227,11 +1232,14 @@ const cardGrid = 4
 const gameDeckMinimum = 9
 eRrestart = 1
 const eRcheck = 2
-gameEnd = 1
+
 function gameOver(n)
     global eRrestart
     global gameEnd, baiThui
     global FaceDown = false
+    if n == 0
+     #   gameEnd = 0
+    end
     GUI && print('\u0007')
     if 0 < n < 5
         global gameStart = false
@@ -1249,7 +1257,7 @@ function gameOver(n)
     gameEnd = n == 5 ?  prevWinner : n
 
     replayHistory(0)
-    
+
 end
 isGameOver() = gameEnd > 0
 
@@ -1265,10 +1273,12 @@ function RESET1()
         global currentPlayer = 1
     else
         global currentPlayer = gameEnd
-     
-    end
-    global emBaiTrigger = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
 
+    end
+    global openAllCard = false
+
+    global emBaiTrigger = [[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0]]
+    global capturedCPoints = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
     global gameTrashCnt = gameTrashCntLatest = zeros(Int8,4)
     global oneTime = true
     global gameStart = false
@@ -1411,7 +1421,7 @@ function RESET3()
     fc_actors = []
     big_actors = []
     mapToActors =[]
-    
+
     mask = zeros(UInt8, 112)
     if noGUI() == false
         actors, fc_actors, big_actors, mapToActors = setupActorgameDeck()
@@ -1484,7 +1494,7 @@ function setupDrawDeck(deck::TuSacCards.Deck, gx, gy, xDim, faceDown = false,ass
             px = x + (modified_cardXdim * rem(i-1, xDim))
             py = y + (modified_cardYdim * div(i-1, xDim))
             if assets
-                adxt = all_assets_marks[card.value] == 2 ? adx << 1 : adx 
+                adxt = all_assets_marks[card.value] == 2 ? adx << 1 : adx
                 dx = all_assets_marks[card.value] == 1 ? 0 : dx + adxt
             end
             if  rem(i-1, xDim) == 0
@@ -1564,7 +1574,7 @@ function readRFDeck(RF,gameDeck)
     P1_discards = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
     P2_discards = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
     P3_discards = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
-    
+
     gameDeck = TuSacCards.Deck(TuSacCards.removeCards!(gameDeck,readline(RF)))
     tstMoveArray = []
     local found = false
@@ -1578,7 +1588,7 @@ function readRFDeck(RF,gameDeck)
         elseif RFp[1] == "D" || RFp[1] == "S"|| RFp[1] == "K"
                 found = true
                 a =[]
-                if RFp[1] == "D" 
+                if RFp[1] == "D"
                     for i in 3:length(RFp)
                         push!(a,TuSacCards.cardStrToVal(RFp[i]))
                     end
@@ -1598,7 +1608,7 @@ function readRFDeck(RF,gameDeck)
                     global  points = a[5:8]
                 end
         else
-            if found 
+            if found
                 break
             end
         end
@@ -1607,7 +1617,7 @@ function readRFDeck(RF,gameDeck)
     a = [P0_hand,P1_hand,P2_hand,P3_hand,P0_assets,P1_assets,P2_assets,P3_assets,P0_discards,P1_discards,P2_discards,P3_discards,gameDeck]
     return a,tstMoveArray,RFaline
 end
-cond(R) = SubString(R,1,1) == "#" || R == "(\"M\"" || R == "#" || R == "D" || R == "S" || R == "K" 
+cond(R) = SubString(R,1,1) == "#" || R == "(\"M\"" || R == "#" || R == "D" || R == "S" || R == "K"
 function readRFNsearch!(RF,index)
     global RFstates, RF, RFaline
     println(RFaline)
@@ -1684,7 +1694,7 @@ function tusacDeal(winner)
     setupDrawDeck(playerD_hand, GUILoc[4,1], GUILoc[4,2], GUILoc[4,3],  FaceDown)
     setupDrawDeck(playerC_hand, GUILoc[3,1], GUILoc[3,2], GUILoc[3,3],  FaceDown)
 
-    
+
     global playerA_discards = TuSacCards.Deck(pop!(gameDeck, 1))
     global playerB_discards = TuSacCards.Deck(pop!(gameDeck, 1))
     global playerC_discards = TuSacCards.Deck(pop!(gameDeck, 1))
@@ -1740,7 +1750,7 @@ end
 """
     ts(a)
 
-to print out card of 1 element or an array 
+to print out card of 1 element or an array
 """
 function ts(a)
     st = ""
@@ -1771,7 +1781,7 @@ function tss(g,s1=" ",s2=", ")
                 st = string(st,_ts(b),s1)
             end
         end
-        if i != length(g) 
+        if i != length(g)
             st = string(st,s2)
         end
     end
@@ -1860,11 +1870,11 @@ to_m(v) = v&0xf3 | 0xc
 
 
 is_xpm(v) = 0x1d > (v & 0x1C) > 0x13
-function suitCards(v) 
+function suitCards(v)
     if is_Tst(v)
         return [is_s(v) ? to_t(v) : to_s(v)]
     elseif is_xpm(v)
-        if is_x(v) 
+        if is_x(v)
             return [to_p(v),to_m(v)]
         elseif is_p(v)
             return [to_x(v),to_m(v)]
@@ -1890,7 +1900,7 @@ end
 inSuit(a, b) = (a & 0xc != 0) && (b & 0xc != 0) && (a & 0xF0 == b & 0xF0)
 
 """
-    inStrictSuit(a,b): check if a,b is in the same sequence cards (Tst) 
+    inStrictSuit(a,b): check if a,b is in the same sequence cards (Tst)
     or (xpm) or chot, but remove equal cards
 """
 inAllStrictSuit(a,b) = !card_equal(a,b) && ((inSuit(a,b)) || (is_c(a) && is_c(b)))
@@ -1969,7 +1979,7 @@ function printAllInfo()
     end
     println("gameDeck")
     println(gameDeck)
-    println("glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,(ts),BIGcard",(glIterationCnt>>2,glNeedaPlayCard,glPrevPlayer,ActiveCard,ts(tsActiveCard),BIGcard )) 
+    println("glIterationCnt,glNeedaPlayCard,glPrevPlayer,ActiveCard,(ts),BIGcard",(glIterationCnt>>2,glNeedaPlayCard,glPrevPlayer,ActiveCard,ts(tsActiveCard),BIGcard ))
     println()
 end
 
@@ -1998,7 +2008,7 @@ function checksum()
 end
 
 
-      
+
 """
     c_scan(p,s)
         scan/c_analyzer all the chots. Return singles.
@@ -2075,11 +2085,11 @@ function c_analyzer(ap,as,ci)
             push!(new_s,c)
         end
     end
-    if match_s 
-        
+    if match_s
+
         new_p = deepcopy(p)
         added_p =[ci,ci]
-        push!(new_p[1],added_p)  
+        push!(new_p[1],added_p)
         ct = c_scan(new_p,new_s, win = true)
     else
         match_p = false
@@ -2097,14 +2107,14 @@ function c_analyzer(ap,as,ci)
                 end
             end
         end
-        if match_p 
+        if match_p
             l = length(newPair) - 1
             push!(new_p[l],newPair)
         else
             push!(new_s,ci)
         end
         ct = c_scan(new_p,new_s, win = true)
-    end     
+    end
     return ct
 end
 """
@@ -2177,7 +2187,7 @@ function c_match(p,s,n,cmd;win=false)
         end
         for ap in p[1]
             if card_equal(ap[1],n)
-                if length(rt)==3 
+                if length(rt)==3
                     rt = ap
                 elseif length(rt) == 1 && cmd == gpCheckMatch2
                     rt = ap
@@ -2202,7 +2212,7 @@ function c_match(p,s,n,cmd;win=false)
     if okToPrint(0x8)
         println("c-match-result = ", rt); ts_s(rt)
     end
-   
+
     return rt
 end
 
@@ -2254,7 +2264,7 @@ function scanCards(inHand, silence = false, psc = false)
         else
             if pairOf > 0
                 if is_T(prevAcard)
-                   
+
                     if pairOf == 1 # Tuong pair of 2 is not really a pair
                         push!(rhand, prevAcard) # put 1 back for rescan
                     else
@@ -2277,7 +2287,7 @@ function scanCards(inHand, silence = false, psc = false)
         prevAcard = acard
     end
     if pairOf > 0
-      
+
         push!(pairs, prevAcard)
         push!(allPairs[pairOf], pairs)
         if is_c(pairs[1])
@@ -2287,7 +2297,7 @@ function scanCards(inHand, silence = false, psc = false)
         push!(rhand, prevAcard)
     end
     #rhand is the non-pair cards remaining after scan for pairs
-   
+
     ahand = rhand
     if length(ahand) > 0
         acard = ahand[1]
@@ -2295,7 +2305,7 @@ function scanCards(inHand, silence = false, psc = false)
         prev2card = acard
         prev3card = acard
         seqCnt = 0
-     
+
         for i = 2:length(ahand)
             acard = ahand[i]
             if inSuit(prevAcard, acard)
@@ -2349,7 +2359,7 @@ function scanCards(inHand, silence = false, psc = false)
             if is_T(mc)
                 push!(missT, ar)
             else
-               
+
                 push!(miss1, ar)
                 if is_T(prev2card)
                     Tuong[prev2card&3+1] = 1
@@ -2384,7 +2394,7 @@ function scanCards(inHand, silence = false, psc = false)
         ts_s(cTrsh)
     end
     chot1 = cTrsh
-    if okToPrint(0x8) && silence == false 
+    if okToPrint(0x8) && silence == false
         print("allPairs= ")
         for ps in allPairs
             for p in ps
@@ -2456,7 +2466,7 @@ end
 function  updateboDoiPic(np,on)
     cp = playerMaptoGUI(np)
 
-    if on 
+    if on
         if cp == 1
             gx,gy = 7, 14
         elseif cp == 2
@@ -2477,7 +2487,7 @@ function updateWinnerPic(np)
         return
     end
     cp = playerMaptoGUI(np)
-    
+
     if np == 0
         gx,gy = 20,20
     elseif cp == 1
@@ -2526,7 +2536,7 @@ function removeCards!(array, n, cards)
                 end
             end
         end
-        if n == 0 
+        if n == 0
             return
         end
         if okToPrint(0x8)
@@ -2675,10 +2685,8 @@ function replayHistory(index,a=[],sel=1,fileMode=0,testP = 0, card=boDoiCard)
             deadCards = circshift(deadCards,s)
             kpoints = circshift(kpoints,s)
             points = circshift(points,s)
-            println("HERE")
-            global aiTrait = circshift(aiTrait,s)
-            global aiType = aiTrait .>> 2
-            println("AITRAIT=",(aiTrait,aiType))
+           # global aiTrait = circshift(aiTrait,s)
+          #  global aiType = aiTrait .>> 2
             global playerName = setPlayerName(playerRootName,aiTrait)
             setGUIname(playerName)
         end
@@ -2760,6 +2768,7 @@ nextPlayer(p) = p == 4 ? 1 : p + 1
 prevPlayer(p) = p == 1 ? 4 : p - 1
 
 function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
+    okToPrint(0x20) && println(" pc=",ts(card),(n1,ts(r1)),(n2,ts(r2)),(n3,ts(r3)),(n4,ts(r4)))
     function getl!(card, n, r)
         if okToPrint(0x8)
             println("Getl ------ n=",n)
@@ -2785,7 +2794,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
 
         win = false
         if l > 0 || is_T(card)# only check winner that has matched cards
-            if length(r) == 3 && is_T(card) && is_T(r[1]) && is_T(r[2]) && is_T(r[3]) 
+            if length(r) == 3 && is_T(card) && is_T(r[1]) && is_T(r[2]) && is_T(r[3])
                 l = 4
             end
             for e in r
@@ -2803,7 +2812,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                 end
             end
             ll = length(ss) + length(cs) + length(m1s) + length(mts)
-          
+
             if oll < ll
                 if okToPrint(0x8)
                     println("whowin, chking more Trsh:",
@@ -2814,7 +2823,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
                 r = []
             end
             if ll == 0
-              
+
                 l = 4
                 win = true
             end
@@ -2840,7 +2849,7 @@ function whoWinRound(card, play4,  n1, r1, n2, r2, n3, r3, n4, r4)
     if !play4 && (l2 == 1)
             l2 = 0
     end
-    if w1 
+    if w1
         w2 = false
         w3 = false
         w4 = false
@@ -2932,7 +2941,7 @@ function getData_all_discard_assets()
             TuSacCards.getDeckArray(playerD_discards),
             TuSacCards.getDeckArray(playerA_discards),
         )
-    
+
         push!(
             all_assets,
             TuSacCards.getDeckArray(playerB_assets),
@@ -2948,7 +2957,7 @@ function getData_all_discard_assets()
             TuSacCards.getDeckArray(playerA_discards),
             TuSacCards.getDeckArray(playerB_discards),
         )
-    
+
         push!(
             all_assets,
             TuSacCards.getDeckArray(playerC_assets),
@@ -2964,7 +2973,7 @@ function getData_all_discard_assets()
             TuSacCards.getDeckArray(playerB_discards),
             TuSacCards.getDeckArray(playerC_discards),
         )
-    
+
         push!(
             all_assets,
             TuSacCards.getDeckArray(playerD_assets),
@@ -3000,7 +3009,7 @@ function getData_all_hands()
             TuSacCards.getDeckArray(playerD_hand),
             TuSacCards.getDeckArray(playerA_hand),
         )
-    
+
     elseif adjustPlayer == 3
         push!(
             all_hands,
@@ -3009,7 +3018,7 @@ function getData_all_hands()
             TuSacCards.getDeckArray(playerA_hand),
             TuSacCards.getDeckArray(playerB_hand),
         )
-    
+
     elseif adjustPlayer == 2
         push!(
             all_hands,
@@ -3018,7 +3027,7 @@ function getData_all_hands()
             TuSacCards.getDeckArray(playerB_hand),
             TuSacCards.getDeckArray(playerC_hand),
         )
-    
+
     end
 end
 
@@ -3044,7 +3053,7 @@ function toDeck(arr,brr,crr,d)
         i += 1
         end
     end
-    
+
     return r
 end
 function popchk!(array)
@@ -3055,7 +3064,7 @@ end
 
 function trackPlayedCards(player,card,deck)
     global prevCard, prevN1, prevDeck
-    if card_equal(card[1],prevCard) || 
+    if card_equal(card[1],prevCard) ||
         (length(card)> 1 &&
         ((inSuit(prevCard,card[1]) && inSuit(prevCard,card[2])) ||
           (is_c(prevCard) && is_c(card[1]) && is_c(card[2]))))
@@ -3064,7 +3073,7 @@ function trackPlayedCards(player,card,deck)
             popchk!(deadCards[n2])
         elseif n2 == player
             if(length(card) > 1) && card_equal(card[1],card[2])
-                popchk!(deadCards[prevN1])    
+                popchk!(deadCards[prevN1])
             end
         elseif prevN1 != 0
             popchk!(deadCards[prevN1])
@@ -3093,7 +3102,7 @@ function trackPlayedCards(player,card,deck)
         push!(deadCards[n1],c)
         n2 = nextPlayer(n1)
         push!(deadCards[n2],c)
-    
+
         prevCard = card
         prevN1 = player
         prevDeck = deck
@@ -3234,12 +3243,13 @@ function gamePlay1Iteration()
     global glIterationCnt,bbox1
     global t1Player,t2Player,t3Player,t4Player
     global n1c,n2c,n3c,n4c,coDoiPlayer, coDoiCards,GUI_busy
+    global FaceDown
 
     function checkHumanResponse(player,cmd)
         global GUI_ready, GUI_array, humanIsGUI,rQ, rReady
         if playerIsHuman(player)
             if humanIsGUI()
-                if GUI_ready 
+                if GUI_ready
                     if cmd == glNeedaPlayCard && length(GUI_array) == 0
                         return false
                     end
@@ -3301,7 +3311,7 @@ function gamePlay1Iteration()
                     rl = split(grp,',')
                     gs = [parse(Int,rl[1]),parse(Int,rl[2]),
                     parse(Int,rl[3]),parse(Int,rl[4])]
-        
+
                     outA = [gs[1],gs[2],gs[3],gs[4]]
                     push!(aArray,outA)
                 end
@@ -3350,18 +3360,20 @@ function gamePlay1Iteration()
             rReady[gpPlayer] = true
             rQ[gpPlayer] = final_card
             return
-        end 
+        end
     end
 
     if(rem(glIterationCnt,4) ==0)
         glIterationCnt += 1
-        l = glIterationCnt >> 2 
-        okToPrint(0x40) && println("I:",l," ",cmpPoints(playerSuitsCnt, khui, kpoints)," ",emBaiLimit,emBaiTrigger)
-        
+        l = glIterationCnt >> 2
+        okToPrint(0x40) && println("I:",l," cP",cmpPoints(playerSuitsCnt, khui, kpoints),
+        " eBL",emBaiLimit," eBT",emBaiTrigger,"\n\t\tcCPs",capturedCPoints,"\ttrshCnt:",
+        gameTrashCntLatest,"\n",(wantFaceDown,FaceDown,gameEnd))
+
         if okToPrint(0x8)
             println(
-                "^+++"," dfT=",emBaiTrigger[glPrevPlayer]," ++++++++++++++++++++++",
-                ((glIterationCnt-1)>>2, glNeedaPlayCard, glPrevPlayer), 
+                "^+++"," eBT=",emBaiTrigger[glPrevPlayer]," ++++++++++++++++++++++",
+                ((glIterationCnt-1)>>2, glNeedaPlayCard, glPrevPlayer),
                 " Bo-doi=",(boDoiPlayers),
                 "+++++++++++++++++++++++++++",
             )
@@ -3387,7 +3399,7 @@ function gamePlay1Iteration()
             )
         end
     elseif(rem(glIterationCnt,4) ==1)
-        FaceDown = !isGameOver()
+        global FaceDown = !isGameOver()
 
         glIterationCnt += 1
         global CardFromDeck = !glNeedaPlayCard
@@ -3424,7 +3436,7 @@ function gamePlay1Iteration()
            # trackPlayedCards(currentPlayer,glNewCard,true)
         end
     elseif(rem(glIterationCnt,4) ==2)
-        
+
         t1Player = nextPlayer(glPrevPlayer)
         glIterationCnt += 1
         hgamePlay(
@@ -3482,10 +3494,10 @@ function gamePlay1Iteration()
             )
         end
     else
-        
+
         glIterationCnt += 1
         aplayer = t1Player
-        
+
         gotHumanInput = true
         for i in  1:4
             if !(glNeedaPlayCard && (i == 4 ))
@@ -3497,7 +3509,7 @@ function gamePlay1Iteration()
             glIterationCnt -= 1
             return
         end
-        FaceDown = !isGameOver()
+        global FaceDown = !isGameOver()
         nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
         if okToPrint(0x8)
             println("nPlayer,coDoiPlayer,coDoicards,winner,r,length", (nPlayer,coDoiPlayer,ts(coDoiCards),winner,ts(r),length(r)))
@@ -3510,7 +3522,7 @@ function gamePlay1Iteration()
             All_hand_updateActor(glNewCard[1],!FaceDown)
         end
         if (coDoiPlayer > 0 && coDoiPlayer != nPlayer) ||
-            (coDoiPlayer > 0 && length(coDoiCards) > 0 && !Doi && 
+            (coDoiPlayer > 0 && length(coDoiCards) > 0 && !Doi &&
             !suit(r,glNewCard) && !isMoreTrash(coDoiCards,all_hands[coDoiPlayer]))
             if okToPrint(0xc)
                 println("Player", coDoiPlayer, " bo doi ", ts(coDoiCards))
@@ -3522,7 +3534,7 @@ function gamePlay1Iteration()
             addCards!(all_assets,0,coDoiPlayer,coDoiCards)
             all_assets_marks[coDoiCards[1]] = 1
             all_assets_marks[coDoiCards[2]] = 2
-           #= 
+           #=
             if boDoiPlayers[coDoiPlayer] == 0
                 boDoiPlayers[coDoiPlayer] = glIterationCnt
                 global boDoiCard = coDoiCards[1]
@@ -3647,27 +3659,27 @@ function pointsCalc(winner)
     end
     astr = Vector{String}(undef,4)
     firstBDP = 0
-    eB = [0,0,0]
+    eB = [111,111,111,111]
     for p in 1:4
-        if emBaiTrigger[p][1] > 0
-            if eB[1] == 0  || (( emBaiTrigger[p][1] != 0 ) && eB[1] > emBaiTrigger[p][1] )
-                eB[1] =  emBaiTrigger[p][1] 
-            end
-            if eB[2] == 0
-                if emBaiTrigger[p][2] > 0
-                    eB[2] = emBaiTrigger[p][2]
+        if emBaiTrigger[p][1] >= 0
+            if emBaiTrigger[p][2] > 0
+                old = eB[emBaiTrigger[p][2]] 
+                if emBaiTrigger[p][1] < old 
+                    eB[emBaiTrigger[p][2]] = emBaiTrigger[p][1]
                 end
             end
-            if eB[3] == 0
-                if emBaiTrigger[p][3] > 0
-                    eB[3] = emBaiTrigger[p][3]
+            if emBaiTrigger[p][3] > 0
+                old = eB[emBaiTrigger[p][3]] 
+                if emBaiTrigger[p][1] < old 
+                    eB[emBaiTrigger[p][3]] = emBaiTrigger[p][1]
                 end
             end
         end
     end
+
     for p in 1:4
-        if eB[1] > 0 && (eB[2] == p || eB[3] == p)
-            astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p],", T",(gameTrashCnt[p],gameTrashCntLatest[p])," E",eB[1])
+        if eB[p] != 111
+            astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p],", T",(gameTrashCnt[p],gameTrashCntLatest[p])," E",eB[p])
         else
             astr[p] = string(playerName[p]," ",pots[p],"+",kpoints[p],", T",(gameTrashCnt[p],gameTrashCntLatest[p]))
         end
@@ -3682,7 +3694,7 @@ function pointsCalc(winner)
 
     matchAve = sum(pots)/match
     println("MatchCnt=",match," Match ave = ",matchAve, " ",gameWin,(pots./gameWin))
-    println("emBaiTrigger=",(emBaiTrigger, eB)," Game Iteration=", glIterationCnt >> 2)
+    println("emBaiTrigger=",emBaiTrigger," sEBT", eB,", cCp",capturedCPoints," Game Iteration=", glIterationCnt >> 2)
     if winner > 4
         setGUIname(astr)
         return
@@ -3691,14 +3703,14 @@ function pointsCalc(winner)
         println(HF,"#, - - ",(astr))
     end
     global restartedGameOnStop
-    if  (kpoints[winner] & 1 ) != 0 
+    if  (kpoints[winner] & 1 ) != 0
         println("Bad Error, final point is an even number")
         exit()
     end
     if stopOn == "defensive"
-        if  (kpoints[winner] & 1 ) != 0 
+        if  (kpoints[winner] & 1 ) != 0
             if reduceFile
-                l2 = ( glIterationCnt >> 2 ) 
+                l2 = ( glIterationCnt >> 2 )
 
                 replayHistory(1,HISTORY[1],  1,0x1,l1)
                 replayHistory(l2,HISTORY[l2],1,0x2)
@@ -3707,14 +3719,14 @@ function pointsCalc(winner)
 
             end
 
-        elseif emBaiTrigger[player][1] > 0 && oneTime && 
+        elseif emBaiTrigger[player][1] >= 0 && oneTime &&
             emBaiTrigger[player][1] != glIterationCnt >> 2
             println("TRIGGERS = ",(emBaiTrigger)," Iteration = ",glIterationCnt >>2 )
             println("c-Points =",
             cmpPoints(playerSuitsCnt, khui,kpoints))
             global oneTime = false
-            l1 = emBaiTrigger[player][1] 
-            l2 = ( glIterationCnt >> 2 ) 
+            l1 = emBaiTrigger[player][1]
+            l2 = ( glIterationCnt >> 2 )
             global boDoiCard = 0
             firstBDP
 
@@ -3734,6 +3746,25 @@ function pointsCalc(winner)
             readline()
             end
         end
+    elseif stopOn == "cases"
+        m,mi = findmin(gameTrashCnt)
+        case = (winner != mi && winner == 1 ) ||
+               ( eB[winner] != 111)
+        if case && reduceFile
+            l1 = eB[winner]
+            l2 = l1 + 4
+            l3 = glIterationCnt >> 2
+            if reduceFile
+                replayHistory(1,HISTORY[1],  1,0x1,l1)
+                replayHistory(l1,HISTORY[l1],1,0x4)
+                replayHistory(l2,HISTORY[l2],1,0x4)
+                replayHistory(l3,HISTORY[l3],1,0x2)
+            elseif histFile
+
+            end
+
+            readline()
+        end
     elseif stopOn == "bodoi" && ((restartedGameOnStop)||
         (maximum(boDoiPlayers) > 0 &&
                 maximum(boDoiPlayers)  != glIterationCnt>>2))
@@ -3744,7 +3775,7 @@ function pointsCalc(winner)
         if restartedGameOnStop
             restartedGameonStop = false
         end
-        
+
         if  maximum(boDoiPlayers) > 0
             if turnOffBoDoi
                 println("HUH, not sure")
@@ -3755,8 +3786,8 @@ function pointsCalc(winner)
             restartedGameonStop = true
             global boDoiPlayers = zeros(UInt8,4)
             global turnOffBoDoi = true
-            if reduceFile 
-                l2 = ( glIterationCnt >> 2 ) 
+            if reduceFile
+                l2 = ( glIterationCnt >> 2 )
                 replayHistory(1,HISTORY[1],  1,0x1,l1)
                 replayHistory(l1,HISTORY[l1],1,0x4)
                 replayHistory(l2,HISTORY[l2],1,0x2)
@@ -3765,7 +3796,7 @@ function pointsCalc(winner)
             l = l1 - 1
             println("echo \"# ($l\" > .a; cat $hfName >> .a; mv .a gtt.txt",echoOption)
             println("cp $hfName  gtt.txt",echoOption)
-        
+
         else
             pv = pW == pBD ? 1 : 0
             cv = winner == pBD ? 1 : 0
@@ -3778,7 +3809,7 @@ function pointsCalc(winner)
             println("Delta-Sum = ", deltaSum, ",(bD/no-bD) $deltaSumN / $deltaSumP")
             global turnOffBoDoi = false
             global allowPrint = stickyAllowPrint
-            if bodoiInspect 
+            if bodoiInspect
                 readline()
             end
         end
@@ -3798,7 +3829,6 @@ function setGUIname(nameStr)
         GUIname[4].pos = tableGridXY(1,1)
     end
 end
-global openAllCard = false
 function SNAPSHOT(testnum=0)
     global tstMoveArray
     currentStates =glIterationCnt>>2,glNeedaPlayCard,glPrevPlayer,tsActiveCard,ActiveCard,BIGcard,ts(tsActiveCard),aiTrait[1],aiTrait[2],aiTrait[3],aiTrait[4], 0
@@ -3835,7 +3865,7 @@ function SNAPSHOT(testnum=0)
                     if moveArray[i,1] != 0
                         astr = string(ts(moveArray[i,1]),moveArray[i,2],moveArray[i,3])
                         moveArray[i,1] = 0
-                        if length(tstMoveArray)<i 
+                        if length(tstMoveArray)<i
                             println("Failed : test #",testnum)
                         else
                             if isTestFile && astr != tstMoveArray[i]
@@ -3891,7 +3921,7 @@ end
 
 function playersSyncDeck!(deck::TuSacCards.Deck)
     global myPlayer
-   
+
     isMaster = (PlayerList[myPlayer] != plSocket)
     if okToPrint(0x1)
         println("in SYNC DECK MY player", myPlayer)
@@ -3975,7 +4005,7 @@ function networkInit()
         end
         so = connectedPlayer
         updated = false
-        
+
         for s in 1:4
             if !(addingPlayer && s != newPlayer)
                 if PlayerList[s] == plSocket
@@ -4136,14 +4166,14 @@ function testCntPlayCard()
 end
 function acquireCntPlayedCard()
     global PlayedCardCnt = zeros(UInt8,32)
-    for as in all_assets 
-        for c in as 
-            updateCntPlayedCard(c) 
+    for as in all_assets
+        for c in as
+            updateCntPlayedCard(c)
         end
     end
     for as in all_discards
-        for c in as 
-            updateCntPlayedCard(c) 
+        for c in as
+            updateCntPlayedCard(c)
         end
     end
 end
@@ -4186,7 +4216,7 @@ states  --
         players and getting data back asyncronously.
 
     6) The iteration will continue until the gameDeck become too small (9) or somebody win.
-    
+
 """
 function gsStateMachine(gameActions)
     global tusacState, all_discards, all_assets,prevWinner,haBai,coins,saveI
@@ -4197,7 +4227,7 @@ function gsStateMachine(gameActions)
     global playerA_assets,playerB_assets,playerC_assets,playerD_assets,khapMatDau
     global kpoints,khui,myPlayer,loadPlayer,isTestFile,tstMoveArray,PlayedCardCnt, points
    prevIter = 0
-   
+
     #=
     Code for state machine --????
     ---------------------------------
@@ -4220,7 +4250,7 @@ function gsStateMachine(gameActions)
                 gameDeck = TuSacCards.ordered_deck()
             end
             if noGUI() == false
-                FaceDown = wantFaceDown
+                global FaceDown = wantFaceDown
                 deckState = setupDrawDeck(gameDeck,GUILoc[13,1], GUILoc[13,2], 14 ,  FaceDown)
                 if coldStart
                     if (GENERIC == 1)
@@ -4262,7 +4292,7 @@ function gsStateMachine(gameActions)
                 randomShuffle()
                 #autoHumanShuffle(rand(4:8))
             end
-           
+
             if mode != m_standalone && noGUI()
                 anewDeck = deepcopy(playersSyncDeck!(gameDeck))
                 pop!(gameDeck,112)
@@ -4337,7 +4367,7 @@ global GUI_ready = false
                             end
                         elseif length(ps) == 3
                             kpoints[i] += 3
-               
+
                             if is_T(ps[1])
                                 points[i] -= 3
                             end
@@ -4387,7 +4417,7 @@ global GUI_ready = false
             khui = [1,1,1,1]
             khapMatDau = zeros(4)
             coldStart = false
-            FaceDown = wantFaceDown
+            global FaceDown = wantFaceDown
             ActiveCard = 0
             saveI = 0
             all_assets = []
@@ -4399,7 +4429,7 @@ global GUI_ready = false
                 global atest
                 global tstMoveArray
                 if  isGameOver() == false
-                    if  isTestFile && rem(glIterationCnt,4) == 0 
+                    if  isTestFile && rem(glIterationCnt,4) == 0
                         if length(testList) > 0
                             atest = popfirst!(testList)
                             println("=========TEST===> ",atest)
@@ -4426,8 +4456,8 @@ global GUI_ready = false
                             replayHistory(-1,a,playerSel)
                             acquireCntPlayedCard()
                         else
-                            if isTestFile 
-                                isTestFile = false 
+                            if isTestFile
+                                isTestFile = false
                                 if !trial
                                     exit()
                                 end
@@ -4454,7 +4484,7 @@ global GUI_ready = false
             end
         end
     elseif tusacState == tsRestart
-     
+
     end
 end
 """
@@ -4578,7 +4608,7 @@ function autoHumanShuffle(n)
 end
 
 gsStateMachine(gsSetupGame)
-    
+
 function RESET2()
     global BIGcard = 0
     global ActiveCard = 0
@@ -4671,19 +4701,19 @@ function on_mouse_move(g, pos)
         println((x,y,reverseTableGridXY(x,y)))
     end
     if tusacState == tsSdealCards
-    
+
         if myPlayer == shufflePlayer
             mouseDirOnBox(x, y, deckState)
         end
     elseif tusacState > tsSstartGame && tusacState <= tsGameLoop
-        
+
         boxId, cardIndx = withinBoxes(x, y, boxes)
         if boxId > 0
             if isGameOver() == false && boxId > 9
                 boxId = 0
             end
         end
-     
+
         if boxId == 0
             v = 0
         elseif boxId == 1
@@ -4735,7 +4765,7 @@ function mouseDownOnBox(x, y, boxState)
         up = div(up, div(cardYdim, 2))
         loc = div((boxState[3] - boxState[1]), modified_cardXdim) * dy + dx + 1
     end
- 
+
     return loc, up
 end
 
@@ -4828,7 +4858,7 @@ function chk1(playCard)
                 return
             end
         end
-    
+
         for mt in missTs
             m = missPiece(mt[1], mt[2])
             print(" (mT)", ts(m))
@@ -4843,7 +4873,7 @@ function chk1(playCard)
                 return
             end
         end
-    
+
         for m1 in miss1s
             m = missPiece(m1[1], m1[2])
             print(" (m1)", (length(miss1s),ts(playCard),ts(m)))
@@ -4998,15 +5028,15 @@ function chk2(playCard;win=false)
 end
 function findDeadCard(player,chkcard,mode=0)
     if mode == dc_target
-        ar = union(deadCards[player],all_assets[player], 
+        ar = union(deadCards[player],all_assets[player],
         all_discards[player],all_discards[prevPlayer(player)])
     else
         ar = union(deadCards[player],
         all_discards[player],all_discards[prevPlayer(player)])
     end
     for c in ar
-        if card_equal(c,chkcard) 
-            return true 
+        if card_equal(c,chkcard)
+            return true
         end
     end
     return false
@@ -5057,7 +5087,7 @@ highValue = zeros(UInt8,4)
 function gpHandlePlay1Card(player)
     gl = glIterationCnt >> 2
 
-   
+
     saveSingles = copy(singles)
     if okToPrint(4)
         print("save-singles= ")
@@ -5070,7 +5100,7 @@ function gpHandlePlay1Card(player)
         if okToPrint(4)
         println("khapMatDau=",khapMatDau[player])
         end
-        if khapMatDau[player] < 2 && (length(allPairs[2]) > 0 || length(allPairs[3]) > 0 ) 
+        if khapMatDau[player] < 2 && (length(allPairs[2]) > 0 || length(allPairs[3]) > 0 )
             found = false
             for m1 in miss1s
                 ap = missPiece(m1[1],m1[2])
@@ -5130,7 +5160,7 @@ function gpHandlePlay1Card(player)
                                     if card_equal(missPiece(m1[1],m1[2]),p[1])
                                         okToPrint(4) && println("--found Saki------>",(length(p),ts(p[1])))
                                         push!(singles,p[1],p[2])
-                                    
+
                                     end
                                 end
                             else
@@ -5205,9 +5235,9 @@ function gpHandlePlay1Card(player)
     end
     if length(singles) > 0
     #    ts_s(singles)
-        if aiType[player] == bRANDOM 
+        if aiType[player] == bRANDOM
             card = singles[rand(1:length(singles))]
-        elseif aiType[player] == bProbability 
+        elseif aiType[player] == bProbability
             pickArray = []
             for s in singles
                 cnt = getCntPlayedCard(s)
@@ -5236,10 +5266,10 @@ function gpHandlePlay1Card(player)
                 okToPrint(4) && println("Index to Scale Array = ",l)
                 scaleData = scaleArray[l]
 
-                if length(saveSingles) > 1# && trashCnt < 4 
-                    blockCard = matchSingle[player] 
+                if length(saveSingles) > 1# && trashCnt < 4
+                    blockCard = matchSingle[player]
                     matchSingle[player] = 0
-                else 
+                else
                     blockCard = 0
                 end
                 max = [[-1000,10],[-1000,10]]
@@ -5250,7 +5280,7 @@ function gpHandlePlay1Card(player)
                 processList!(max,miss1_1,player,scaleData[1],0,scaleData[4])
                 processList!(max,miss1_2,player,scaleData[2],0,scaleData[4])
                 processList!(max,missTs,player,scaleData[3],0,scaleData[4])
-            
+
                 processList!(max,saveSingles,player,scaleData[4],blockCard,scaleData[4])
                 if length(chotPs[1]) == 0 && length(chot1s) == 1
                     processList!(max,chot1s,player,scaleData[5],0,scaleData[4])
@@ -5312,18 +5342,18 @@ elevateDead= [0,0,0,0]
     get count for a card: card that has been played/discard or in own hand
 """
 function cntCard(c,player,own=false)
- 
+
     cnt = getCntPlayedCard(c)
     #print(cnt," ")
     cnt += CntCardinList(c,all_hands[player])
-   
+
     #print(cnt," ")
 
     cArr = suitCards(c)
     scnt = 0
     for sc in cArr
         if !is_T(sc) && !card_equal(sc,c)
-            scnt += getCntPlayedCard(sc) 
+            scnt += getCntPlayedCard(sc)
             scnt += CntCardinList(sc,all_hands[player])
         end
     end
@@ -5352,7 +5382,7 @@ function  cardInfo(card,player)
     #println("player:$player, Trash:",(player,ts(pTrsh)))
     max = maxc = 0
     for c in pTrsh
-        if  !is_T(c) && !card_equal(c,card) 
+        if  !is_T(c) && !card_equal(c,card)
             global cnt = cntCard(c,player,true)
             if cnt > max
                 max = cnt
@@ -5367,7 +5397,7 @@ end
 function processList!(max,list,player,sc,blockCard,sc1)
     finalList = []
     for l in list
-        push!(finalList,l) 
+        push!(finalList,l)
     end
     finalList = finalList[randperm(length(finalList))]
     rcnt = 0
@@ -5376,7 +5406,7 @@ function processList!(max,list,player,sc,blockCard,sc1)
         if length(cs) > 1
             mc = missPiece(cs[1],cs[2])
             dead = getCntPlayedCard(mc) > 2
-            if dead 
+            if dead
                 scale = sc1
             end
         end
@@ -5387,7 +5417,7 @@ function processList!(max,list,player,sc,blockCard,sc1)
             scnt = 0
             found = false
             for sc in cArr
-                a = getCntPlayedCard(sc) 
+                a = getCntPlayedCard(sc)
                 if a == 4
                     a = 12
                 end
@@ -5397,10 +5427,10 @@ function processList!(max,list,player,sc,blockCard,sc1)
                     found = true
                 end
             end
-            if found 
+            if found
                 scnt = -1
             end
-           
+
             score = cnt*scale[1] + scnt*scale[2] + scale[4]
             if c == highValue[player]
                 score += score + 500
@@ -5408,13 +5438,13 @@ function processList!(max,list,player,sc,blockCard,sc1)
             end
             score_addon = 0
             for p2 in allPairs[1]
-                if card_equal(p2[1],c) 
+                if card_equal(p2[1],c)
                     score_addon -= 4*(scale[1])
                     break
                 end
             end
-            
-            okToPrint(4) && print("score=$score addon-->",score_addon) 
+
+            okToPrint(4) && print("score=$score addon-->",score_addon)
 
             if cardHasPair(c)
                 score_addon += is_Tst(c)&& !has_T(c) ? 0 : -3*scale[2]
@@ -5425,17 +5455,17 @@ function processList!(max,list,player,sc,blockCard,sc1)
                 end
             end
             okToPrint(4) && print("-->",score_addon)
-            if emBaiTrigger[player][1] > 0
+            if emBaiTrigger[player][1] >= 0
                 n2 = emBaiTrigger[player][2]
-                df =  findDeadCard(n2,c,dc_next) 
-            else 
+                df =  findDeadCard(n2,c,dc_target)
+            else
                 df = false
             end
              n1 = nextPlayer(player)
             if CardinList(c,nDead[player])|| findDeadCard(n1,c,dc_next) || df
                 score_addon += elevateDead[player] > 0 ? scale[3]<<6 : scale[3]
             end
-           
+
             okToPrint(4) && println("-->",score_addon)
 
             if score_addon != 0
@@ -5447,7 +5477,7 @@ function processList!(max,list,player,sc,blockCard,sc1)
             if score >= max[1][1]# || ((score == max[1]) && (rand((0:rcnt)) == 0 ))
                 max[2][1] = max[1][1]
                 max[2][2] = max[1][2]
-                
+
                 max[1][1] = score
                 max[1][2] = c
             else
@@ -5458,7 +5488,7 @@ function processList!(max,list,player,sc,blockCard,sc1)
             end
             (okToPrint(4)) && println("max=",(max[1][1],ts(max[1][2])),"Card(",ts(c),") , score = $score ,cnt = $cnt, suitcnt = $scnt",scale)
         end
-    end 
+    end
 end
 
 #=
@@ -5471,19 +5501,19 @@ end
 
 =#
 function processSCard(max,list,player)
-  
+
 end
 
 function processM1Card(max,list,player)
-  
+
 end
 
 function processM2Card(max,list,player)
-  
+
 end
 
 function processCCard(max,list,player)
-  
+
 end
 
 function randomSampling(c,list)
@@ -5532,12 +5562,12 @@ function deadCardsExist(player,mode=dc_target,list = false)
     pTrsh = playerTrash(player)
 
     for a in pTrsh
-            if !is_T(a) &&findDeadCard(player,a,mode) 
+            if !is_T(a) &&findDeadCard(player,a,mode)
                 push!(lst,a)
                 cnt += 1
             end
     end
-   
+
     if list
         return cnt,lst
     else
@@ -5546,22 +5576,33 @@ function deadCardsExist(player,mode=dc_target,list = false)
 end
 
 function beDefensive(player)
+    global capturedCPoints
     tps =cmpPoints(playerSuitsCnt, khui,kpoints)
-    okToPrint(0x20) &&  println("c=",tps)
     max,t = findmax(tps)
-    if max >= emBaiLimit[player] 
+    if max >= emBaiLimit[player]
         tps[t] = 0
         max2,t2 = findmax(tps)
         delta = max - max2
         if delta*4 > max
             t2 = 0
         end
-        
-        if player == t && t2 != 0
-            return t2,t # so that t2 will be checked
-        else
-            return t,t2
+     
+        if player == t
+            t = t2
+            t2 = 0
+        elseif player == t2
+            t2 = 0
         end
+        if emBaiTrigger[player][1] >= 0 && t > 0
+            oldTps = capturedCPoints[player]
+            deltaTps = tps .- oldTps    
+            deltaTps[t] = 0
+            maxTps,tTps = findmax(deltaTps)
+            if deltaTps[tTps] > 2
+                t2 = tTps
+            end
+        end
+        return t,t2
     end
     return 0,0
 end
@@ -5581,30 +5622,46 @@ function em_Bai(pc,player,rc)
         if isTripple(rc) ||
             ( cFlag && length(rc) == 2 && !card_equal(rc[1],rc[2]) && gameTrashCntLatest[player] < 4 ) ||
             (gameTrashCntLatest[player] < 3)
+            okToPrint(0x20) && print("sap het rac, try to win  ",gameTrashCntLatest[player])
+
             return false
         end
 
         r1,r2 = beDefensive(player)
 
-       
-        
+
+        it = glIterationCnt >> 2
+
         global emBaiTrigger
-        if emBaiTrigger[player][1] == 0 && r1 > 0
-            emBaiTrigger[player] = [glIterationCnt >> 2, r1,r2]
+        if emBaiTrigger[player][1] < 0
+            if r1 > 0
+                emBaiTrigger[player] = [it, r1,r2]
+                capturedCPoints[player] = cmpPoints(playerSuitsCnt, khui,kpoints)
+            end
+        else
+            if r1 >0 && r1 != emBaiTrigger[player][2]
+                 emBaiTrigger[player][2] = r1
+            end
+            if r2 >0 && r2 != emBaiTrigger[player][3]
+                emBaiTrigger[player][3] = r2
+            end
         end
-     
-        if emBaiTrigger[player][1] > 0 && r1 != player && r2 != player && gameTrashCntLatest[player] > 3
+        it = it >> 2
+        if emBaiTrigger[player][1] >= 0 && (gameTrashCntLatest[player]+it) > 5
+            okToPrint(0x20) && print("Player$player nhieu rac -- give up ",gameTrashCntLatest[player])
             return true
         end
-
-        nDead[player] =[]
-    
-        if (r1 == player && r2 == 0) || (r1+r2)==0
+        if r1+r2 == 0
             elevateDead[player] = 0
             return false
+        elseif r1 != 0 && r2 != 0
+            elevateDead[player] = r1
+            okToPrint(0x20) && print(" Too many Triggers ",gameTrashCntLatest[player])
+                return true
         end
+        nDead[player] =[]
         elevateDead[player] = t = r1
-      
+
       #  if true || getCardFromDeck
         if t > 0 && findDeadCard(t,pc,dc_target)  == false
             ci = cardInfo(pc,player)
@@ -5613,7 +5670,7 @@ function em_Bai(pc,player,rc)
             ci = [1.0,0.0]
         end
       #  println("MARK",findDeadCard(t,pc,dc_target),(currentPlayer,prevPlayer(player),t,CardFromDeck,rcisPair,prevPlayer(t)))
-        if prevPlayer(player) == t  && rcisPair || 
+        if prevPlayer(player) == t  && rcisPair ||
             (rcisPair && (player != prevPlayer(t) && (currentPlayer == prevPlayer(t)))) ||
             (CardFromDeck && (((currentPlayer == t) && rcisPair) || (CardFromDeck && currentPlayer == prevPlayer(t) &&(ci[1] <= ci[2] ))))
             if okToPrint(0x20)
@@ -5635,7 +5692,7 @@ function em_Bai(pc,player,rc)
         okToPrint(0x20) && println("DDD($player)=",(ts(rc)),(r1,r2),(cmpPoints(playerSuitsCnt, khui,kpoints),emBaiLimit),emBaiTrigger,(cnt,cnt1),(ts(la),ts(lb)))
 
         cnt += cnt1
-        if cnt == 0  && r1 != player && r2 != player 
+        if cnt == 0  && r1 != player && r2 != player
             if okToPrint(0x20)
             println("*********************************")
             println("*          PASSED               *")
@@ -5662,12 +5719,6 @@ function em_Bai(pc,player,rc)
                         break
                     end
                 end
-            end
-            if okToPrint(0x20) && rr == false
-                println("*********************************")
-                println("*          CNT = $cnt $cnt1             *")
-                println("*********************************")
-                println("player,r1,r2",(player,r1,r2,n1,n2),tss(nDead[player]))
             end
         end
         if rr  && ci[1] <= ci[2] && player != prevPlayer(t) # only trade card if it next to trget
@@ -5697,11 +5748,11 @@ function passOnMatchLastTrash(pcard,cards,flag)
     lmt = length(missTs)
     lm1s = length(miss1s)
     lc1s = length(chot1s)
-   
+
     if (ls+lmt+lm1s == 0 && lc1s <= 2 ) ||
         (lc1s == 0 && ls+lmt+lm1s == 1)
-      
-        if card_equal(pcard,cards[1]) == false 
+
+        if card_equal(pcard,cards[1]) == false
             return 0,true,true
         else
             if length(cards) == 1
@@ -5722,7 +5773,7 @@ function passOnMatchLastTrash(pcard,cards,flag)
                         return n,false,true
                     end
                 end
-            else 
+            else
                 n = flag ? 1 : 0
                 return n,false,true
             end
@@ -5761,7 +5812,7 @@ function gpHandleMatch2Card(pcard,player)
     boDoiFlag = (aiTrait[player] & 0x1 ) != 0
     pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc,boDoiFlag)
     mydefensiveFlag = defensiveFlag && ((aiTrait[player] & 0x2) != 0)
-    if win 
+    if win
         return rc
     elseif pass > 2
         rc = []
@@ -5770,9 +5821,10 @@ function gpHandleMatch2Card(pcard,player)
             rc = []
         end
         if length(rc) > 0 && mydefensiveFlag &&em_Bai(pcard,player,rc)
+            okToPrint(0x20) && println(", Em-bai rc=",ts(rc))
             rc = []
         end
- 
+
     end
     if lastTrsh && length(rc) == 0
         boDoiPlayers[player] = glIterationCnt >> 2
@@ -5818,7 +5870,7 @@ function gpHandleMatch1or2Card(pcard,player)
     else
         rc = card2
     end
-    
+
     if okToPrint(0x8)
         println("Played(1)-",ts(card1)," Played(2)-",ts(card2))
     end
@@ -5827,7 +5879,7 @@ function gpHandleMatch1or2Card(pcard,player)
     pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc,boDoiFlag)
     mydefensiveFlag = defensiveFlag && ((aiTrait[player] & 0x2) != 0)
 
-    if win 
+    if win
         return rc
     elseif pass > 2
         rc = []
@@ -5836,9 +5888,10 @@ function gpHandleMatch1or2Card(pcard,player)
             rc = []
         end
         if length(rc) > 0 &&mydefensiveFlag && em_Bai(pcard,player,rc)
+            okToPrint(0x20) && println(", Em-bai rc=",ts(rc))
             rc = []
         end
- 
+
     end
     if lastTrsh && length(rc) == 0
         boDoiPlayers[player] = glIterationCnt >> 2
@@ -5881,7 +5934,7 @@ function hgamePlay(
 )
 
     global rQ, rReady, coDoiPlayer, coDoiCards, GUI_ready, GUI_array, GUI_busy,
-    currentCards,currentAction, currentPlayCard
+    currentCards,currentAction, currentPlayCard, FaceDown,gameEnd,wantFaceDown
     if(gpPlayer==myPlayer)
         currentAction = gpAction
         if playerIsHuman(myPlayer)
@@ -5891,7 +5944,7 @@ function hgamePlay(
         end
     end
     currentPlayCard = pcard
-    FaceDown = !isGameOver() && wantFaceDown
+    global FaceDown = !isGameOver() && wantFaceDown
     if gpPlayer == 1
         global human_state = setupDrawDeck(playerA_hand, GUILoc[1,1], GUILoc[1,2], GUILoc[1,3],  false)
         discard1 = setupDrawDeck(playerA_discards,GUILoc[9,1], GUILoc[9,2], GUILoc[9,3],  false)
@@ -5912,7 +5965,7 @@ function hgamePlay(
         asset4 = setupDrawDeck(playerD_assets, GUILoc[8,1], GUILoc[8,2], GUILoc[8,3], false,true)
 
     end
-    
+
     rReady[gpPlayer] = false
     rQ[gpPlayer] = []
     if okToPrint(0x8)
@@ -5929,7 +5982,7 @@ function hgamePlay(
    global allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials, suitCnt,miss1_1,miss1_2 = scanCards(all_hands[gpPlayer])
     if gpAction == gpPlay1card
         ll = length(singles) + length(chot1s) + length(miss1s) + length(missTs)
-        if ll == 0 && glIterationCnt == 1 
+        if ll == 0 && glIterationCnt == 1
             println("over----")
             gameOver(gpPlayer)
             pointsCalc(gpPlayer)
@@ -5959,7 +6012,7 @@ function hgamePlay(
         println("rc=",cards," --  ", ts(cards))
         println(ts(coDoiCards)," ",coDoiPlayer)
     end
-    if length(coDoiCards) == 2 && coDoiPlayer == 0 
+    if length(coDoiCards) == 2 && coDoiPlayer == 0
          if( length(cards) != 2 || !card_equal(cards[1],cards[2]))
             if okToPrint(0x8)
                 println("POSS BODOI ", (gpPlayer, ts(coDoiCards)),ts(cards))
@@ -6059,7 +6112,7 @@ function restartGame()
 end
 function isMoreTrash(cards,hand)
     okToPrint(0x10) && println("trashCnt")
-    
+
     allPairs, singles, chot1s, miss1s, missTs, miss1sbar,chotPs,chot1Specials =
 scanCards(hand, false)
     TrashCnt = length(chot1s)
@@ -6147,7 +6200,7 @@ function on_key_down(g)
             println("Attempting to switch human-mode from ", mode_human, playerName[myPlayer])
             nameSynced = false
         end
-        
+
         if tusacState == tsSdealCards && g.keyboard.enter
             doCardDeal()
             gsStateMachine(gsOrganize)
@@ -6169,7 +6222,7 @@ function on_key_down(g)
                     mode = m_client
                     networkInit()
                     if mode == m_client
-                        if histFile 
+                        if histFile
                             close(HF)
                             histFile = false
                         end
@@ -6365,7 +6418,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                 break
             end
         end
-     
+
         allfound = allfound && found
         if action != gpPlay1card
             for t in allPairs[2]
@@ -6380,7 +6433,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
     if !allfound
         return true
     end
- 
+
     if action == gpPlay1card
         return (length(cards) != 1) || is_T(cards[1])
     else
@@ -6418,7 +6471,7 @@ function badPlay(cards,player, hand,action,botCards,matchC)
                     else
                         all_in_suit = all_chots(cards,pcard)
                     end
-                    if okToPrint(0x8)  && !all_in_suit 
+                    if okToPrint(0x8)  && !all_in_suit
                         println(cards," is not in suit")
                     end
                 else
@@ -6526,14 +6579,14 @@ function on_mouse_down(g, pos)
     global playCard = []
     global tusacState, Pre_haBai, haBai
     global GUI_busy, bbox, bbox1
-   
+
 
         x = pos[1] << macOSconst
         y = pos[2] << macOSconst
 
         if tusacState == tsSdealCards
             doCardDeal()
-        
+
         elseif tusacState == tsGameLoop
             if !isGameOver() && playerIsHuman(myPlayer)
                 if Pre_haBai && glNeedaPlayCard
@@ -6618,7 +6671,7 @@ function update(g)
     FaceDown = !isGameOver()
 
     if tusacState == tsSdealCards
-      
+
         if (deckState[5] > 10)
             shuffled = true
             TuSacCards.humanShuffle!(gameDeck, 14, deckState[5])
@@ -6630,9 +6683,9 @@ function update(g)
     elseif tusacState == tsSstartGame
         gsStateMachine(gsStartGame)
     elseif (tusacState == tsSdealCards)
-    
+
     elseif tusacState == tsGameLoop
-      
+
         updateHandPic(currentPlayer)
         gsStateMachine(gsGameLoop)
     elseif tusacState == tsRestart
@@ -6657,7 +6710,7 @@ end
 
 function draw(g)
     global BIGcard, ActiveCard
-    global cardSelect
+    global cardSelect, FaceDown
     global drawCnt,lsx,lsy
     if noGUI()
         return
@@ -6693,7 +6746,7 @@ function draw(g)
         if saveI != 0
             draw(big_actors[saveI])
         end
-        
+
         if ActiveCard != 0
             global csx,csy = big_actors[ActiveCard].pos
             if drawCnt >0
