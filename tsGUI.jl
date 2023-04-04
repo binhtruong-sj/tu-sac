@@ -1,4 +1,4 @@
-version = "0.62r"
+version = "0.62s"
 using GameZero
 using Sockets
 using Random: randperm
@@ -17,7 +17,7 @@ const m_client = 0
 const m_server = 1
 const m_standalone = 2
 boxes = []
-
+noRandom = false
 const bRANDOM = 1
 const bProbability = 2
 const bMax = 3
@@ -35,6 +35,8 @@ gameTrashCnt = gameTrashCntLatest = zeros(Int8,4)
 gameEnd = 1
 openAllCard = false
 
+coinsCnt = 0
+coinsArr = [[0,0],[0,0],[0,0],[0,0]]
 FaceDown = false
 match = 0
 emBaiLimit = zeros(Int8,4)
@@ -891,7 +893,7 @@ end
 lcCmp(a,b) = lowercase(a) == lowercase(b)
 function config(fn)
     global PlayerList,noGUI_list, mode,NAME,playerName,GUI,fontSize,histFILENAME,testFile,bodoiInspect,emBaiLimit,
-    mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,showLocation,echoOption,reduceFile,
+    mode_human,serverURL,serverIP,serverPort, hints,allowPrint,wantFaceDown,showLocation,echoOption,reduceFile,noRandom,
     gamew,macOS,numberOfSocketPlayer,myPlayer,GENERIC,HF,histFile,RF,reloadFile,upgradeAllowPrint,stickyAllowPrint,
     RFindex,isTestFile,RFstates,RFaline,testList, trial, aiType,aiTrait, playerName,aiFilename,stopOn,defensiveFlag
     global GUILoc
@@ -926,6 +928,8 @@ function config(fn)
                 println(stopOn)
             elseif lcCmp(keyword,"BoDoiInspect")
                 bodoiInspect = rl[2] == "true"
+            elseif lcCmp(keyword,"noRandom")
+                noRandom = rl[2] == "true"
             elseif lcCmp(keyword,"emBai")
                 emBaiLimit += [parse(Int,rl[2]),parse(Int,rl[3]),parse(Int,rl[4]),parse(Int,rl[5])]
                 println("Modified Em-bai limit = ",emBaiLimit)
@@ -1276,6 +1280,8 @@ function RESET1()
 
     end
     global openAllCard = false
+    global coinsArr = [[0,0],[0,0],[0,0],[0,0]]
+
 
     global emBaiTrigger = [[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0]]
     global capturedCPoints = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
@@ -1585,7 +1591,7 @@ function readRFDeck(RF,gameDeck)
             found = true
             astr = string(RFp[2],RFp[3],RFp[4])
             push!(tstMoveArray,astr)
-        elseif RFp[1] == "D" || RFp[1] == "S"|| RFp[1] == "K"
+        elseif RFp[1] == "D" || RFp[1] == "S"|| RFp[1] == "K"|| RFp[1] == "C"
                 found = true
                 a =[]
                 if RFp[1] == "D"
@@ -1606,6 +1612,12 @@ function readRFDeck(RF,gameDeck)
                 elseif RFp[1] == "K"
                     global kpoints = a[1:4]
                     global  points = a[5:8]
+                elseif RFp[1] == "C"
+                    global coinsArr[1] = [a[1],a[2]]
+                    global coinsArr[2] = [a[3],a[4]]
+                    global coinsArr[3] = [a[5],a[6]]
+                    global coinsArr[4] = [a[7],a[8]]
+                    println("COIN:",coinsArr)
                 end
         else
             if found
@@ -2646,7 +2658,7 @@ fileMode:0 no file
          4       write
 """
 function replayHistory(index,a=[],sel=1,fileMode=0,testP = 0, card=boDoiCard)
-    global HISTORY,all_hands,all_assets,all_discards,gameDeckArray,
+    global HISTORY,all_hands,all_assets,all_discards,gameDeckArray, coinsArr,
      glIterationCnt,glNeedaPlayCard,glPrevPlayer,tsActiveCard,ActiveCard,BIGcard,aiTrait,aiType
     global playerA_hand, playerA_discards, playerA_assets
     global playerB_hand, playerB_discards, playerB_assets
@@ -2685,10 +2697,24 @@ function replayHistory(index,a=[],sel=1,fileMode=0,testP = 0, card=boDoiCard)
             deadCards = circshift(deadCards,s)
             kpoints = circshift(kpoints,s)
             points = circshift(points,s)
-           # global aiTrait = circshift(aiTrait,s)
-          #  global aiType = aiTrait .>> 2
+            coinsArr = circshift(coinsArr)
+            global aiTrait = circshift(aiTrait,s)
+            global aiType = aiTrait .>> 2
             global playerName = setPlayerName(playerRootName,aiTrait)
             setGUIname(playerName)
+        end
+        if GUI
+            for p in 1:4
+                ccnt = 0
+                for i in 1:coinsArr[p][1]
+                        createCoin(1,p,ccnt)
+                        ccnt += 1
+                end 
+                for i in 1:coinsArr[p][2]
+                    createCoin(2,p,ccnt)
+                    ccnt += 1
+                end   
+            end
         end
         GUI && updateHandPic(glPrevPlayer)
     end
@@ -2728,6 +2754,13 @@ function replayHistory(index,a=[],sel=1,fileMode=0,testP = 0, card=boDoiCard)
                     print(HF,", ",m)
                 end
                 println(HF)
+            print(HF,"C, 1")
+            for p in 1:4
+                for c in coinsArr[p]
+                    print(HF,", ",c)
+                end
+            end
+            println(HF)
         end
         if fileMode & 0x2 > 0
             close(HF)
@@ -3362,7 +3395,7 @@ function gamePlay1Iteration()
             return
         end
     end
-
+    global openAllCard = FaceDown
     if(rem(glIterationCnt,4) ==0)
         glIterationCnt += 1
         l = glIterationCnt >> 2
@@ -3748,21 +3781,21 @@ function pointsCalc(winner)
         end
     elseif stopOn == "cases"
         m,mi = findmin(gameTrashCnt)
-        case = (winner != mi && winner == 1 ) ||
+        case = (winner != mi && winner == 1 ) &&
                ( eB[winner] != 111)
-        if case && reduceFile
+               println("m,mi,case",(gameTrashCnt,gameTrashCntLatest),(m,mi,case,winner,eB))
+        if case 
             l1 = eB[winner]
-            l2 = l1 + 4
+            l2 = l1 +1
             l3 = glIterationCnt >> 2
             if reduceFile
                 replayHistory(1,HISTORY[1],  1,0x1,l1)
                 replayHistory(l1,HISTORY[l1],1,0x4)
                 replayHistory(l2,HISTORY[l2],1,0x4)
                 replayHistory(l3,HISTORY[l3],1,0x2)
-            elseif histFile
-
             end
-
+            println("echo \"# ($l1\" > .a; cat $hfName >> .a; mv .a gtt.txt",echoOption)
+            println("cp $hfName  gtt.txt",echoOption)
             readline()
         end
     elseif stopOn == "bodoi" && ((restartedGameOnStop)||
@@ -3775,7 +3808,6 @@ function pointsCalc(winner)
         if restartedGameOnStop
             restartedGameonStop = false
         end
-
         if  maximum(boDoiPlayers) > 0
             if turnOffBoDoi
                 println("HUH, not sure")
@@ -3914,7 +3946,13 @@ function SNAPSHOT(testnum=0)
                 print(HF,", ",m)
             end
             println(HF)
-
+            print(HF,"C, 1")
+            for p in 1:4
+                for c in coinsArr[p]
+                    print(HF,", ",c)
+                end
+            end
+            println(HF)
             flush(HF)
         end
 end
@@ -4177,7 +4215,19 @@ function acquireCntPlayedCard()
         end
     end
 end
-
+function createCoin(type,player,coinsCnt)
+    if type == 1
+        coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
+    else
+        coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
+    end
+        mi = playerMaptoGUI(player)
+        coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
+                            mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
+                            mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
+                            tableGridXY(5,10+coinsCnt*1)
+        push!(coins,coinActor)
+end
 """
 gsStateMachine(gameActions)
 
@@ -4356,6 +4406,9 @@ global GUI_ready = false
                             kpoints[i] += 8
                             khui[i] = 2
                             if GUI
+                                isTestFile == false && createCoin(1,i,coinsCnt)
+                                coinsArr[i][1] += 1
+                                #=
                                 coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
                                 mi = playerMaptoGUI(i)
                                 coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
@@ -4364,6 +4417,9 @@ global GUI_ready = false
                                                     tableGridXY(5,10+coinsCnt*1)
                                 push!(coins,coinActor)
                                 coinsCnt += 1
+                                =#
+                                coinsCnt += 1
+
                             end
                         elseif length(ps) == 3
                             kpoints[i] += 3
@@ -4372,6 +4428,10 @@ global GUI_ready = false
                                 points[i] -= 3
                             end
                             if GUI
+                                isTestFile == false && createCoin(2,i,coinsCnt)
+                                coinsArr[i][2] += 1
+
+                                #=
                                 coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
                                 mi = playerMaptoGUI(i)
                                 coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
@@ -4379,6 +4439,8 @@ global GUI_ready = false
                                                  mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
                                                  tableGridXY(5,10+coinsCnt*1)
                                 push!(coins,coinActor)
+                                coinsCnt += 1
+                                =#
                                 coinsCnt += 1
                             end
                         end
@@ -5048,7 +5110,11 @@ function findWorstCard(Singles,player; findDead = false)
     max = -1.0
     card = []
     while length(singles) > 0
-        s = splice!(singles,rand(1:length(singles)))
+        if noRandom
+            s = pop!(singles)
+        else
+            s = splice!(singles,rand(1:length(singles)))
+        end
         okToPrint(4) && println("card = ",ts(s))
         cnt = getCntPlayedCard(s)
         cArr = suitCards(s)
@@ -5398,8 +5464,10 @@ function processList!(max,list,player,sc,blockCard,sc1)
     finalList = []
     for l in list
         push!(finalList,l)
+    end   
+    if noRandom == false
+        finalList = finalList[randperm(length(finalList))]
     end
-    finalList = finalList[randperm(length(finalList))]
     rcnt = 0
     for cs in finalList
         scale = sc
