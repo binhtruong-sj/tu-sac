@@ -43,7 +43,9 @@ match = 0
 emBaiLimit = zeros(Int8,4)
 gameWin = [0,0,0,0]
 elevateDead = 0
-defensiveFlag = true
+defensiveFlag = [true,true,true,true]
+boDoiFlag =  [true,true,true,true]
+boDoiFlag = 
 boDoiCard = 0
 oneTime = true
 emBaiTrigger = [[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0]]
@@ -108,6 +110,7 @@ prevCard = 0x10
 prevN1 = 0
 noSingle = [false,false,false,false]
 okToPrint(a) = allowPrint&a != 0
+
 cmpPoints(playerSuitsCnt, khui,kpoints) = playerSuitsCnt.*khui+kpoints.*khui
 a =cmpPoints(2,1,3)
 emBaiLimit = [a,a,a,a]
@@ -136,8 +139,8 @@ module nwAPI
             return 0
         end
     end
-    function allwPrint()
-        allowPrint = 1
+    function allwPrint(a)
+        allowPrint = a
     end
     function nw_sendToMaster(id,connection,arr)
 
@@ -282,16 +285,17 @@ module TuSacCards
 
     # Deck & deck-related methods
     export Deck, shuffle!, ssort, full_deck, reduce_deck, ordered_deck
-    export ordered_deck_chot, humanShuffle!, dealCards, full_deck_chot, ordered_reduce_deck
+    export ordered_deck_chot, humanShuffle!, dealCards, full_deck_chot, 
+           ordered_reduce_deck
     export getCards, rearrange, sort!, rcut, moveCards!,cardStrToVal
-    export test_deck, getDeckArray, newDeckUsingArray,allwPrint
+    export test_deck, toValueArray, newDeckUsingArray,allwPrint
     #####
     ##### Types
     #####
     okToPrint(a) = allowPrint&a != 0
 
-    function allwPrint()
-        allowPrint = 1
+    function allwPrint(a)
+        allowPrint = a
     end
     """
         In TuSac, cards has 4 suit of color: White,Yellow,Red,Green
@@ -637,6 +641,7 @@ module TuSacCards
         collect(ntuple(i -> pop!(deck.cards), n))
     function Base.pop!(deck::Deck, card::Card)
         L0 = length(deck)
+        println(deck)
         filter!(x -> x ≠ card, deck.cards)
         L0 == length(deck) + 1 || error("Could not pop $(card) from deck.")
         return card
@@ -734,7 +739,7 @@ module TuSacCards
 
     """
     """
-    function getDeckArray(deck::Deck)
+    function toValueArray(deck::Deck)
         l = length(deck)
         a = Vector{UInt8}(undef,l)
         i = 1
@@ -746,7 +751,7 @@ module TuSacCards
     end
     """
     """
-    function getDeckArray(deck::Vector{Card})
+    function toValueArray(deck::Vector{Card})
         l = length(deck)
         a = Vector{UInt8}(undef,l)
         i = 1
@@ -836,6 +841,2210 @@ module TuSacCards
 end # module
 ######################################################################
 
+"""
+ Game Manager
+
+
+
+"""
+module TuSacManager
+# manage game 
+
+    using Random: randperm
+    import Random: shuffle!
+
+    import ..TuSacCards
+    export init,autoHumanShuffle,doShuffle,restoreCards,deadCards, 
+    play1Card,setNoRandom,setAITRAIT, setManagerMode, syncRemoveCards, 
+    syncAddCards,printTable
+
+    const gpCheckMatch2 = 2
+    const gpCheckMatch1or2 = 1
+    const plBot1 = 0
+    const plSocket = 1
+    currentAction = 0
+    PlayerList =[plBot1,plBot1,plBot1,plBot1]
+
+    mvArray = []
+    managerModeAsMaster = false 
+    aiType = [4,4,4,4]
+    all_assets_marks = zeros(UInt8,128)
+    boDoiPlayers = zeros(UInt8,4)
+    PlayedCardCnt = zeros(UInt8,32)
+    activePlayer = 1
+    allowPrint = 0xc4
+    okToPrint(a) = allowPrint&a != 0
+    khapMatDau = zeros(4)
+    matchSingle = zeros(UInt8,4)
+    noRandom = false
+    defensiveFlag = [true,true,true,true]
+    boDoiFlag =  [true,true,true,true]
+
+     emBaiTrigger = [[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0]]
+     capturedCPoints = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+     gameTrashCnt = gameTrashCntLatest = zeros(Int8,4)
+     oneTime = true
+     gameStart = false
+     gotClick = false
+     GUI_array=[]
+     GUI_ready=true
+     HISTORY = []
+     waitForHuman = false
+     pBseat = []
+     points = zeros(Int8,4)
+     aiTrait = [19,19,19,19]
+     aiType = aiTrait .>>2
+     boDoiFlag = (aiTrait .& 0x1 ) .!= 0
+     mydefensiveFlag = defensiveFlag .&& ((aiTrait .& 0x2) .!= 0)
+
+     playerSuitsCnt = zeros(UInt8,4)
+     PlayedCardCnt = zeros(UInt8,32)
+
+     drawCnt = 1
+     gsHcnt = 1
+
+     deadCards = [[],[],[],[]]
+     prevDeck = false
+     prevCard = 0x00
+     prevN1 = 0
+     probableCards = [[],[],[],[]]
+     noSingle = [false,false,false,false]
+     all_assets_marks = zeros(UInt8,128)
+     mGameDeckArray =[]
+     matchSingle = zeros(UInt8,4)
+    Tuong = zeros(UInt8,4)
+    vPlayerHand = []
+    vPlayerAsset = []
+    vPlayerDiscard = []
+    nDead=[[],[],[],[]]
+    boDoiFlag = (aiTrait .& 0x1 ) .!= 0
+    notDoneInit = true
+
+    highValue = zeros(UInt8,4)
+
+    coDoiPlayer = 0
+    coDoiCards = []
+    rQ = Vector{Any}(undef,4)
+    rReady = Vector{Bool}(undef,4)
+
+    function setPlayerList(player,t) 
+        global PlayerList[player] = t
+    end
+    
+    function setManagerMode(m)
+        global managerModeAsMaster = m
+    end
+    
+    function allwPrint(a)
+        allowPrint = a
+    end
+    function setAITRAIT(a)
+        global aiTrait = a
+        global aiType = aiTrait .>>2
+        global boDoiFlag = (aiTrait .& 0x1 ) .!= 0
+        global mydefensiveFlag = defensiveFlag .&& ((aiTrait .& 0x2) .!= 0)
+
+    end
+    function setNoRandom(r)
+        noRandom = r
+    end
+
+chksum(s,v) = s &0x8000_0000_0000_0000 == 0 ? xor(s,v) << 1 : xor((xor(s,v) << 1),0x1)
+function checksum()
+    local checksum::UInt64
+    local a::UInt64
+    checksum = 0
+    for (i,ah) in enumerate(playerHand)
+        for a in ah
+           checksum = chksum(checksum,a)
+        end
+    end
+    for (i,ah) in enumerate(playerDiscard)
+        for a in ah
+            checksum = chksum(checksum,a)
+        end
+    end
+    for (i,ah) in enumerate(playerAsset)
+        for a in ah
+            checksum = chksum(checksum,a)
+        end
+    end
+    println("checksum = 0x",string(checksum,base=16))
+    return checksum
+end
+
+
+    function init(coldStart=true) 
+        global mGameDeck
+        global mvArray
+        global all_assets_marks = zeros(UInt8,128)
+        global boDoiPlayers = zeros(UInt8,4)
+        global PlayedCardCnt = zeros(UInt8,32)
+        global deadCards = [[],[],[],[]]
+        global probableCards = [[],[],[],[]]
+        global mvArray = []
+        global kpoints,points
+        global coinsArr = [[0,0],[0,0],[0,0],[0,0]]
+        global kpoints = zeros(Int8,4)
+        global points = zeros(Int8,4)
+        global khapMatDau = zeros(4)
+        global matchSingle = zeros(UInt8,4)
+        boDoiFlag = (aiTrait .& 0x1 ) .!= 0
+
+        global emBaiTrigger = [[-1,0,0],[-1,0,0],[-1,0,0],[-1,0,0]]
+        global capturedCPoints = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+        global gameTrashCnt = gameTrashCntLatest = zeros(Int8,4)
+        global oneTime = true
+        global gameStart = false
+        global gotClick = false
+        global GUI_array=[]
+        global GUI_ready=true
+        global HISTORY = []
+        global waitForHuman = false
+        global handPic
+        global baiThuiPic
+        global pBseat = []
+        global points = zeros(Int8,4)
+    
+        global playerSuitsCnt = zeros(UInt8,4)
+        global PlayedCardCnt = zeros(UInt8,32)
+    
+        global drawCnt = 1
+        global gsHcnt = 1
+    
+        global deadCards = [[],[],[],[]]
+        global prevDeck = false
+        global prevCard = 0x00
+        global prevN1 = 0
+        global probableCards = [[],[],[],[]]
+        global noSingle = [false,false,false,false]
+        global all_assets_marks = zeros(UInt8,128)
+        global mGameDeckArray =[]
+        global matchSingle = zeros(UInt8,4)
+        global Tuong = zeros(UInt8,4)
+        global notDoneInit = true
+        nDead=[[],[],[],[]]
+        highValue = zeros(UInt8,4)
+        needAcard = false
+
+        if coldStart
+            mGameDeck = TuSacCards.ordered_deck()
+        end
+    end
+
+    function startTurn()
+        rReady = [false,false,false,false]
+    end
+
+    function syncRemoveCards(cards,player,array)
+        if notDoneInit 
+            return
+        end
+        if managerModeAsMaster == false
+            if array == 1
+                println("In HERE ", (cards,player,array))
+                removeCards!(vPlayerHand,player,cards)
+                println("In HERE - done ", (cards,player,array))
+
+            else
+                pop!(mGameDeck,1)
+                pop!(vGameDeck)
+            end
+            return []
+        else
+            return cards,player
+        end
+    end
+    function syncAddCards(card,player,arrays)
+    end
+
+    function _ts(a)
+            TuSacCards.Card(a[1])
+    end
+
+    function ts(a)
+        st = ""
+        if length(a) == 1
+            st = _ts(a)
+        else
+            if length(a) > 1
+                for b in a
+                    st = string(st,_ts(b)," ")
+                end
+            end
+        end
+        return st
+    end
+
+    """
+    tss(g)
+    to print out arr of arr of cards, like this [[],[],[]]
+    """
+    function tss(g,s1=" ",s2=", ")
+        st = ""
+        for (i,a) in enumerate(g)
+            for (j,b) in enumerate(a)
+                if j == length(a)
+                    st = string(st,_ts(b))
+                else
+                    st = string(st,_ts(b),s1)
+                end
+            end
+            if i != length(g)
+                st = string(st,s2)
+            end
+        end
+        return st
+    end
+
+    function ts_s(rt, sp = "", n = true)
+        for rq in rt
+            print(" ",ts(rq))
+            if length(rq) > 1
+                for r in rq[2:end]
+                    print("+",ts(r))
+                end
+            end
+        end
+        print(sp)
+        if n
+            println()
+        end
+        return
+    end
+
+    function ts_ss(rts, n = true)
+        for rt in rts
+            for r in rt
+                print(ts(r), " ")
+            end
+            print(",")
+        end
+        if n
+            println()
+        end
+        return
+    end
+
+
+    const T = 0
+    const V = 1 << 5
+    const X = 2 << 5
+    const D = 3 << 5
+
+    is_T(v) = (v & 0x1C) == 0x4
+    to_T(v) = v&0xf3 | 0x4
+
+    is_s(v) = (v & 0x1C) == 0x8
+    to_s(v) = v&0xf3 | 0x8
+
+    is_t(v) = (v & 0x1C) == 0xc
+    to_t(v) = v&0xf3 | 0xc
+
+    is_Tst(v) = (0xd > (v & 0x1C) > 3)
+
+
+    """
+        c(v) is a chot
+    """
+    fourCs = [0x10,0x30,0x50,0x70]
+    is_c(v) = ((v & 0x1C) == 0x10)
+
+    is_colorT(v) = ((v & 0x60) == 0x00)
+    is_colorV(v) = ((v & 0x60) == 0x20)
+    is_colorX(v) = ((v & 0x60) == 0x40)
+    is_colorD(v) = ((v & 0x60) == 0x60)
+
+    to_colorT(v) = ((v & 0x1c) | T)
+    to_colorV(v) = ((v & 0x1c) | V)
+    to_colorX(v) = ((v & 0x1c) | X)
+    to_colorD(v) = ((v & 0x1c) | D)
+    """
+        x(v) is a xe
+    """
+
+    is_x(v) = ((v & 0x1C) == 0x14)
+    to_x(v) = v&0xf3 | 0x4
+
+    """
+        p(v) is a phao
+    """
+    is_p(v) = (v & 0x1C) == 0x18
+    to_p(v) = v&0xf3 | 0x8
+
+    """
+        m(v) is a ma
+    """
+    is_m(v) = (v & 0x1C) == 0x1c
+    to_m(v) = v&0xf3 | 0xc
+
+
+    is_xpm(v) = 0x1d > (v & 0x1C) > 0x13
+
+    function suitCards(v)
+        if is_Tst(v)
+            return [is_s(v) ? to_t(v) : to_s(v)]
+        elseif is_xpm(v)
+            if is_x(v)
+                return [to_p(v),to_m(v)]
+            elseif is_p(v)
+                return [to_x(v),to_m(v)]
+            else
+                return [to_x(v),to_p(v)]
+            end
+        else
+            if is_colorT(v)
+                return [to_colorV(v),to_colorD(v),to_colorX(v)]
+            elseif is_colorV(v)
+                return [to_colorT(v),to_colorD(v),to_colorX(v)]
+            elseif is_colorD(v)
+                return [to_colorT(v),to_colorV(v),to_colorX(v)]
+            else
+                return [to_colorT(v),to_colorV(v),to_colorD(v)]
+            end
+        end
+    end
+    
+
+    """
+        inSuit(a,b): check if a,b is in the same sequence cards (Tst) or (xpm)
+    """
+    inSuit(a, b) = (a & 0xc != 0) && (b & 0xc != 0) && (a & 0xF0 == b & 0xF0)
+
+    """
+        inStrictSuit(a,b): check if a,b is in the same sequence cards (Tst)
+        or (xpm) or chot, but remove equal cards
+    """
+    inAllStrictSuit(a,b) = !card_equal(a,b) && ((inSuit(a,b)) || (is_c(a) && is_c(b)))
+    """
+        inTSuit(a)
+        a is either si or tuong
+
+    """
+    inTSuit(a) = (a&0x1c == 0x08) || (a&0x1c == 0x0C)
+    function suit(r,matchc)
+        if length(r) != 2
+            return false
+        end
+        rt = card_equal(missPiece(r[1],r[2]), matchc)
+   
+        return rt
+    end
+
+    """
+    card_equal(a,b): a,b are the same card (same color, and same kind)
+"""
+card_equal(a, b) = a&0xFC == b&0xFC
+
+isPair(r) = length(r) == 2 ? card_equal(r[1],r[2]) : false
+isTripple(r) = length(r) == 3 ? card_equal(r[1],r[2]) : false
+
+function has_T(c)
+    global Tuong
+    return Tuong[c&0x3+1] != 0
+end
+"""
+    miss(s1,s2): creat the missing card for group of 3,
+
+"""
+missPiece(s1, s2) = (s2 > s1) ? (((((s2 & 0xc) - (s1 & 0xc)) == 4 ) ?
+                                ( ((s1 & 0xc) == 4) ? 0xc : 4 ) : 8) |
+                                (s1 & 0xF3)) :
+                                (((((s1 & 0xc) - (s2 & 0xc)) == 4 ) ?
+                                ( ((s2 & 0xc) == 4) ? 0xc : 4 ) : 8) |
+                                    (s2 & 0xF3))
+
+function printTable()
+   # checksum()
+    println("==========Hands")
+    for (i,ah) in enumerate(vPlayerHand)
+        print(i,": ");ts_s(ah)
+    end
+    println("==========Discards")
+    for (i,ah) in enumerate(vPlayerDiscard)
+        print(i,": ");ts_s(ah)
+    end
+    println("===========Assets")
+    for (i,ah) in enumerate(vPlayerAsset)
+        print(i,": ");ts_s(ah)
+    end
+    println("gameDeck")
+    println(mGameDeck)
+    println()
+end
+
+    """
+    c_scan(p,s)
+        scan/c_analyzer all the chots. Return singles.
+    TBW
+    """
+    function c_scan(p,s;win=false)
+   
+        if length(s) > 2
+            return []
+        elseif length(s) == 2
+            if length(p[2])>0 && win
+                return[]
+            else
+                if length(p[1])>1
+                    return []
+                elseif length(p[1])==1
+                    return [p[1][1][1]]
+                else
+                    return s
+                end
+            end
+        else
+            if length(p[2])>1 && win
+                return[]
+            elseif length(p[2])==1 && win
+                return s
+            else
+                if length(p[1]) > 2
+                    return []
+                else
+                    return s
+                end
+            end
+        end
+    end
+    """
+    c_analyzer(p,s,ci)
+        return array, if length of 0, then perfect match
+    not check for pairs match --- this function got call first before
+        the regular pairs check
+"""
+function c_analyzer(ap,as,ci)
+    p = deepcopy(ap)
+    s = deepcopy(as)
+    #println("c_analyzer= ",(p,s,ci))
+    match_s = false
+    new_s = []
+    new_p = []
+    for c in s
+        if card_equal(c,ci)
+            match_s = true
+        else
+            push!(new_s,c)
+        end
+    end
+    if match_s
+
+        new_p = deepcopy(p)
+        added_p =[ci,ci]
+        push!(new_p[1],added_p)
+        ct = c_scan(new_p,new_s, win = true)
+    else
+        match_p = false
+        newPair = []
+        new_p = [[],[],[]]
+        for aps in p
+            for ap in aps
+                if card_equal(ap[1],ci)
+                    newPair = ap
+                    push!(newPair,ci)
+                    match_p = true
+                else
+                    l = length(ap) - 1
+                    push!(new_p[l],ap)
+                end
+            end
+        end
+        if match_p
+            l = length(newPair) - 1
+            push!(new_p[l],newPair)
+        else
+            push!(new_s,ci)
+        end
+        ct = c_scan(new_p,new_s, win = true)
+    end
+    return ct
+end
+"""
+    c_match(p,s,n)
+        return match for a chot. Taking in account of all chots, not just the
+            singles.
+TBW
+"""
+function c_match(p,s,n,cmd;win=false)
+    global coDoiCards
+    if okToPrint(0x8)
+         println("c-match ",(p,s,n,length(s)))
+    end
+    rt = []
+    nrt = []
+    if length(s) > 1
+        for es in s
+            if card_equal(es,n)
+                    rt = [es]
+            else
+                push!(nrt,es)
+            end
+        end
+        if length(rt) != 0
+            if length(p[1]) == 2
+                rt = [nrt[1],p[1][1][1],p[1][2][1]]
+            elseif length(s) == 3
+                if length(p[1]) > 0
+                    if length(nrt) > 1
+                        pop!(nrt)
+                    end
+                    push!(nrt,p[1][1][1])
+                    rt = nrt
+                else
+                    rt = []
+                end
+            end
+        else
+            rt = s
+        end
+    elseif length(s)==1
+        if card_equal(s[1],n)
+            rt = s
+        else
+        # now we have 2 uniq chots
+            if length(p[2])>0 && win# at least 1 3-pair
+                rt =  [p[2][1][1],s[1]] # use 1 of the 3-pair
+            else
+                if length(p[1])>1 # at least 2 2-pair and 1-single
+                    if !(card_equal(n,p[1][1][1]) ||
+                        card_equal(n,p[1][2][1]) )
+                        rt =  [p[1][1][1],p[1][2][1]]
+                    else
+                        rt = []
+                    end
+                elseif length(p[1])==1 && !card_equal(n,p[1][1][1])
+                    rt =  [p[1][1][1],s[1]]
+                else
+                    rt =  []
+                end
+            end
+        end
+    end
+    if length(rt) != 0
+        for ap in p[2]
+            if card_equal(ap[1],n)
+                rt = ap
+                break
+            end
+        end
+        for ap in p[1]
+            if card_equal(ap[1],n)
+                if length(rt)==3
+                    rt = ap
+                elseif length(rt) == 1 && cmd == gpCheckMatch2
+                    rt = ap
+                end
+                break
+            end
+        end
+    else
+        for aps in p
+            for ap in aps
+                if card_equal(ap[1],n)
+                    if length(ap) == 2
+                        coDoiCards = ap
+                    end
+                    rt = ap
+                    break
+                end
+            end
+        end
+    end
+
+    if okToPrint(0x8)
+        println("c-match-result = ", rt); ts_s(rt)
+    end
+
+    return rt
+end
+
+    """
+    scanCards() scan for single and missing seq
+                put cards in piles of (pairs, single1, miss1, missT, miss1bar, chot1)
+                NOTE: some card can be in both group (pairs, single) for easy of matching purpose
+                since it got rescan on every move, the duplication does not affecting correctness
+
+    """
+    function scanCards(inHand, silence = false, psc = false)
+        # scan for pairs and remove them
+        global allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt ,miss1_1,miss1_2,cTrsh
+
+        ahand = deepcopy(inHand)
+        pairs = []
+        allPairs = [[], [], []]
+        pairOf = 0
+        rhand = []
+        chot1 = []
+        chot1Special = []
+        chotP = [[],[],[]]
+        all_chots =[]
+        miss1 = []
+        miss1_1 = []
+        miss1_2 = []
+        missT = []
+        miss1Card = []
+        single = []
+        cTrsh = []
+
+        global Tuong = zeros(UInt8,4)
+
+        
+        suitCnt = 0
+        if length(ahand) == 0
+            return allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt ,miss1_1,miss1_2,cTrsh
+        end
+        prevAcard = ahand[1]
+        if is_c(prevAcard)
+            push!(all_chots,prevAcard)
+        elseif is_T(prevAcard)
+            suitCnt += 1
+        end
+        for i = 2:length(ahand)
+            acard = ahand[i]
+            if is_T(acard)
+                suitCnt += 1
+            end
+            if card_equal(acard, prevAcard)
+                push!(pairs, prevAcard)
+                pairOf += 1
+                @assert pairOf < 4
+            else
+                if pairOf > 0
+                    if is_T(prevAcard)
+
+                        if pairOf == 1 # Tuong pair of 2 is not really a pair
+                            push!(rhand, prevAcard) # put 1 back for rescan
+                        else
+                            push!(pairs, prevAcard)
+                            push!(allPairs[pairOf], pairs)
+                        end
+                    else
+                        push!(pairs, prevAcard)
+                        push!(allPairs[pairOf], pairs)
+                        if is_c(pairs[1])
+                            push!(chotP[pairOf],pairs)
+                        end
+                    end
+                    pairs = []
+                    pairOf = 0
+                else
+                    push!(rhand, prevAcard)
+                end
+            end
+            prevAcard = acard
+        end
+        if pairOf > 0
+
+            push!(pairs, prevAcard)
+            push!(allPairs[pairOf], pairs)
+            if is_c(pairs[1])
+                push!(chotP[pairOf],pairs)
+            end
+        else
+            push!(rhand, prevAcard)
+        end
+        #rhand is the non-pair cards remaining after scan for pairs
+
+        ahand = rhand
+        if length(ahand) > 0
+            acard = ahand[1]
+            prevAcard = acard
+            prev2card = acard
+            prev3card = acard
+            seqCnt = 0
+
+            for i = 2:length(ahand)
+                acard = ahand[i]
+                if inSuit(prevAcard, acard)
+                    prev3card = prev2card
+                    prev2card = prevAcard
+                    seqCnt += 1
+                else
+                    if seqCnt == 2
+                        if !is_Tst(prevAcard)
+                            suitCnt += 1
+                        end
+                    elseif seqCnt == 1
+                        ar = []
+                        mc = missPiece(prev2card, prevAcard)
+                        push!(miss1Card, mc)
+                        push!(ar, prev2card, prevAcard)
+                        if is_T(mc)
+                            push!(missT, ar)
+                        else
+                            push!(miss1, ar)
+                            if is_T(prev2card)
+                                Tuong[prev2card&3+1] = 1
+                                push!(miss1_1,prevAcard)
+                            else
+                                push!(miss1_2,ar)
+                            end
+                        end
+                    elseif seqCnt == 0
+                        # a single
+                        if !is_T(prevAcard) # Tuong
+                            if is_c(prevAcard)
+                                push!(chot1Special, prevAcard)
+                            else
+                                push!(single, prevAcard)
+                            end
+                        end
+                    end
+                    seqCnt = 0
+                end
+                prevAcard = acard
+            end
+            if seqCnt == 2
+                if !is_Tst(prevAcard)
+                    suitCnt += 1
+                end
+            elseif seqCnt == 1
+                ar = []
+                mc = missPiece(prev2card, prevAcard)
+                push!(miss1Card, mc)
+                push!(ar, prev2card, prevAcard)
+                if is_T(mc)
+                    push!(missT, ar)
+                else
+
+                    push!(miss1, ar)
+                    if is_T(prev2card)
+                        Tuong[prev2card&3+1] = 1
+                        push!(miss1_1,prevAcard)
+                    else
+                        push!(miss1_2,ar)
+                    end
+                end
+            elseif seqCnt == 0
+                # a single
+                if !is_T(prevAcard) # Tuong
+                    if is_c(prevAcard)
+                        push!(chot1Special, prevAcard)
+                    else
+                        push!(single, prevAcard)
+                    end
+                end
+            end
+        end
+        if length(allPairs[1]) >= 3
+            for (i,p) in enumerate(allPairs[1])
+                if is_x(p[1]) && (length(allPairs[1]) - i ) > 2
+                    if inSuit(p[1],allPairs[1][i+1][1]) && inSuit(p[1],allPairs[1][i+2][1])
+                        suitCnt += 2
+                    end
+                end
+            end
+        end
+        cTrsh = c_scan(chotP,chot1Special)
+        chot1 = cTrsh
+        return allPairs, single, chot1, miss1, missT, miss1Card, chotP, chot1Special, suitCnt, miss1_1,miss1_2,cTrsh
+    end
+
+    function autoHumanShuffle(n)
+        for i in 1:n
+            rl = rand(17:23)
+            rh = rand(37:43)
+            sh = rand(0:1) > 0 ? rl : rh
+            TuSacCards.humanShuffle!(mGameDeck,14,sh)
+        end
+    end
+
+    function doShuffle(mode)
+        if mode == 0 
+            TuSacCards.shuffle!(mGameDeck)
+        elseif mode == 1 
+            autoHumanShuffle(4)
+        end
+    end
+   
+    nextPlayer(p) = p == 4 ? 1 : p + 1
+    prevPlayer(p) = p == 1 ? 4 : p - 1
+    
+    function removeCards!(array, n, cards)
+        global mvArray
+        for c in cards
+            push!(mvArray,(1,n,c))
+            found = false
+            for l = 1:length(array[n])
+                if c == array[n][l]
+                    found = true
+                    splice!(array[n], l)
+                    break
+                end
+            end
+            pop!(playerHand[n],ts(c))
+        end
+    end
+
+    function addCards!(array,arrNo, n, cards)
+        global mvArray
+        for c in cards
+            updateCntPlayedCard(c)
+            push!(mvArray,(0,n,c))
+            push!(array[n], c)
+            if arrNo == 0
+                push!(playerAsset[n],ts(c))
+            else
+                push!(playerDiscard[n],ts(c))
+            end
+        end
+    end
+    function getAllPlayerCards()
+        global playerHand,playerAsset,playerDiscard,mGameDeck,
+        vPlayerHand,vPlayerAsset,vPlayerDiscard,vGameDeck
+
+        vPlayerHand = []
+        vPlayerAsset = []
+        vPlayerDiscard = []
+
+        for i in 1:4
+            push!(vPlayerHand, TuSacCards.toValueArray(playerHand[i]))
+            push!(vPlayerAsset,TuSacCards.toValueArray(playerAsset[i]))
+            push!(vPlayerDiscard,TuSacCards.toValueArray(playerDiscard[i]))
+        end
+        vGameDeck = TuSacCards.toValueArray(mGameDeck)
+    end
+
+    function restoreCards(allCardsArray,playerIndex)
+        global playerHand,playerAsset,playerDiscard,mGameDeck,
+        vPlayerHand,vPlayerAsset,vPlayerDiscard,vGameDeck,kpoints,points,coinsArr
+
+            playerA_hand, playerA_discards, playerA_assets,
+            playerB_hand, playerB_discards, playerB_assets,
+            playerC_hand, playerC_discards, playerC_assets,
+            playerD_hand, playerD_discards, playerD_assets,
+            mGameDeck,kpoints,points,coinsArr = deepcopy(allCardsArray)
+            global activePlayer = playerIndex
+            playerHand = []
+            playerDiscard = []
+            playerAsset = []
+            push!(playerHand,playerA_hand)
+            push!(playerHand,playerB_hand)
+            push!(playerHand,playerC_hand)
+            push!(playerHand,playerD_hand)
+
+            push!(playerDiscard,playerA_discards)
+            push!(playerDiscard,playerB_discards)
+            push!(playerDiscard,playerC_discards)
+            push!(playerDiscard,playerD_discards)
+
+            push!(playerAsset,playerA_assets)
+            push!(playerAsset,playerB_assets)
+            push!(playerAsset,playerC_assets)
+            push!(playerAsset,playerD_assets)
+
+        getAllPlayerCards()
+        global notDoneInit = false
+
+    end
+
+    function dealCards(firstPlayer) 
+        global playerHand,playerAsset,playerDiscard,vPlayerHand,vPlayerAsset,vPlayerDiscard
+        playerIndex[1] = firstPlayer
+        playerIndex[2] = nextPlayer(playerIndex[1])
+        playerIndex[3] = nextPlayer(playerIndex[2])
+        playerIndex[4] = nextPlayer(playerIndex[3])
+        playerHand = [[],[],[],[]]
+        playerAsset = [[],[],[],[]]
+        playerDiscard = [[],[],[],[]]
+        vPlayerHand = [[],[],[],[]]
+        vPlayerAsset = [[],[],[],[]]
+        vPlayerDiscard = [[],[],[],[]]
+        playerHand[playerIndex[1]] = TuSacCards.Deck(pop!(mGameDeck, 1))
+        for r in 1:4
+            for i in 1:4
+                playerHand[playerIndex[i]] = TuSacCards.Deck(pop!(mGameDeck, 5))
+            end
+        end
+        for i in 1:4
+            TuSacCards.ssort(playerHand[i])
+            vPlayerHand[i] = TuSacCards.toValueArray(playerHand[i])
+        end
+        for i in 1:4
+            allPairs = scanCards(vPlayerHand[i],false)
+            for pss in allPairs 
+                for ps in pss
+                    if length(ps) == 4
+                        removeCards!(vPlayerHand,i,ps)
+                        addCards!(vPlayerAsset,0,i,ps)
+                        all_assets_marks[ps[1]] = 1
+                        kpoints[i] += 8
+                        khui[i] = 2
+                    elseif length(ps) == 3
+                        kpoints[i] += 3
+                        if is_T(ps[1])
+                            points[i] -= 3
+                        end
+                    end
+                end
+            end
+        end
+        global notDoneInit = false
+    end
+
+
+
+  
+    function updateCntPlayedCard(card)
+        global PlayedCardCnt
+        c = card >> 2
+        PlayedCardCnt[c] += 1
+    end
+    
+    function getCntPlayedCard(card)
+        global PlayedCardCnt
+        c = card >> 2
+        return PlayedCardCnt[c]
+    end
+    
+    function cardHasPair(card)
+        cArr = suitCards(card)
+        for c in cArr
+            for p in allPairs[1]
+                if card_equal(c,p[1])
+                    return true
+                end
+            end
+        end
+        return false
+    end
+    
+    function cardHasTripple(card)
+        cArr = suitCards(card)
+        for c in cArr
+            for p in allPairs[2]
+                if card_equal(c,p[1])
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+
+"""
+chk1(playCard)
+"""
+function chk1(playCard)
+    if is_c(playCard)
+             r  = c_match(chotPs,chot1Specials,playCard,currentAction)
+      if length(r) > 0
+        return r
+      end
+    end
+    function chk1Print()
+        for s in singles
+            print(" (s)",(ts(s)))
+            @assert !is_c(s)
+            if card_equal(s, playCard)
+                print("@")
+                return
+            end
+        end
+
+        for mt in missTs
+            m = missPiece(mt[1], mt[2])
+            print(" (mT)", ts(m))
+            if card_equal(m, playCard)
+                print("@")
+                return
+            elseif card_equal(mt[1], playCard) && !is_T(playCard)
+                print("@")
+                return
+            elseif card_equal(mt[2], playCard) && !is_T(playCard)
+                print("@")
+                return
+            end
+        end
+
+        for m1 in miss1s
+            m = missPiece(m1[1], m1[2])
+            print(" (m1)", (length(miss1s),ts(playCard),ts(m)))
+            if card_equal(m, playCard)
+                print("@")
+                return
+            elseif card_equal(m1[1], playCard) && !is_T(playCard)
+                print("@")
+                return
+            elseif card_equal(m1[2], playCard) && !is_T(playCard)
+                print("@")
+                return
+            end
+        end
+    end
+    if okToPrint(0x8)
+         chk1Print()
+    end
+
+    for s in singles
+        if card_equal(s, playCard)
+            return s
+        end
+    end
+
+    for mt in missTs
+        m = missPiece(mt[1], mt[2])
+        if card_equal(m, playCard)
+            return mt
+        elseif card_equal(mt[1], playCard) && !is_T(playCard)
+            return mt[1]
+        elseif card_equal(mt[2], playCard) && !is_T(playCard)
+            return mt[2]
+        end
+    end
+
+    for m1 in miss1s
+        m = missPiece(m1[1], m1[2])
+        if card_equal(m, playCard)
+            return m1
+        elseif card_equal(m1[1], playCard) && !is_T(playCard)
+            return m1[1]
+        elseif card_equal(m1[2], playCard) && !is_T(playCard)
+            return m1[2]
+        end
+    end
+    return []
+end
+
+"""
+chk2(playCard) check for pairs -- also check for P XX ? M
+
+"""
+function chk2(playCard;win=false)
+    global coDoiCards
+    function chk2Print()
+        found = false
+        if !is_c(playCard)
+            for m1 in miss1s # CAAE XX PM ? X
+                if card_equal(playCard, missPiece(m1[1], m1[2])) &&
+                    !is_T(m1[1]) &&
+                    !is_T(m1[2])
+                    if okToPrint(0x8)
+                    println("Found Saki -- allow bo doi")
+                    end
+                    found = true
+                    break
+                end
+            end
+        end
+        for p = 1:2
+            print(" (pair)",(p+1))
+            for ap in allPairs[p]
+                print(ts(ap[1]))
+                if is_T(playCard)
+                    if p == 2 && card_equal(ap[1], playCard)
+                        print("@")
+                        return
+                    end
+                elseif !is_c(playCard) && card_equal(ap[1], playCard)
+                    if (p == 1) && found
+                        print(" SAKI ")
+                        print("@")
+                        return
+                    else
+                        print("@")
+                        if p == 1
+                            if length(coDoiCards) == 0
+                                if okToPrint(0x8)
+                                    println("FOUND CODOI", ( length(coDoiCards), ts(ap) ))
+                                end
+                            end
+                        end
+                        return
+                    end
+                end
+            end
+        end
+        println()
+    end
+    if okToPrint(0x8)
+        chk2Print()
+    end
+    inSuitArr = []
+    found = false
+    if !is_c(playCard)
+        for m1 in miss1s # CAAE XX PM ? X
+            if card_equal(playCard, missPiece(m1[1], m1[2])) &&
+            !is_T(m1[1]) &&
+            !is_T(m1[2])
+                found = true
+                break
+            end
+        end
+    end
+    for p = 1:2
+        for ap in allPairs[p]
+            if is_T(playCard)
+                if p == 2 && card_equal(ap[1], playCard)
+                    return ap # TTTT
+                end
+            elseif !is_c(playCard) && card_equal(ap[1], playCard)
+                if (p == 1) && found
+                    return []  # SAKI -- return nothing
+                else
+                    if p == 1
+                        if length(coDoiCards) == 0
+                            if okToPrint(0x8)
+                                println("chk2-codoi-",ap)
+                            end
+                            push!(coDoiCards,ap[1],ap[2])
+                        end
+                    end
+                     return ap
+                end
+            elseif inSuit(ap[1], playCard) && p == 1 # CASE X PP ? M
+                if length(inSuitArr) == 0
+                    push!(inSuitArr, ap[1]) # put in array to check
+                end
+            end
+        end
+    end
+    if length(inSuitArr) > 0
+        for s in singles
+            if inSuit(s, playCard)
+                push!(inSuitArr, s)
+                return inSuitArr
+            end
+        end
+    end
+    return []
+end
+
+function findDeadCard(player,chkcard,mode=0)
+    if mode == dc_target
+        ar = union(deadCards[player],all_assets[player],
+        playerDiscard[player],playerDiscard[prevPlayer(player)])
+    else
+        ar = union(deadCards[player],
+        playerDiscard[player],playerDiscard[prevPlayer(player)])
+    end
+    for c in ar
+        if card_equal(c,chkcard)
+            return true
+        end
+    end
+    return false
+end
+
+const dc_next =1
+const dc_target = 0
+function findWorstCard(Singles,player; findDead = false)
+    singles = copy(Singles)
+    max = -1.0
+    card = []
+    while length(singles) > 0
+        if noRandom
+            s = pop!(singles)
+        else
+            s = splice!(singles,rand(1:length(singles)))
+        end
+        okToPrint(4) && println("card = ",ts(s))
+        cnt = getCntPlayedCard(s)
+        cArr = suitCards(s)
+        if okToPrint(4)
+            print(" suitcards=") ; ts_s(cArr)
+        end
+        scnt = 0
+        for c in cArr
+           scnt += getCntPlayedCard(c)
+        end
+        if is_c(s)
+            m = cnt/4 + scnt/6
+        else
+            m = cnt/4 + scnt/4
+        end
+        n1 = nextPlayer(player)
+        if findDead && findDeadCard(n1,s,dc_next)
+            m = 100
+        end
+        if m > max
+            max = m
+            card = s
+        end
+        if okToPrint(4)
+            println("---->",(ts(s),m))
+        end
+    end
+    if okToPrint(4)
+    println((ts(card),max))
+    end
+    return card
+end
+    function play1Card(player)
+        
+        allPairs, singles, chot1s, miss1s, missTs, miss1sbar, chotPs, chot1Specials, suitCnt, miss1_1,miss1_2,cTrsh =
+        scanCards(vPlayerHand[player],false,true)
+        trashCnt = length(singles)+length(missTs)+length(miss1s)+length(chot1s)
+        pairsCnt = length(allPairs[1])+length(allPairs[2])+length(allPairs[3])
+    
+
+        ai = aiType[player]
+        localAI = ai
+        i = aiType[player]
+        localAI = ai
+       # localAI = mapAI(ai,trashCnt)
+        println("Local AI = ",(ai,localAI))
+    
+        println("Local AI",localAI)
+
+
+        saveSingles = copy(singles)
+        if okToPrint(4)
+            print("save-singles= ")
+            ts_s(saveSingles)
+        end
+
+        if length(chot1s) == 1 && length(chotPs) < 2
+            push!(singles, chot1s[1])
+        else
+            if okToPrint(4)
+            println("khapMatDau=",khapMatDau[player])
+            end
+            if khapMatDau[player] < 2 && (length(allPairs[2]) > 0 || length(allPairs[3]) > 0 )
+                found = false
+                for m1 in miss1s
+                    ap = missPiece(m1[1],m1[2])
+                    for ps in allPairs[2:3]
+                        for p in ps
+                            if card_equal(ap,p[1])
+                                khapMatDau[player] = 1
+                                found = true
+                                if okToPrint(4)
+                                println("khap-mat-",(ts(m1[1]),ts(m1[2]),ts(p[1])))
+                                end
+                                if !is_T(m1[1])
+                                    push!(singles,m1[1])
+                                end
+                                if !is_T(m1[2])
+                                    push!(singles,m1[2])
+                                end
+                                break
+                            end
+                        end
+                    end
+                end
+                if found == false
+                    khapMatDau[player] = 2
+                end
+            else
+                khapMatDau[player] = 2
+            end
+            if okToPrint(4)
+            println("khapMatDau=",khapMatDau[player])
+            end
+            for m1 in miss1sbar
+                for p in allPairs[1]
+                    if card_equal(m1,p[1]) && !is_T(m1)
+                        pushfirst!(miss1_1,p[1])
+                        break
+                    end
+                end
+            end
+            if length(singles) == 0
+                for mt in missTs
+                    for m in mt
+                        push!(singles, m)
+                    end
+                end
+            end
+            if length(singles) == 0
+                if length(miss1s) > 0
+                    for m1 in miss1s
+                            if !is_T(m1[1]) && !is_T(m1[2])
+                                if okToPrint(4)
+                                    println((ts(m1[1]),ts(m1[2])))
+                                end
+                                push!(singles,m1[1],m1[2])
+                                for p in allPairs[1]
+                                    if card_equal(missPiece(m1[1],m1[2]),p[1])
+                                        okToPrint(4) && println("--found Saki------>",(length(p),ts(p[1])))
+                                        push!(singles,p[1],p[2])
+
+                                    end
+                                end
+                            else
+                                if !is_T(m1[1])
+                                    push!(singles,m1[1])
+                                else
+                                    push!(singles,m1[2])
+                                end
+                            end
+                    end
+                end
+                if length(chot1s) > 0
+                    for m in chot1s
+                        push!(singles,m)
+                    end
+                end
+            end
+        end
+        c_need = []
+        if length(chot1s) > 0
+            for c in fourCs
+                crt = c_analyzer(chotPs,chot1Specials,c)
+                if length(crt) == 0
+                push!(c_need,c)
+                end
+            end
+        end
+    
+
+        if okToPrint(4)
+            print("---Player:",player)
+            print("  ---aiType:",localAI)
+            print("  ---suitCnt:",playerSuitsCnt)
+            print(" --- TrashCnt:",trashCnt)
+            print(" -- Pairs Cnt:",pairsCnt)
+            print(" -- Singles:")
+            ts_s(singles)
+            print(" -- SaveSingles:")
+            ts_s(saveSingles)
+            println("matched single=",ts(matchSingle)," max_assets =", maxAssets())
+
+            print("missing-one-1 -- ")
+            ts_ss(miss1_1)
+            print("missing-one-2 -- ")
+            ts_ss(miss1_2)
+            print("missing T ")
+            ts_ss(missTs)
+            print("Chot1=")
+            ts_s(chot1s)
+            print("cho1Specials=")
+            ts_s(chot1Specials)
+            print("chotPs=")
+            ts_ss(chotPs)
+            print(" -- c-need=")
+            ts_s(c_need)
+            n1 = nextPlayer(player)
+            print("Dead:")
+            ts_s(deadCards[n1])
+            print("Probable:")
+            ts_s(probableCards[n1])
+            println("     ----------- ")
+            for n1 in 1:4
+                print("Dead$n1:")
+                ts_s(deadCards[n1])
+                print("Probable$n1:")
+                ts_s(probableCards[n1])
+            end
+        end
+    
+        if length(singles) > 0
+            if localAI == 1
+                card = singles[rand(1:length(singles))]
+            elseif localAI == 2
+                pickArray = []
+                for s in singles
+                    cnt = getCntPlayedCard(s)
+                    if cnt == 3
+                        return s
+                    end
+                    if is_c(s)
+                        rcnt = 10 - cnt
+                    elseif is_Tst(s)
+                        rcnt = 8 - cnt
+                    else
+                        rcnt = 6 - cnt
+                    end
+                    for i in 1:rcnt
+                    push!(pickArray,s)
+                    end
+                end
+                card = pickArray[rand(1:length(pickArray))]
+            elseif localAI == 3
+                    if okToPrint(4)
+                        println("In BMAX, player",player, " singles cnt =",length(singles))
+                    end
+                    card = findWorstCard(singles,player)
+            elseif localAI == 4
+                    l = min(length(scaleArray)-1,trashCnt)
+                    okToPrint(4) && println("Index to Scale Array = ",l)
+                    scaleData = scaleArray[l]
+
+                    if length(saveSingles) > 1# && trashCnt < 4
+                        blockCard = matchSingle[player]
+                        matchSingle[player] = 0
+                    else
+                        blockCard = 0
+                    end
+                    max = [[-1000,10],[-1000,10]]
+                    if length(chotPs[1]) != 0 || length(chot1s) > 1
+                        # MORE THAN 1 CHOT, SO TREAT THEM AS 2 (XP, OR PM)
+                        processList!(max,chot1s,player,scaleData[2],0,scaleData[4])
+                    end
+                    processList!(max,miss1_1,player,scaleData[1],0,scaleData[4])
+                    processList!(max,miss1_2,player,scaleData[2],0,scaleData[4])
+                    processList!(max,missTs,player,scaleData[3],0,scaleData[4])
+
+                    processList!(max,saveSingles,player,scaleData[4],blockCard,scaleData[4])
+                    if length(chotPs[1]) == 0 && length(chot1s) == 1
+                        processList!(max,chot1s,player,scaleData[5],0,scaleData[4])
+                    end
+                    okToPrint(4) && println("Max-Array = ", (max[1][1],ts(max[1][2]) ),(max[2][1],ts(max[2][2])))
+                    card = max[1][2]
+            else
+                    println("SHOULD NOT BE HERE",aiType)
+                    exit()
+                    max = [[-1000,10],[-1000,10]]
+                    processM1Card(max,miss1_1,player)
+                    processM2Card(max,miss1_2,player)
+                    processM2Card(max,missTs,player)
+                    processSCard(max,saveSingles,player)
+                    processCCard(max,chot1s,player)
+                    okToPrint(4) && println("Max-Array = ", (max[1][1],ts(max[1][2]) ),(max[2][1],ts(max[2][2])))
+                    card = max[1][2]
+            end
+        else
+            card =[] # rare case, no trash in the very start
+        end
+        global coDoiPlayer = 0
+        global coDoiCards = []
+        return card
+    end
+        
+    # miss1_1,miss1_2,missT,singles,chot1
+    # index by trashs count
+    scaleArray = [
+    [[1,1,21,-6],[2,1,21,-8],[8,1,21,-2],[8,1,21,1],[2,1,12,0]],
+    [[1,1,21,-6],[8,1,21,-8],[8,1,21,-2],[8,1,21,1],[2,1,12,0]],
+    [[1,1,21,-6],[8,1,21,-8],[8,1,21,0],[8,1,21,11],[2,1,12,0]],
+    [[1,1,21,-6],[8,1,21,-8],[8,1,21,0],[8,1,21,11],[2,1,12,0]],
+    [[1,1,4,0],[8,1,4,0],[8,1,4,0],    [8,1,21,16],[4,1,21,17]],
+    [[1,1,4,-6],[8,1,1,-8],[10,1,4,0],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,1,-8],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,1,-8],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,1,-8],[10,1,4,4],[32,1,32,16],[24,1,21,17]],
+    [[1,1,4,-6],[8,1,1,-8],[10,1,4,4],[32,1,32,16],[24,1,20,17]],
+    ]
+    function CardinList(card,list)
+        for c in list
+            if card_equal(c,card)
+                return true
+            end
+        end
+        return false
+    end
+    function CntCardinList(card,list)
+        cnt = 0
+        for c in list
+            if card_equal(c,card) && c!=card
+                cnt += 1
+            end
+        end
+        return cnt
+    end
+    elevateDead= [0,0,0,0]
+    """
+        getCardCnt(c,player)
+
+        get count for a card: card that has been played/discard or in own hand
+    """
+    function cntCard(c,player,own=false)
+
+        cnt = getCntPlayedCard(c)
+        #print(cnt," ")
+        cnt += CntCardinList(c,all_hands[player])
+
+        #print(cnt," ")
+
+        cArr = suitCards(c)
+        scnt = 0
+        for sc in cArr
+            if !is_T(sc) && !card_equal(sc,c)
+                scnt += getCntPlayedCard(sc)
+                scnt += CntCardinList(sc,all_hands[player])
+            end
+        end
+        #println(scnt)
+        mult = length(cArr)
+        fcnt = scnt + cnt * mult
+        if is_Tst(c)
+            fcnt = fcnt / 12
+        elseif is_xpm(c)
+            fcnt = fcnt / 16
+        else
+            fcnt = fcnt / 24
+        end
+        return fcnt
+    end
+
+    """
+        cardInfo(card,player)
+
+    return a score on a card, and a potential card, higher score means card been 'known'.
+    maximum for a xpm is 16, a x count other x by 2, and p,m by 1
+    """
+    function  cardInfo(card,player)
+        tcard = cntCard(card,player)
+        pTrsh = playerTrash(player)
+        #println("player:$player, Trash:",(player,ts(pTrsh)))
+        max = maxc = 0
+        for c in pTrsh
+            if  !is_T(c) && !card_equal(c,card)
+                global cnt = cntCard(c,player,true)
+                if cnt > max
+                    max = cnt
+                    maxc = c
+                end
+            end
+        end
+        return cnt,max,maxc
+    end
+    function processList!(max,list,player,sc,blockCard,sc1)
+        finalList = []
+        for l in list
+            push!(finalList,l)
+        end   
+        if noRandom == false
+            finalList = finalList[randperm(length(finalList))]
+        end
+        rcnt = 0
+        for cs in finalList
+            scale = sc
+            if length(cs) > 1
+                mc = missPiece(cs[1],cs[2])
+                dead = getCntPlayedCard(mc) > 2
+                if dead
+                    scale = sc1
+                end
+            end
+            for c in cs
+                rcnt += 1
+                cnt = getCntPlayedCard(c)
+                cArr = suitCards(c)
+                scnt = 0
+                found = false
+                for sc in cArr
+                    a = getCntPlayedCard(sc)
+                    if a == 4
+                        a = 12
+                    end
+                    scnt += a
+                    if card_equal(blockCard,sc)
+                        (okToPrint(4)) && println("FOUND blockCard = ",ts(blockCard))
+                        found = true
+                    end
+                end
+                if found
+                    scnt = -1
+                end
+    
+                score = cnt*scale[1] + scnt*scale[2] + scale[4]
+                if c == highValue[player]
+                    score += score + 500
+                    highValue[player] = 0
+                end
+                score_addon = 0
+                for p2 in allPairs[1]
+                    if card_equal(p2[1],c)
+                        score_addon -= 4*(scale[1])
+                        break
+                    end
+                end
+    
+                okToPrint(4) && print("score=$score addon-->",score_addon)
+    
+                if cardHasPair(c)
+                    score_addon += is_Tst(c)&& !has_T(c) ? 0 : -3*scale[2]
+                elseif cardHasTripple(c)
+                    score_addon += abs(scale[4])
+                    if is_c(c)
+                        score_addon = score_addon >> 2
+                    end
+                end
+                okToPrint(4) && print("-->",score_addon)
+                if emBaiTrigger[player][1] >= 0
+                    n2 = emBaiTrigger[player][2]
+                    df =  findDeadCard(n2,c,dc_target)
+                else
+                    df = false
+                end
+                 n1 = nextPlayer(player)
+                if CardinList(c,nDead[player])|| findDeadCard(n1,c,dc_next) || df
+                    score_addon += elevateDead[player] > 0 ? scale[3]<<6 : scale[3]
+                end
+    
+                okToPrint(4) && println("-->",score_addon)
+    
+                if score_addon != 0
+                    score += score_addon
+                else
+                    score += is_Tst(c)&&!has_T(c) ? 1 : 0
+                end
+    
+                if score >= max[1][1]# || ((score == max[1]) && (rand((0:rcnt)) == 0 ))
+                    max[2][1] = max[1][1]
+                    max[2][2] = max[1][2]
+    
+                    max[1][1] = score
+                    max[1][2] = c
+                else
+                    if score >= max[2][1]
+                        max[2][1] = score
+                        max[2][2] = c
+                    end
+                end
+                (okToPrint(4)) && println("max=",(max[1][1],ts(max[1][2])),"Card(",ts(c),") , score = $score ,cnt = $cnt, suitcnt = $scnt",scale)
+            end
+        end
+    end
+    
+    #=
+        For every card, we need to evaluate from 2 perspectives:
+            1) out-going, minimize the probability of being taken by others
+            2) keepng cards that has higher probability of being received
+
+            for every entry, calculate the probability of get rid of it and not be used
+                the oppposite is the probability of getting a card to complete a suit
+
+    =#
+    function processSCard(max,list,player)
+
+    end
+
+    function processM1Card(max,list,player)
+
+    end
+
+    function processM2Card(max,list,player)
+
+    end
+
+    function processCCard(max,list,player)
+
+    end
+
+    function randomSampling(c,list)
+
+    end
+
+    function list(s1,s2,p1,p2,p3)
+        r =[]
+        for l in s1
+            push!(r,l)
+        end
+        for l in s2
+            push!(r,l)
+        end
+    
+        for ls in p1
+            for l in ls
+                push!(r,l)
+            end
+        end
+        for ls in p2
+            for l in ls
+                push!(r,l)
+            end
+        end
+        for ls in p3
+            for l in ls
+                push!(r,l)
+            end
+        end
+        return r
+    end
+    
+    function playerTrash(player)
+        list = union(singles,chot1s)
+        for l in union(miss1s,missTs)
+            union!(list, l)
+        end
+        return list
+    end
+    
+    function deadCardsExist(player,mode=dc_target,list = false)
+        cnt = 0
+        trashCnt = length(singles)+length(missTs)+length(miss1s)+length(chot1s)
+        lst = []
+        pTrsh = playerTrash(player)
+    
+        for a in pTrsh
+                if !is_T(a) &&findDeadCard(player,a,mode)
+                    push!(lst,a)
+                    cnt += 1
+                end
+        end
+    
+        if list
+            return cnt,lst
+        else
+            return cnt
+        end
+    end
+    
+    function beDefensive(player)
+        global capturedCPoints
+        tps =cmpPoints(playerSuitsCnt, khui,kpoints)
+        max,t = findmax(tps)
+        if max >= emBaiLimit[player]
+            tps[t] = 0
+            max2,t2 = findmax(tps)
+            delta = max - max2
+            if delta*4 > max
+                t2 = 0
+            end
+            if player == t
+                t = t2
+                t2 = 0
+            elseif player == t2
+                t2 = 0
+            end
+            if emBaiTrigger[player][1] >= 0 && t > 0
+                oldTps = capturedCPoints[player]
+                deltaTps = tps .- oldTps    
+                deltaTps[t] = 0
+                maxTps,tTps = findmax(deltaTps)
+                if deltaTps[tTps] > 2
+                    t2 = tTps
+                end
+            end
+         
+            return t,t2
+        end
+        return 0,0
+    end
+    
+    """
+        defensive(pc,player,rc)
+    
+    true if not want to take and play anycard.
+        it would take and play if it thinks the play card has higher score (been seen)
+    """
+    function em_Bai(pc,player,rc)
+        global oneTime,elevateDead,nDead
+            global highValue
+            highValue[player] = 0
+            rcisPair = isPair(rc)
+    
+            if isTripple(rc) ||
+                ( cFlag && length(rc) == 2 && !card_equal(rc[1],rc[2]) && gameTrashCntLatest[player] < 4 ) ||
+                (gameTrashCntLatest[player] < 3)
+                return false
+            end
+    
+            r1,r2 = beDefensive(player)
+    
+    
+            it = glIterationCnt >> 2
+    
+            global emBaiTrigger
+            if emBaiTrigger[player][1] < 0
+                if r1 > 0
+                    emBaiTrigger[player] = [it, r1,r2]
+                    capturedCPoints[player] = cmpPoints(playerSuitsCnt, khui,kpoints)
+                end
+            else
+                if r1 >0 && r1 != emBaiTrigger[player][2]
+                     emBaiTrigger[player][2] = r1
+                end
+                if r2 >0 && r2 != emBaiTrigger[player][3]
+                    emBaiTrigger[player][3] = r2
+                end
+            end
+            it = it >> 2
+            if emBaiTrigger[player][1] >= 0 && (gameTrashCntLatest[player]+it) > 5
+                return true
+            end
+            if r1+r2 == 0
+                elevateDead[player] = 0
+                return false
+            elseif r1 != 0 && r2 != 0
+                elevateDead[player] = r1
+                    return true
+            end
+            nDead[player] =[]
+            elevateDead[player] = t = r1
+    
+          #  if true || getCardFromDeck
+            if t > 0 && findDeadCard(t,pc,dc_target)  == false
+                ci = cardInfo(pc,player)
+            else
+                ci = [1.0,0.0]
+            end
+          #  println("MARK",findDeadCard(t,pc,dc_target),(currentPlayer,prevPlayer(player),t,CardFromDeck,rcisPair,prevPlayer(t)))
+            if prevPlayer(player) == t  && rcisPair ||
+                (rcisPair && (player != prevPlayer(t) && (currentPlayer == prevPlayer(t)))) ||
+                (CardFromDeck && (((currentPlayer == t) && rcisPair) || (CardFromDeck && currentPlayer == prevPlayer(t) &&(ci[1] <= ci[2] ))))
+                if okToPrint(0x20)
+                    println("*********************************")
+                    println("*        EARLY                  *")
+                    println("*********************************")
+                end
+                return false
+            end
+            if r2 == 0
+                n1 = nextPlayer(player)
+            else
+                n1 = r2
+            end
+            cnt,la = deadCardsExist(n1,dc_next,true)
+    
+            n2 = t
+            cnt1,lb = deadCardsExist(n2,dc_target,true)
+            okToPrint(0x20) && println("DDD($player)=",(ts(rc)),(r1,r2),(cmpPoints(playerSuitsCnt, khui,kpoints),emBaiLimit),emBaiTrigger,(cnt,cnt1),(ts(la),ts(lb)))
+    
+            cnt += cnt1
+            if cnt == 0  && r1 != player && r2 != player
+                if okToPrint(0x20)
+                println("*********************************")
+                println("*          PASSED               *")
+                println("*********************************")
+                end
+                rr = true
+            else
+                for c in la
+                    push!(nDead[player],c)
+                end
+                for c in lb
+                    push!(nDead[player],c)
+                end
+                rr = false
+                for c in nDead[player]
+                    for r in rc
+                        if card_equal(r,c)
+                            if okToPrint(0x20)
+                            println("*********************************")
+                            println("*          PASSED               *")
+                            println("*********************************")
+                            end
+                            rr = true
+                            break
+                        end
+                    end
+                end
+            end
+            if rr  && ci[1] <= ci[2] && player != prevPlayer(t) # only trade card if it next to trget
+                if okToPrint(0x20)
+                println("*********************************")
+                println("* ",ci[1], "  <=  ",ci[2]," ",ts(ci[3]))
+                println("*********************************")
+                end
+                highValue[player] = ci[3]
+                rr = false
+            end
+            return rr
+    end
+    
+    """
+        passOnMatchLastTrash(pcard,cards)
+    
+    0: not pass
+    2: pass
+    1: may-be, if not defensive, the true
+    """
+    function passOnMatchLastTrash(pcard,cards,flag)
+        if length(cards) == 0
+            return 2,false,false
+        end
+        ls = length(singles)
+        lmt = length(missTs)
+        lm1s = length(miss1s)
+        lc1s = length(chot1s)
+    
+        if (ls+lmt+lm1s == 0 && lc1s <= 2 ) ||
+            (lc1s == 0 && ls+lmt+lm1s == 1)
+    
+            if card_equal(pcard,cards[1]) == false
+                return 0,true,true
+            else
+                if length(cards) == 1
+                    if ls > 0
+                        return 0,true,true
+                    else
+                        if lc1s > 0
+                            if lc1s ==1
+                                return 0,true,true
+                            else
+                                n = flag ? 2 : 0
+                                return n,false,true
+                            end
+                        else
+                            #lmt or lm1s
+                            #after this no trash
+                            n = flag ? 1 : 0
+                            return n,false,true
+                        end
+                    end
+                else
+                    n = flag ? 1 : 0
+                    return n,false,true
+                end
+            end
+        else
+            return 0,false,false
+        end
+    end
+    maxAssets() = max(length(playerAsset[1]),length(playerAsset[2]),length(playerAsset[3]),length(playerAsset[4]))
+    
+    
+    function Match2Card(pcard,player)
+        global allPairs, singles, chot1s, miss1s, missTs, miss1sbar, chotPs, chot1Specials, suitCnt, miss1_1,miss1_2,cTrsh 
+        global currentAction = gpCheckMatch2 
+
+        allPairs, singles, chot1s, miss1s, missTs, miss1sbar, chotPs, chot1Specials, suitCnt, miss1_1,miss1_2,cTrsh =
+        scanCards(vPlayerHand[player],false,true)
+
+        card1 = chk1(pcard)
+        card2 = chk2(pcard)
+        ls = length(singles)
+        lmt = length(missTs)
+        lm1s = length(miss1s)
+        lc1s = length(chot1s)
+        gameTrashCntLatest[player] = ls + lmt + lm1s + lc1s
+            global gameTrashCnt,gameTrashCntLatest
+            if gameTrashCnt[player] == 0
+                gameTrashCnt[player] = ls + lmt + lm1s + lc1s
+            end
+        if length(card1) == 0
+            rc = card2
+        elseif length(card2) == 0 || !card_equal(card2[1],card2[2])
+                rc = card1
+        else
+            rc = card2
+        end
+        if okToPrint(0x8)
+            println("Played(1)-",ts(card1)," Played(2)-",ts(card2))
+        end
+       
+        pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc,boDoiFlag[player])
+        if win
+            return rc
+        elseif pass > 2
+            rc = []
+        else
+            if !mydefensiveFlag[player] && pass >0
+                rc = []
+            end
+            if length(rc) > 0 && mydefensiveFlag[player] &&em_Bai(pcard,player,rc)
+                okToPrint(0x20) && println(", Em-bai rc=",ts(rc))
+                rc = []
+            end
+    
+        end
+        if lastTrsh && length(rc) == 0
+            boDoiPlayers[player] = glIterationCnt >> 2
+        end
+        #=
+        if length(rc) > 0
+            global coDoiCards = []
+        end
+        =#
+        if highValue[player] != 0
+            for c in rc
+                if card_equal(c,highValue[player])
+                    if length(rc) == 1
+                        rc = []
+                    end
+                    highValue[player] = 0
+                    break
+                end
+            end
+        end
+        return rc
+    
+    end
+    function Match1or2Card(pcard,player)
+        global allPairs, singles, chot1s, miss1s, missTs, miss1sbar, chotPs, chot1Specials, suitCnt, miss1_1,miss1_2,cTrsh 
+        global currentAction = gpCheckMatch1or2 
+
+        allPairs, singles, chot1s, miss1s, missTs, miss1sbar, chotPs, chot1Specials, suitCnt, miss1_1,miss1_2,cTrsh =
+        scanCards(vPlayerHand[player],false,true)
+
+        card1 = chk1(pcard)
+        card2 = chk2(pcard)
+        ls = length(singles)
+        lmt = length(missTs)
+        lm1s = length(miss1s)
+        lc1s = length(chot1s)
+        gameTrashCntLatest[player] = ls + lmt + lm1s + lc1s
+    
+            global gameTrashCnt,gameTrashCntLatest
+            if gameTrashCnt[player] == 0
+                gameTrashCnt[player] = ls + lmt + lm1s + lc1s
+            end
+            if length(card2) == 3
+            rc = card2
+        elseif length(card1) >0
+            rc = card1
+        else
+            rc = card2
+        end
+    
+        if okToPrint(0x8)
+            println("Played(1)-",ts(card1)," Played(2)-",ts(card2))
+        end
+        pass,win,lastTrsh = passOnMatchLastTrash(pcard,rc,boDoiFlag[player])
+        if win
+            return rc
+        elseif pass > 2
+            rc = []
+        else
+            if !mydefensiveFlag[player] && pass >0
+                rc = []
+            end
+            if length(rc) > 0 &&mydefensiveFlag[player] && em_Bai(pcard,player,rc)
+                okToPrint(0x20) && println(", Em-bai rc=",ts(rc))
+                rc = []
+            end
+    
+        end
+        if lastTrsh && length(rc) == 0
+            boDoiPlayers[player] = glIterationCnt >> 2
+        end
+        if highValue[player] != 0
+            for c in rc
+                if card_equal(c,highValue[player])
+                    if length(rc) == 1
+                        rc = []
+                    end
+                    highValue[player] = 0
+                    break
+                end
+            end
+        end
+        return rc
+    end
+    
+    function whoWinTurn!(pcard,play3,t1Player)
+        t2Player = nextPlayer(t1Player)
+        t3Player = nextPlayer(t2Player)
+        t4Player = nextPlayer(t3Player)
+        if  rReady[t1Player] &&
+            rReady[t2Player] &&
+            rReady[t3Player] &&
+           (play3  ||
+            rReady[t4Player]  )
+            n1c = rQ[t1Player]
+            n2c = rQ[t2Player]
+            n3c = rQ[t3Player]
+            if okToPrint(0x8)
+                println(n1c)
+                println(n2c)
+                println(n3c)
+            end
+            if !play3
+                n4c = rQ[t4Player]
+                if okToPrint(0x8)
+                  println(n4c)
+                end
+            else
+                n4c = []
+            end
+            rReady[t1Player] = false
+            rReady[t2Player] = false
+            rReady[t3Player] = false
+            rReady[t4Player] = false
+        else
+            glIterationCnt -= 1
+            return
+        end
+        if okToPrint(0x8)
+            println("AT whoWin ",((ts(n1c),ts(n2c),ts(n3c),ts(n4c)),glNewCard),(t1Player,t2Player,t3Player,t4Player),
+            (PlayerList[t1Player],PlayerList[t2Player],
+            PlayerList[t3Player],PlayerList[t4Player])
+            )
+        end
+        if (PlayerList[myPlayer] != plSocket) && isServer()
+            if PlayerList[t1Player] == plSocket
+                n1c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(t1Player, nwPlayer[t1Player],8))
+            end
+            if PlayerList[t2Player] == plSocket
+                n2c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(t2Player, nwPlayer[t2Player],8))
+            end
+            if PlayerList[t3Player] == plSocket
+                n3c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(t3Player, nwPlayer[t3Player],8))
+            end
+            if PlayerList[t4Player] == plSocket
+                if !play3
+                    n4c = nwAPI.nw_getR(nwAPI.nw_receiveFromPlayer(t4Player, nwPlayer[t4Player],8))
+                end
+            end
+    
+            nPlayer, winner, r = whoWinRound(
+                pcard,
+                !play3,
+                t1Player,
+                n1c,
+                t2Player,
+                n2c,
+                t3Player,
+                n3c,
+                t4Player,
+                n4c,
+            )
+            function nw_makeR2(a,b,r)
+                s_ar = []
+                push!(s_ar,a,b,length(r))
+                for ar in r
+                    push!(s_ar,ar)
+                end
+                return s_ar
+            end
+            msg = nw_makeR2(nPlayer, winner, r )
+            for i in 1:4
+                if(PlayerList[i] == plSocket)
+                    nwAPI.nw_sendToPlayer(i,nwPlayer[i],msg)
+                end
+            end
+        elseif PlayerList[myPlayer] == plSocket
+                r =[]
+                if t1Player == myPlayer
+                    r = n1c
+                    nwAPI.nw_sendToMaster(myPlayer, nwMaster,r)
+                elseif t2Player == myPlayer
+                    r = n2c
+                    nwAPI.nw_sendToMaster(myPlayer, nwMaster,r)
+                elseif t3Player == myPlayer
+                    r = n3c
+                    nwAPI.nw_sendToMaster(myPlayer, nwMaster,r)
+                else
+                    if !play3
+                        r = n4c
+                        nwAPI.nw_sendToMaster(myPlayer, nwMaster,r)
+                    end
+                end
+                rmsg = nwAPI.nw_receiveFromMaster(nwMaster,8)
+                nPlayer, winner, l= rmsg[2],rmsg[3],rmsg[4]
+                r = []
+                for i in 1:l
+                    push!(r,rmsg[i+4])
+                end
+                if okToPrint(0x8)
+                    println("received =" , (nPlayer, winner, l, r))
+                end
+                if winner&0xFF == 0xFE
+                    if okToPrint(0x8)
+                        println("Game Over, player ", nPlayer, " win")
+                    end
+                    gameOver(nPlayer)
+                end
+        else
+            nPlayer, winner, r = whoWinRound(
+                pcard,
+                !play3,
+                t1Player,
+                n1c,
+                t2Player,
+                n2c,
+                t3Player,
+                n3c,
+                t4Player,
+                n4c,
+            )
+        end
+        return nPlayer, winner, r
+    end
+    
+    function endTurn()
+        nPlayer, winner, r =  whoWin!(glIterationCnt, glNewCard,glNeedaPlayCard,t1Player,t2Player,t3Player,t4Player)
+
+    end
+
+end # end TuSacManager
+
+####################################################
 
 coldStart = true
 shufflePlayer = 1
@@ -931,6 +3140,7 @@ function config(fn)
                 bodoiInspect = rl[2] == "true"
             elseif lcCmp(keyword,"noRandom")
                 noRandom = rl[2] == "true"
+                TuSacManager.setNoRandom(noRandom)
             elseif lcCmp(keyword,"emBai")
                 emBaiLimit += [parse(Int,rl[2]),parse(Int,rl[3]),parse(Int,rl[4]),parse(Int,rl[5])]
                 println("Modified Em-bai limit = ",emBaiLimit)
@@ -951,8 +3161,9 @@ function config(fn)
                 showLocation = true
             elseif lcCmp(keyword,"allowPrint")
                 stickyAllowPrint = allowPrint = parse(Int,rl[2])
-                nwAPI.allwPrint()
-                TuSacCards.allwPrint()
+                nwAPI.allwPrint(allowPrint)
+                TuSacCards.allwPrint(allowPrint)
+                TuSacManager.allwPrint(allowPrint)
             elseif lcCmp(keyword,"GUIadjust")
                 arrayIndex = parse(Int,rl[2])
                 x = parse(Int,rl[3])
@@ -965,6 +3176,7 @@ function config(fn)
                     
 
                     println("AITYPE=", (aiTrait,aiType))
+                    TuSacManager.setAITRAIT(aiTrait)
                     playerName = setPlayerName(playerRootName,aiTrait)
                     boDoiFlag = (aiTrait .& 0x1 ) .!= 0
                     mydefensiveFlag = defensiveFlag .&& ((aiTrait .& 0x2) .!= 0)
@@ -1270,7 +3482,7 @@ isGameOver() = gameEnd > 0
 
 
 function playerIsHuman(p)
-    return (p == myPlayer && mode_human)
+    return ((p == myPlayer) && mode_human)
 end
 humanIsGUI() = mode_human & !noGUI()
 
@@ -1547,7 +3759,7 @@ function getRand1and0(low, high)
 end
 
 
-#ar = TuSacCards.getDeckArray(dd)
+#ar = TuSacCards.toValueArray(dd)
 #println(ar)
 
 rs = getRand1and0(13, 26)
@@ -1736,7 +3948,7 @@ function tusacDeal(winner)
     replayHistory(0)
 end
 
-#ar = TuSacCards.getDeckArray(dd)
+#ar = TuSacCards.toValueArray(dd)
 #println(ar)
 const gsOrganize = 1
 const gsSetupGame = 2
@@ -1936,6 +4148,7 @@ function suit(r,matchc)
     end
     return rt
 end
+
 """
     miss(s1,s2): creat the missing card for group of 3,
 
@@ -2241,6 +4454,7 @@ scanCards() scan for single and missing seq
 """
 function scanCards(inHand, silence = false, psc = false)
     # scan for pairs and remove them
+
     ahand = deepcopy(inHand)
     pairs = []
     allPairs = [[], [], []]
@@ -2534,6 +4748,7 @@ function removeCards!(array, n, cards)
     if haBai
         return
     end
+   TuSacManager.syncRemoveCards(cards,n,1)
     m = n == 0 ? 0 : playerMaptoGUI(n)
   #  if length(cards) != 4 && length(cards) > 0
   #     trackPlayedCards(n,cards,false)
@@ -2555,8 +4770,8 @@ function removeCards!(array, n, cards)
         if n == 0
             return
         end
-        if okToPrint(0x8)
-            println("REMOVE ",ts(c)," from ",n," map-> ",playerMaptoGUI(n))
+        if okToPrint(0xC)
+            println("REMOVE ",ts(c)," from ",n," map-> ",m)
         end
         found = false
         for l = 1:length(array[n])
@@ -2955,71 +5170,71 @@ function getData_all_discard_assets()
     all_discards = []
     all_assets = []
     adjustPlayer = myPlayer
-     gameDeckArray = TuSacCards.getDeckArray(gameDeck)
+     gameDeckArray = TuSacCards.toValueArray(gameDeck)
 
     if adjustPlayer == 1
 
     push!(
         all_discards,
-        TuSacCards.getDeckArray(playerA_discards),
-        TuSacCards.getDeckArray(playerB_discards),
-        TuSacCards.getDeckArray(playerC_discards),
-        TuSacCards.getDeckArray(playerD_discards),
+        TuSacCards.toValueArray(playerA_discards),
+        TuSacCards.toValueArray(playerB_discards),
+        TuSacCards.toValueArray(playerC_discards),
+        TuSacCards.toValueArray(playerD_discards),
     )
     push!(
         all_assets,
-        TuSacCards.getDeckArray(playerA_assets),
-        TuSacCards.getDeckArray(playerB_assets),
-        TuSacCards.getDeckArray(playerC_assets),
-        TuSacCards.getDeckArray(playerD_assets),
+        TuSacCards.toValueArray(playerA_assets),
+        TuSacCards.toValueArray(playerB_assets),
+        TuSacCards.toValueArray(playerC_assets),
+        TuSacCards.toValueArray(playerD_assets),
     )
     elseif adjustPlayer == 4
         push!(
             all_discards,
-            TuSacCards.getDeckArray(playerB_discards),
-            TuSacCards.getDeckArray(playerC_discards),
-            TuSacCards.getDeckArray(playerD_discards),
-            TuSacCards.getDeckArray(playerA_discards),
+            TuSacCards.toValueArray(playerB_discards),
+            TuSacCards.toValueArray(playerC_discards),
+            TuSacCards.toValueArray(playerD_discards),
+            TuSacCards.toValueArray(playerA_discards),
         )
 
         push!(
             all_assets,
-            TuSacCards.getDeckArray(playerB_assets),
-            TuSacCards.getDeckArray(playerC_assets),
-            TuSacCards.getDeckArray(playerD_assets),
-            TuSacCards.getDeckArray(playerA_assets),
+            TuSacCards.toValueArray(playerB_assets),
+            TuSacCards.toValueArray(playerC_assets),
+            TuSacCards.toValueArray(playerD_assets),
+            TuSacCards.toValueArray(playerA_assets),
         )
     elseif adjustPlayer == 3
         push!(
             all_discards,
-            TuSacCards.getDeckArray(playerC_discards),
-            TuSacCards.getDeckArray(playerD_discards),
-            TuSacCards.getDeckArray(playerA_discards),
-            TuSacCards.getDeckArray(playerB_discards),
+            TuSacCards.toValueArray(playerC_discards),
+            TuSacCards.toValueArray(playerD_discards),
+            TuSacCards.toValueArray(playerA_discards),
+            TuSacCards.toValueArray(playerB_discards),
         )
 
         push!(
             all_assets,
-            TuSacCards.getDeckArray(playerC_assets),
-            TuSacCards.getDeckArray(playerD_assets),
-            TuSacCards.getDeckArray(playerA_assets),
-            TuSacCards.getDeckArray(playerB_assets),
+            TuSacCards.toValueArray(playerC_assets),
+            TuSacCards.toValueArray(playerD_assets),
+            TuSacCards.toValueArray(playerA_assets),
+            TuSacCards.toValueArray(playerB_assets),
         )
     elseif adjustPlayer == 2
         push!(
             all_discards,
-            TuSacCards.getDeckArray(playerD_discards),
-            TuSacCards.getDeckArray(playerA_discards),
-            TuSacCards.getDeckArray(playerB_discards),
-            TuSacCards.getDeckArray(playerC_discards),
+            TuSacCards.toValueArray(playerD_discards),
+            TuSacCards.toValueArray(playerA_discards),
+            TuSacCards.toValueArray(playerB_discards),
+            TuSacCards.toValueArray(playerC_discards),
         )
 
         push!(
             all_assets,
-            TuSacCards.getDeckArray(playerD_assets),
-            TuSacCards.getDeckArray(playerA_assets),
-            TuSacCards.getDeckArray(playerB_assets),
-            TuSacCards.getDeckArray(playerC_assets),
+            TuSacCards.toValueArray(playerD_assets),
+            TuSacCards.toValueArray(playerA_assets),
+            TuSacCards.toValueArray(playerB_assets),
+            TuSacCards.toValueArray(playerC_assets),
         )
 
     end
@@ -3035,37 +5250,37 @@ function getData_all_hands()
     if adjustPlayer == 1
         push!(
             all_hands,
-            TuSacCards.getDeckArray(playerA_hand),
-            TuSacCards.getDeckArray(playerB_hand),
-            TuSacCards.getDeckArray(playerC_hand),
-            TuSacCards.getDeckArray(playerD_hand),
+            TuSacCards.toValueArray(playerA_hand),
+            TuSacCards.toValueArray(playerB_hand),
+            TuSacCards.toValueArray(playerC_hand),
+            TuSacCards.toValueArray(playerD_hand),
         )
 
     elseif adjustPlayer == 4
         push!(
             all_hands,
-            TuSacCards.getDeckArray(playerB_hand),
-            TuSacCards.getDeckArray(playerC_hand),
-            TuSacCards.getDeckArray(playerD_hand),
-            TuSacCards.getDeckArray(playerA_hand),
+            TuSacCards.toValueArray(playerB_hand),
+            TuSacCards.toValueArray(playerC_hand),
+            TuSacCards.toValueArray(playerD_hand),
+            TuSacCards.toValueArray(playerA_hand),
         )
 
     elseif adjustPlayer == 3
         push!(
             all_hands,
-            TuSacCards.getDeckArray(playerC_hand),
-            TuSacCards.getDeckArray(playerD_hand),
-            TuSacCards.getDeckArray(playerA_hand),
-            TuSacCards.getDeckArray(playerB_hand),
+            TuSacCards.toValueArray(playerC_hand),
+            TuSacCards.toValueArray(playerD_hand),
+            TuSacCards.toValueArray(playerA_hand),
+            TuSacCards.toValueArray(playerB_hand),
         )
 
     elseif adjustPlayer == 2
         push!(
             all_hands,
-            TuSacCards.getDeckArray(playerD_hand),
-            TuSacCards.getDeckArray(playerA_hand),
-            TuSacCards.getDeckArray(playerB_hand),
-            TuSacCards.getDeckArray(playerC_hand),
+            TuSacCards.toValueArray(playerD_hand),
+            TuSacCards.toValueArray(playerA_hand),
+            TuSacCards.toValueArray(playerB_hand),
+            TuSacCards.toValueArray(playerC_hand),
         )
 
     end
@@ -3171,10 +5386,8 @@ function whoWin!(glIterationCnt, pcard,play3,t1Player,t2Player,t3Player,t4Player
         else
             n4c = []
         end
-        rReady[t1Player] = false
-        rReady[t2Player] = false
-        rReady[t3Player] = false
-        rReady[t4Player] = false
+        rReady = [false,false,false,false]
+   
     else
         glIterationCnt -= 1
         return
@@ -3421,7 +5634,8 @@ function gamePlay1Iteration()
         end
       #  okToPrint(0x80) && checksum()
         okToPrint(0x80) && printAllInfo()
-
+        okToPrint(0x80) && TuSacManager.printTable()
+        
         if length(aiFilename) > 0
             getScaledData(aiFilename)
         end
@@ -3465,6 +5679,7 @@ function gamePlay1Iteration()
         else
             nc = pop!(gameDeck, 1)
             nca = pop!(gameDeckArray)
+            TuSacManager.syncRemoveCards(nca,5,0)
             # no need to call removeCard here -- gamedeck is array 0
             global gd = setupDrawDeck(gameDeck, GUILoc[13,1], GUILoc[13,2],  GUILoc[13,3],  FaceDown)
             All_hand_updateActor(nc[1].value, !FaceDown)
@@ -3985,7 +6200,7 @@ function playersSyncDeck!(deck::TuSacCards.Deck)
                 deck = []
                 deck = TuSacCards.newDeckUsingArray(dArray)
            else
-                dArray = TuSacCards.getDeckArray(deck)
+                dArray = TuSacCards.toValueArray(deck)
                 deck = []
                 deck = TuSacCards.newDeckUsingArray(dArray)
 
@@ -4006,7 +6221,7 @@ function playersSyncDeck!(deck::TuSacCards.Deck)
             println("PLAYER",(PlayerList,myPlayer))
         end
         if PlayerList[myPlayer] == plSocket
-            dArray = TuSacCards.getDeckArray(deck)
+            dArray = TuSacCards.toValueArray(deck)
             nwAPI.nw_sendToMaster(myPlayer, nwMaster,dArray)
             dArray =[]
             dArray = nwAPI.nw_receiveFromMaster(nwMaster,112)
@@ -4402,30 +6617,14 @@ global GUI_ready = false
                         end
                         if length(ps) == 4
                             removeCards!(all_hands,i,ps)
-                         #   removeCards!(all_hands,i,ps[2])
-                         #   removeCards!(all_hands,i,ps[3])
-                         #   removeCards!(all_hands,i,ps[4])
                             addCards!(all_assets,0,i,ps)
                             all_assets_marks[ps[1]] = 1
-
-                        #    addCards!(all_assets,0,i,ps[2])
-                         #   addCards!(all_assets,0,i,ps[3])
-                         #   addCards!(all_assets,0,i,ps[4])
                             kpoints[i] += 8
                             khui[i] = 2
                             if GUI
                                 isTestFile == false && createCoin(1,i,coinsCnt)
                                 coinsArr[i][1] += 1
-                                #=
-                                coinActor = macOS ?  Actor("coin_b.png") : Actor("coin.png")
-                                mi = playerMaptoGUI(i)
-                                coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
-                                                    mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
-                                                    mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
-                                                    tableGridXY(5,10+coinsCnt*1)
-                                push!(coins,coinActor)
-                                coinsCnt += 1
-                                =#
+                             
                                 coinsCnt += 1
 
                             end
@@ -4439,24 +6638,23 @@ global GUI_ready = false
                                 isTestFile == false && createCoin(2,i,coinsCnt)
                                 coinsArr[i][2] += 1
 
-                                #=
-                                coinActor = macOS ?  Actor("coin1d_b.png") : Actor("coin1d.png")
-                                mi = playerMaptoGUI(i)
-                                coinActor.pos =  mi == 1 ? tableGridXY(10+coinsCnt*1,15) :
-                                                 mi == 2 ? tableGridXY(17,10+coinsCnt*1) :
-                                                 mi == 3 ? tableGridXY(10+coinsCnt*1,5) :
-                                                 tableGridXY(5,10+coinsCnt*1)
-                                push!(coins,coinActor)
-                                coinsCnt += 1
-                                =#
                                 coinsCnt += 1
                             end
                         end
                     end
                 end
             end
-            global gameDeckArray = TuSacCards.getDeckArray(gameDeck)
+            global gameDeckArray = TuSacCards.toValueArray(gameDeck)
             replayHistory(0)
+            allCards =   
+            playerA_hand, playerA_discards, playerA_assets,
+            playerB_hand, playerB_discards, playerB_assets,
+            playerC_hand, playerC_discards, playerC_assets,
+            playerD_hand, playerD_discards, playerD_assets,
+            gameDeck,kpoints,points,coinsArr
+
+            TuSacManager.restoreCards(allCards,prevWinner)
+
         global gameEnd = 0
         if okToPrint(0x1)
             println("Starting game, e-",gameEnd)
@@ -4891,7 +7089,7 @@ function keyboardInput(gpPlayer)
 end
 
 function humanInput()
-    testDeck = TuSacCards.getDeckArray(TuSacCards.ordered_deck())
+    testDeck = TuSacCards.toValueArray(TuSacCards.ordered_deck())
     local al = readline()
     if length(al) > 1
         local rl = split(al, ' ')
@@ -5156,8 +7354,33 @@ end
 nDead=[[],[],[],[]]
 highValue = zeros(UInt8,4)
 
+function mapAI(ai,trashCnt)
+    
+    if trashCnt >= 5
+        if ai == 5
+            localAI = 1
+        elseif ai == 6
+            localAI = 2
+        elseif ai == 7
+            localAI = 3
+        end
+    else
+        if ai == 5
+            localAI = 3
+        elseif ai == 6
+            localAI = 4
+        elseif ai == 7
+            localAI = 4
+        end
+    end
+    return localAI
+end
 function gpHandlePlay1Card(player)
     gl = glIterationCnt >> 2
+    erc = TuSacManager.play1Card(player)
+    println("???????????????????????????????")
+    println("Play1Card player$player  erc=",ts(erc))
+    println("???????????????????????????????")
 
     trashCnt = length(singles)+length(missTs)+length(miss1s)+length(chot1s)
     pairsCnt = length(allPairs[1])+length(allPairs[2])+length(allPairs[3])
@@ -5165,25 +7388,9 @@ function gpHandlePlay1Card(player)
 
     ai = aiType[player]
     localAI = ai
-   
-    if trashCnt >= 4
-        if ai == 5
-            localAI = 1
-        elseif ai == 6
-            localAI = 2
-        elseif ai == 7
-            localAI = 4
-        end
-    else
-        if ai == 5
-            localAI = 4
-        elseif ai == 6
-            localAI = 4
-        elseif ai == 7
-            localAI = 2
-        end
-    end
-   
+   # localAI = mapAI(ai,trashCnt)
+    println("Local AI = ",(ai,localAI))
+
     saveSingles = copy(singles)
     if okToPrint(4)
         print("save-singles= ")
@@ -5395,6 +7602,12 @@ function gpHandlePlay1Card(player)
     else
         card =[] # rare case, no trash in the very start
     end
+    global coDoiPlayer = 0
+    global coDoiCards = []
+    println("???????????????????????????????")
+    println("real-Play1Card player$player rc=",ts(card))
+    println("???????????????????????????????")
+
     return card
 end
 # miss1_1,miss1_2,missT,singles,chot1
@@ -5614,6 +7827,7 @@ end
 function randomSampling(c,list)
 
 end
+
 
 function list(s1,s2,p1,p2,p3)
     r =[]
@@ -5881,6 +8095,11 @@ maxAssets() = max(length(all_assets[1]),length(all_assets[2]),length(all_assets[
 
 
 function gpHandleMatch2Card(pcard,player)
+    erc = TuSacManager.Match2Card(pcard,player)
+    println("???????????????????????????????")
+    println("match2 player$player  ERC=",ts(erc))
+    println("???????????????????????????????")
+
     card1 = chk1(pcard)
     card2 = chk2(pcard)
     ls = length(singles)
@@ -5939,11 +8158,19 @@ function gpHandleMatch2Card(pcard,player)
             end
         end
     end
+    println("???????????????????????????????")
+    println("Real-match2 player$player RC=",ts(erc))
+    println("???????????????????????????????")
+
     return rc
 
 end
 function gpHandleMatch1or2Card(pcard,player)
-   
+     erc = TuSacManager.Match1or2Card(pcard,player)
+     println("???????????????????????????????")
+     println("mat1or2  player$player ERC=",ts(erc))
+     println("???????????????????????????????")
+
     card1 = chk1(pcard)
     card2 = chk2(pcard)
     ls = length(singles)
@@ -5998,6 +8225,10 @@ function gpHandleMatch1or2Card(pcard,player)
             end
         end
     end
+    println("???????????????????????????????")
+    println("Real-match1or2 player$player RC=",ts(rc))
+    println("???????????????????????????????")
+
     return rc
 end
 
@@ -6830,7 +9061,7 @@ function draw(g)
         if(tusacState == tsHistory)
             GUI && sleep(.2)
         end
-        saveI = saveI + drawAhand(TuSacCards.getDeckArray(gameDeck))
+        saveI = saveI + drawAhand(TuSacCards.toValueArray(gameDeck))
         for i in 1:4
             saveI = saveI + drawAhand(all_hands[i])
             saveI = saveI + drawAhand(all_assets[i])
